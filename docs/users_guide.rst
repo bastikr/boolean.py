@@ -125,7 +125,7 @@ In detail the following laws are used recursively on every subterm of + and \*:
 * :ref:`idempotence`
 * :ref:`identity`
 * :ref:`complementation`
-* :ref:`elemination`
+* :ref:`elimination`
 * :ref:`absorption`
 * :ref:`negative-absorption`
 * :ref:`commutativity` (for sorting)
@@ -180,7 +180,7 @@ never be equal to a named symbol:
 
 .. doctest:: boolean
 
-    >>> x, y, z = symbols(None, None, "z") 
+    >>> x, y, z = symbols(None, None, "z")
     >>> x == y
     False
     >>> x == x
@@ -188,11 +188,11 @@ never be equal to a named symbol:
     >>> x == z
     False
 
-Two named symbols are equal if they are the same or their holded objects
+Two named symbols are equal if they are the same or their associated objects
 compare to equal:
 
 .. doctest:: boolean
-    
+
     >>> x, y, z = symbols("x", "y", "z")
     >>> x == y
     False
@@ -223,9 +223,24 @@ Here some examples of equal and unequal structures:
     False
 
 
-
-Normal Forms
-------------
-
 Using boolean.py to define your own boolean algebra
 ---------------------------------------------------
+
+The usage of boolean.py by it's own is pretty limited. However, sometimes
+boolean algebras occur in completely different programming tasks. E.g. some
+kind of filters which take one argument and then return True or False could
+be composed according to boolean algebra.
+
+.. doctest::
+
+    import boolean
+
+    class Filter(boolean.BooleanBase):
+        def __init__(self, *, bool_expr):
+            boolean.BooleanBase.__init__(self, bool_expr=bool_expr, bool_base=Filter)
+
+        def apply(self, arg):
+            subs_dict = {}
+            for s in self.bool_expr.symbols:
+                subs_dict[s] = boolean.BaseElement(s.holder.apply(arg))
+            return self.bool_expr.subs(subs_dict)

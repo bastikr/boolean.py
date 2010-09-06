@@ -2,7 +2,7 @@
 Concepts and Definitions
 ========================
 
-In this document the basic definitions and importent laws of Boolean algebra
+In this document the basic definitions and important laws of Boolean algebra
 are stated.
 
 .. contents::
@@ -49,7 +49,7 @@ for* :class:`BaseElement`, :class:`Symbol` *and* :class:`Function`.
 NOT
 ^^^
 
-A boolean function of order 1 with following truthtable:
+A boolean function of order 1 with following truth table:
 
 +---+--------+
 | x | NOT(x) |
@@ -67,7 +67,7 @@ Instead of :math:`NOT(x)` one can write :math:`~x`.
 AND
 ^^^
 
-A boolean function of order 2 or more with the truthtable for two
+A boolean function of order 2 or more with the truth table for two
 elements
 
 +---+---+----------+
@@ -93,8 +93,8 @@ Instead of :math:`AND(x, y, z)` one can write :math:`x*y*z`.
 OR
 ^^
 
-A boolean function of order 2 or more with the truthtable for two
-elements 
+A boolean function of order 2 or more with the truth table for two
+elements
 
 +---+---+---------+
 | x | y | OR(x,y) |
@@ -131,8 +131,6 @@ A disjunction of conjunctions of literals where the conjunctions don't
 contain a boolean variable *and* it's negation. An example would be
 :math:`x*y + x*z`.
 
-*Implemented as class* :class:`DNF`.
-
 
 Full disjunctive normal form (FDNF)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -149,7 +147,6 @@ A conjunction of disjunctions of literals where the disjunctions don't
 contain a boolean variable *and* it's negation. An example would be
 :math:`(x+y) * (x+z)`.
 
-*Implemented as class* :class:`CNF`.
 
 Full conjunctive normal form (FCNF)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -157,6 +154,7 @@ Full conjunctive normal form (FCNF)
 A CNF where all disjunctions have the same count of literals as the
 whole CNF has boolean variables. An example would be:
 :math:`(x+y+z) * (x+y+~z) * (x+~y+z)`.
+
 
 Laws
 ----
@@ -264,9 +262,9 @@ De Morgan
 * :math:`~(x+y) = ~x * ~y`
 
 
-.. _elemination:
+.. _elimination:
 
-Elemination
+Elimination
 ^^^^^^^^^^^
 
 * :math:`(x*y) + (x*~y) = x`

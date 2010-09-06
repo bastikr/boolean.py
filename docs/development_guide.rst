@@ -49,16 +49,6 @@ OR
 ..
     .. autoclass:: boolean.OR
 
-CNF
-^^^
-..
-    .. autoclass:: boolean.CNF
-
-DNF
-^^^
-..
-    .. autoclass:: boolean.DNF
-
 
 .. _class-creation:
 
@@ -92,24 +82,6 @@ if it is called with a meaningful argument.
 * :obj:`1` | :obj:`True` ---> :obj:`TRUE`
 * :obj:`0` | :obj:`False` ---> :obj:`FALSE`
 
-NormalForm
-^^^^^^^^^^
-
-There won't be any processing if any from :class:`NormalForm` inheriting class
-is called with an argument of type :class:`NormalForm`. Of course it has to
-be the right type of NormalForm, so if CNF is called with a DNF as argument,
-the DNF will nevertheless be transformed.
-
-* :obj:`NormalForm`
-
-FullNormalForm
-^^^^^^^^^^^^^^
-
-The same as in NormalForm.
-
-* :obj:`FullNormalForm`
-
-
 .. _class-initialization:
 
 Class initialization
@@ -136,16 +108,6 @@ arguments may have the following types and are adequately processed:
 * :obj:`1` | :obj:`True` ---> :obj:`TRUE`
 * :obj:`0` | :obj:`False` ---> :obj:`FALSE`
 
-NormalForm
-^^^^^^^^^^
-
-* :obj:`Expression`
-* :obj:`str` --- :func:`parse` ---> :obj:`Expression`
-* :obj:`1` | :obj:`True` ---> :obj:`TRUE`
-* :obj:`0` | :obj:`False` ---> :obj:`FALSE`
-
-FullNormalForm
-^^^^^^^^^^^^^^
 
 Ordering
 --------
@@ -176,15 +138,7 @@ if it is in both compared classes available.
 +----------------------+-----------+
 | :class:`AND`         |    10     |
 +----------------------+-----------+
-| :class:`CNF`         |    15     |
-+----------------------+-----------+
-| :class:`FCNF`        |    20     |
-+----------------------+-----------+
 | :class:`OR`          |    25     |
-+----------------------+-----------+
-| :class:`DNF`         |    30     |
-+----------------------+-----------+
-| :class:`FDNF`        |    35     |
 +----------------------+-----------+
 
 Instance ordering
@@ -231,7 +185,7 @@ Parsing
 
 Parsing is done by iterating over all characters of a given string, creating
 adequate boolean objects as soon as possible and storing them in a list until
-they can be integrated into boolean objects by themself.
+they can be integrated into boolean objects by them selfs.
 
 Let's go through a simple example:
 
@@ -246,7 +200,7 @@ happen with this symbol so we store it in a list of following structure:
 
 Where the first position contains a pointer to the upper list (in this case
 None, since it isn't a subexpression) and the second determines which
-operation should be performed with the arguments in the following positions. 
+operation should be performed with the arguments in the following positions.
 Analysing the next character which is a "+" tells us that an OR operation is
 performed and we can update the current list to:
 
