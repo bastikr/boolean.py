@@ -405,6 +405,7 @@ class OtherTestCase(unittest.TestCase):
         self.assertEqual(expr.subs({a:a}), expr)
         self.assertEqual(expr.subs({a:b+c}), boolean.parse("(b+c)*b+c"))
         self.assertEqual(expr.subs({a*b:a}), a+c)
+        self.assertEqual(expr.subs({c:boolean.TRUE}), boolean.TRUE)
 
 
 class BooleanBaseTestCase(unittest.TestCase):
@@ -414,9 +415,25 @@ class BooleanBaseTestCase(unittest.TestCase):
                 boolean.BooleanBase.__init__(self, bool_expr=bool_expr,
                                              bool_base=Filter)
 
-        a = Filter()
-        b = Filter()
+            def eval(self):
+                subs_dict = {}
+                for h in self.bool_expr.holders:
+                    subs_dict[h.bool_expr] = h.eval()
+                return self.bool_expr.subs(subs_dict)
+
+        class ConstFilter(Filter):
+            def __init__(self, value):
+                Filter.__init__(self)
+                self.value = boolean.BaseElement(value)
+
+            def eval(self):
+                return self.value
+
+        a = ConstFilter(True)
+        b = ConstFilter(False)
         self.assertEqual(type(a+b), Filter)
+        self.assertEqual((a+b).eval(), boolean.TRUE)
+        self.assertEqual((a*b).eval(), boolean.FALSE)
 
 
 if __name__ == "__main__":

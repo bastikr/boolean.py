@@ -6,7 +6,7 @@
 Users Guide
 ===========
 
-This document is for everyone who wants to learn how to use **boolean.py**. It
+This document gives an easy introduction into **boolean.py**. It
 requires that you are already familiar with python and know a little bit
 about boolean algebra. All used definitions and laws are stated in
 :doc:`concepts`.
@@ -54,6 +54,13 @@ A shortcut for this would be:
 .. doctest:: boolean
 
     >>> x, y, z = symbols("x", "y", "z")
+
+Alternatively anonymous symbols can be created by simply not giving any
+argument (or :keyword:`None`) to Symbol:
+
+.. doctest:: boolean
+
+    >>> u = Symbol()
 
 These defined Symbols can be composed in different ways:
 

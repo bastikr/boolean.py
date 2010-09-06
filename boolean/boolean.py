@@ -24,6 +24,7 @@ class Expression:
     _args = None
     _iscanonical = False
     _hash = None
+    _holder = None
     algebra = None
 
     def __new__(cls, arg, *, eval=True):
@@ -43,6 +44,24 @@ class Expression:
         Return a tuple of all subterms.
         """
         return self._args
+
+    @property
+    def holder(self):
+        """
+        Return the holder of this object.
+        """
+        return self._holder
+
+    @property
+    def holders(self):
+        """
+        Return all holders in this expression.
+        """
+        s = set() if self.holder is None else set([self.holder])
+        if self.args is not None:
+            for arg in self.args:
+                s |= arg.holders
+        return s
 
     @property
     def isliteral(self):
@@ -93,9 +112,7 @@ class Expression:
                 s |= arg.symbols
             return s
 
-    def subs(self, subs_dict=None, *, eval=True, **kwargs):
-        subs_dict = {} if subs_dict is None else subs_dict.copy()
-        subs_dict.update(kwargs)
+    def subs(self, subs_dict, *, eval=True):
         for expr, substitution in subs_dict.items():
             if expr == self:
                 return substitution
@@ -316,11 +333,12 @@ class Symbol(Expression):
     _cls_order = 5
     _obj = None
 
-    def __new__(cls, obj=None, *, eval=False):
+    def __new__(cls, obj=None, *, eval=False, holder=None):
         return object.__new__(cls)
 
-    def __init__(self, obj=None, *, eval=False):
+    def __init__(self, obj=None, *, eval=False, holder=None):
         self._obj = obj
+        self._holder = holder
 
     @property
     def obj(self):
@@ -968,8 +986,11 @@ class BooleanBase:
     bool_base = None
 
     def __init__(self, *, bool_expr=None, bool_base=None):
-        self.bool_expr = Symbol() if bool_expr is None else bool_expr
+        self.bool_expr = Symbol(holder=self) if bool_expr is None else bool_expr
         self.bool_base = BooleanBase if bool_base is None else bool_base
+
+    def __hash__(self):
+        return hash(self.bool_expr) ^ id(self)
 
     def __eq__(self, other):
         return self.bool_base(bool_expr=self.bool_expr == other.bool_expr)
