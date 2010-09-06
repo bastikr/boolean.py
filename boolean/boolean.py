@@ -79,6 +79,54 @@ class Expression:
             return self.__class__(*args, eval=False)
 
     @property
+    def symbols(self):
+        """
+        Return a set of all symbols contained in this or any subexpression.
+        """
+        if isinstance(self, Symbol):
+            return set((self,))
+        if self.args is None:
+            return set()
+        else:
+            s = set()
+            for arg in self.args:
+                s |= arg.symbols
+            return s
+
+    def subs(self, subs_dict=None, *, eval=True, **kwargs):
+        subs_dict = {} if subs_dict is None else subs_dict.copy()
+        subs_dict.update(kwargs)
+        for expr, substitution in subs_dict.items():
+            if expr == self:
+                return substitution
+        expr = self._subs(subs_dict, eval=eval)
+        return self if expr is None else expr
+
+    def _subs(self, subs_dict, eval):
+        new_args = []
+        changed_something = False
+        for arg in self.args:
+            matched = False
+            for expr, substitution in subs_dict.items():
+                if arg == expr:
+                    new_args.append(substitution)
+                    changed_something = matched = True
+                    break
+            if not matched:
+                new_arg = None if arg.args is None else\
+                         arg._subs(subs_dict, eval)
+                if new_arg is None:
+                    new_args.append(arg)
+                else:
+                    changed_something = True
+                    new_args.append(new_arg)
+
+        if changed_something:
+            return self.__class__(*new_args, eval=eval)
+        else:
+            return None
+
+    @property
     def iscanonical(self):
         """
         Return True if the boolean object is in canonical form.
@@ -120,7 +168,7 @@ class Expression:
         """
         Test if other element is structurally the same as itself.
 
-        This method doesn't try any transformations, so it will actually return
+        This method doesn't try any transformations, so it will return
         False although terms are mathematically equal. It only uses the fact
         that all operations are commutative and considers different ordering as
         equal. Actually also idempotence is used, so args can appear more often
@@ -264,16 +312,22 @@ class Symbol(Expression):
     "anonymous symbols", which will always be unequal to any other symbol but
     themselfs.
     """
-    _args = None
     _iscanonical = True
     _cls_order = 5
+    _obj = None
 
     def __new__(cls, obj=None, *, eval=False):
         return object.__new__(cls)
 
     def __init__(self, obj=None, *, eval=False):
-        if obj is not None:
-            self._args = (obj,)
+        self._obj = obj
+
+    @property
+    def obj(self):
+        """
+        Return the object associated with this symbol.
+        """
+        return self._obj
 
     @property
     def isliteral(self):
@@ -282,35 +336,62 @@ class Symbol(Expression):
         """
         return True
 
+    def __hash__(self):
+        """
+        Calculate a hash considering eventually associated objects.
+        """
+        if self._hash is not None:
+            return self._hash # Return cached hash.
+        else:
+            if self.obj is None: # Anonymous symbol.
+                myhash = id(self)
+            else: # Hash of associated object.
+                myhash = hash(self.obj)
+            self._hash = myhash
+            return myhash
+
+    def __eq__(self, other):
+        """
+        Test if other element equals to this symbol.
+        """
+        if self is other:
+            return True
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        if self.obj is None or other.obj is None:
+            return False
+        else:
+            return self.obj == other.obj
+
     def __lt__(self, other):
         cmp = Expression.__lt__(self, other)
         if cmp is not NotImplemented:
             return cmp
         if isinstance(other, Symbol):
-            if self.args is None:
-                if other.args is None:
+            if self.obj is None:
+                if other.obj is None:
                     return hash(self) < hash(other) # 2 anonymous symbols.
                 else:
                     return False # Anonymous-Symbol < Named-Symbol.
             else:
-                if other.args is None:
+                if other.obj is None:
                     return True # Named-Symbol < Anonymous-Symbol.
                 else:
-                    return self.args[0].__lt__(other.args[0]) # 2 named symbols.
+                    return self.obj.__lt__(other.obj) # 2 named symbols.
         return NotImplemented
 
     def __str__(self):
-        if self.args is None:
-            return "L" + str(hash(self))
+        if self.obj is None:
+            return "S<%s>" % str(hash(self))
         else:
-            return str(self.args[0])
+            return str(self.obj)
 
     def __repr__(self):
-        if self.args:
-            arg = repr(self.args[0])
+        if self.obj is not None:
+            obj = repr(self.obj)
         else:
-            arg = hash(self)
-        return "%s(%s)" % (self.__class__.__name__, arg)
+            obj = hash(self)
+        return "%s(%s)" % (self.__class__.__name__, obj)
 
 
 class Function(Expression):
@@ -877,4 +958,37 @@ def parse(expr, eval=True):
             ast[0].append(ast[1](*ast[2:], eval=eval))
             ast = ast[0]
     return expr
+
+
+class BooleanBase:
+    """
+    Base class for user defined boolean algebras.
+    """
+    bool_expr = None
+    bool_base = None
+
+    def __init__(self, *, bool_expr=None, bool_base=None):
+        self.bool_expr = Symbol() if bool_expr is None else bool_expr
+        self.bool_base = BooleanBase if bool_base is None else bool_base
+
+    def __eq__(self, other):
+        return self.bool_base(bool_expr=self.bool_expr == other.bool_expr)
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __lt__(self, other):
+        return self.bool_base(bool_expr=self.bool_expr < other.bool_expr)
+
+    def __gt__(self, other):
+        return self.bool_base(bool_expr=self.bool_expr > other.bool_expr)
+
+    def __mul__(self, other):
+        return self.bool_base(bool_expr=self.bool_expr * other.bool_expr)
+
+    def __invert__(self):
+        return self.bool_base(bool_expr= ~self.bool_expr)
+
+    def __add__(self, other):
+        return self.bool_base(bool_expr=self.bool_expr + other.bool_expr)
 

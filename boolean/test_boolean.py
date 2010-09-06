@@ -125,7 +125,7 @@ class SymbolTestCase(unittest.TestCase):
     def test_printing(self):
         self.assertTrue(str(boolean.Symbol("a")) == "a")
         self.assertTrue(str(boolean.Symbol(1)) == "1")
-        self.assertTrue(repr(boolean.Symbol("a")) == "Symbol('a')")
+        self.assertTrue(repr(boolean.Symbol("a")), "Symbol('a')")
         self.assertTrue(repr(boolean.Symbol(1)) == "Symbol(1)")
 
 
@@ -397,6 +397,26 @@ class OtherTestCase(unittest.TestCase):
         self.assertTrue(parse("(a*b)+(b*((c+a)*(b+(c*a))))") ==\
                         parse("a*b + b*(c+a)*(b+c*a)") ==\
                         (a*b)+(b*((c+a)*(b+(c*a)))))
+
+    def test_subs(self):
+        a, b, c = boolean.symbols("a", "b", "c")
+        expr = a*b+c
+        self.assertEqual(expr.subs({a:b}), b+c)
+        self.assertEqual(expr.subs({a:a}), expr)
+        self.assertEqual(expr.subs({a:b+c}), boolean.parse("(b+c)*b+c"))
+        self.assertEqual(expr.subs({a*b:a}), a+c)
+
+
+class BooleanBaseTestCase(unittest.TestCase):
+    def test_implementation(self):
+        class Filter(boolean.BooleanBase):
+            def __init__(self, *, bool_expr=None):
+                boolean.BooleanBase.__init__(self, bool_expr=bool_expr,
+                                             bool_base=Filter)
+
+        a = Filter()
+        b = Filter()
+        self.assertEqual(type(a+b), Filter)
 
 
 if __name__ == "__main__":
