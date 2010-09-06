@@ -226,21 +226,25 @@ Here some examples of equal and unequal structures:
 Using boolean.py to define your own boolean algebra
 ---------------------------------------------------
 
-The usage of boolean.py by it's own is pretty limited. However, sometimes
-boolean algebras occur in completely different programming tasks. E.g. some
-kind of filters which take one argument and then return True or False could
-be composed according to boolean algebra.
+The usage of boolean.py by its own is pretty limited. However, sometimes
+boolean algebras occur in completely different programming tasks. Here a small
+example how to implement a filters which can be mixed according to boolean
+algebra and have a common base class called "Filters" implementing the
+interface common to all filters in this example just a method :meth:`eval`::
 
-.. doctest::
 
     import boolean
 
     class Filter(boolean.BooleanBase):
-        def __init__(self, *, bool_expr):
-            boolean.BooleanBase.__init__(self, bool_expr=bool_expr, bool_base=Filter)
+        def __init__(self, *, bool_expr=None):
+            boolean.BooleanBase.__init__(self, bool_expr=bool_expr,
+                                            bool_base=Filter)
 
-        def apply(self, arg):
+        def eval(self, *args, **kwargs):
             subs_dict = {}
-            for s in self.bool_expr.symbols:
-                subs_dict[s] = boolean.BaseElement(s.holder.apply(arg))
+            for h in self.bool_expr.holders:
+                subs_dict[h.bool_expr] = h.eval(*args, **kwargs)
             return self.bool_expr.subs(subs_dict)
+
+Then specific filters could inherit from this generic Filter and implement
+their own eval methods.
