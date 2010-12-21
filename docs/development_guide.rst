@@ -100,7 +100,7 @@ Symbol
 Function
 ^^^^^^^^
 
-A function can take an amount of arguments according to it's order. These
+A function can take an amount of arguments according to its order. These
 arguments may have the following types and are adequately processed:
 
 * :obj:`Expression`

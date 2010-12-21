@@ -11,20 +11,35 @@ Released under revised BSD license.
 import itertools
 import collections
 
-BaseSet = collections.namedtuple("BaseSet", ("TRUE", "FALSE"))
-BaseOperations = collections.namedtuple("BaseOperations", ("NOT", "AND", "OR"))
+# A boolean algebra is defined by its base elements (=domain), its operations
+# (in this case only NOT, AND and OR) and an additional "symbol" type.
 Algebra = collections.namedtuple("Algebra",
-                                 ("baseset", "operations", "symbol"))
+                                 ("domain", "operations", "symbol"))
+
+# Defines the two base elements TRUE and FALSE for the algebra.
+BooleanDomain = collections.namedtuple("BooleanDomain", ("TRUE", "FALSE"))
+
+# Defines the basic boolean operations NOT, AND and OR.
+BooleanOperations = collections.namedtuple("BooleanOperations",
+                                           ("NOT", "AND", "OR"))
 
 
 class Expression:
     """
-    Base class for all boolean classes.
+    Base class for all boolean expressions.
     """
+    # Used to store subterms. Can be empty.
     _args = None
+    # Defines order relation between different classes.
+    _cls_order = None
+    # Stores if an expression is already canonical.
     _iscanonical = False
+    # Cashes the hash value for an expression. (Expressions are immutable)
     _hash = None
-    _holder = None
+    # Stores an object associated to this boolean expression.
+    _obj = None
+
+    # Holds an Algebra tuple which defines the boolean algebra.
     algebra = None
 
     def __new__(cls, arg, *, eval=True):
@@ -33,9 +48,9 @@ class Expression:
         if isinstance(arg, str):
             return parse(arg, eval=eval)
         elif arg in (0, False):
-            return FALSE
+            return cls.algebra.domain.FALSE
         elif arg in (1, True):
-            return TRUE
+            return cls.algebra.domain.TRUE
         raise TypeError("Wrong argument for Expression.")
 
     @property
@@ -46,21 +61,25 @@ class Expression:
         return self._args
 
     @property
-    def holder(self):
+    def obj(self):
         """
-        Return the holder of this object.
+        Return the associated object of this object.
+
+        Might be None.
         """
-        return self._holder
+        return self._obj
 
     @property
-    def holders(self):
+    def objects(self):
         """
-        Return all holders in this expression.
+        Return a set off all associated objects in this expression.
+
+        Might be an empty set.
         """
-        s = set() if self.holder is None else set([self.holder])
+        s = set() if self.obj is None else set([self.obj])
         if self.args is not None:
             for arg in self.args:
-                s |= arg.holders
+                s |= arg.objects
         return s
 
     @property
@@ -113,6 +132,9 @@ class Expression:
             return s
 
     def subs(self, subs_dict, *, eval=True):
+        """
+        Return an expression where all subterms equal to a key are substituted.
+        """
         for expr, substitution in subs_dict.items():
             if expr == self:
                 return substitution
@@ -205,7 +227,7 @@ class Expression:
         return not self == other
 
     def __lt__(self, other):
-        if hasattr(self, "_cls_order") and hasattr(other, "_cls_order"):
+        if self._cls_order is not None and other._cls_order is not None:
             if self._cls_order == other._cls_order:
                 return NotImplemented
             else:
@@ -233,30 +255,35 @@ class BaseElement(Expression):
     """
     Base class for the base elements TRUE and FALSE of the boolean algebra.
     """
+    _cls_order = 0
     _iscanonical = True
-    _instance = None
+
+    # The following two attributes define the output of __str__ and __repr__
+    # respectively. They are overwritten in the classes TRUE and FALSE.
     _str = None
     _repr = None
-    _cls_order = 0
 
     def __new__(cls, arg=None, *, eval=False):
         if arg is not None:
             if isinstance(arg, BaseElement):
                 return arg
             elif arg in (0, False):
-                return FALSE
+                return cls.algebra.domain.FALSE
             elif arg in (1, True):
-                return TRUE
+                return cls.algebra.domain.TRUE
             else:
                 raise TypeError("Bad argument: %s" % arg)
         elif cls is BaseElement:
             raise TypeError("BaseElement can't be created without argument.")
-        # Make sure only one instance is created.
-        if cls._instance is None:
-            obj = object.__new__(cls)
-            cls._instance = obj # Save this instance.
-            return obj
-        return cls._instance # Return the already created instance.
+        if cls.algebra is None:
+            return object.__new__(cls)
+        elif isinstance(cls.algebra.domain.TRUE, cls):
+            return cls.algebra.domain.TRUE
+        elif isinstance(cls.algebra.domain.FALSE, cls):
+            return cls.algebra.domain.FALSE
+        else:
+            raise TypeError("BaseElement can only create objects in the\
+                             current domain.")
 
     @property
     def dual(self):
@@ -266,11 +293,11 @@ class BaseElement(Expression):
         That means TRUE.dual will return FALSE and FALSE.dual will return
         TRUE.
         """
-        bs = self.algebra.baseset
-        if self is bs.TRUE:
-            return bs.FALSE
-        elif self is bs.FALSE:
-            return bs.TRUE
+        domain = self.algebra.domain
+        if self is domain.TRUE:
+            return domain.FALSE
+        elif self is domain.FALSE:
+            return domain.TRUE
         else:
             raise AttributeError("Class should be TRUE or FALSE but is %s."\
                                  % self.cls.__name__)
@@ -280,7 +307,7 @@ class BaseElement(Expression):
         if cmp is not NotImplemented:
             return cmp
         if isinstance(other, BaseElement):
-            if self is FALSE:
+            if self is self.algebra.domain.FALSE:
                 return True
             return False
         return NotImplemented
@@ -312,8 +339,9 @@ class _FALSE(BaseElement):
     _str = "0"
     _repr = "FALSE"
 
+
 # Initialize two singletons which will be used as base elements for the
-# boolean algebra.
+# default boolean algebra.
 TRUE = _TRUE()
 FALSE = _FALSE()
 
@@ -329,16 +357,16 @@ class Symbol(Expression):
     "anonymous symbols", which will always be unequal to any other symbol but
     themselfs.
     """
-    _iscanonical = True
     _cls_order = 5
+    _iscanonical = True
+
     _obj = None
 
-    def __new__(cls, obj=None, *, eval=False, holder=None):
+    def __new__(cls, obj=None, *, eval=False):
         return object.__new__(cls)
 
-    def __init__(self, obj=None, *, eval=False, holder=None):
+    def __init__(self, obj=None, *, eval=False):
         self._obj = obj
-        self._holder = holder
 
     @property
     def obj(self):
@@ -420,7 +448,11 @@ class Function(Expression):
     the order of the function) and maps them to one of the base elements.
     Typical examples for implemented functions are AND and OR.
     """
+    # Specifies how many arguments a function takes. the first number gives a
+    # lower limit, the second an upper limit.
     order = (2, float("inf"))
+
+    # Specifies an infix notation of an operator for printing.
     operator = None
 
     def __new__(cls, *args, eval=True):
@@ -521,7 +553,7 @@ class NOT(Function):
         term = self.cancel()
         if not isinstance(term, self.__class__):
             return term.eval()
-        elif term.args[0] in self.algebra.baseset:
+        elif term.args[0] in self.algebra.domain:
             return term.args[0].dual
         else:
             expr = self.__class__(term.args[0].eval(**evalkwargs),
@@ -572,6 +604,8 @@ class DualBase(Function):
     and OR. Both operations take 2 or more arguments and can be created using
     "+" for OR and "*" for AND.
     """
+    # Specifies the identity element for the specific operation. (TRUE for
+    # AND and FALSE for OR).
     _identity = None
 
     @property
@@ -827,9 +861,9 @@ class AND(DualBase):
     The AND operation takes 2 or more arguments and can also be created by
     using "*" between two boolean expressions.
     """
-    operator = "*"
     _cls_order = 10
     _identity = True
+    operator = "*"
 
 
 class OR(DualBase):
@@ -839,15 +873,17 @@ class OR(DualBase):
     The OR operation takes 2 or more arguments and can also be created by
     using "+" between two boolean expressions.
     """
-    operator = "+"
     _cls_order = 25
     _identity = False
+    operator = "+"
 
 
-BASESET = BaseSet(TRUE=TRUE, FALSE=FALSE)
-BASEOPERATIONS = BaseOperations(NOT=NOT, AND=AND, OR=OR)
-ALGEBRA = Algebra(BASESET, BASEOPERATIONS, Symbol)
+# Create a default algebra.
+DOMAIN = BooleanDomain(TRUE=TRUE, FALSE=FALSE)
+OPERATIONS = BooleanOperations(NOT=NOT, AND=AND, OR=OR)
+ALGEBRA = Algebra(DOMAIN, OPERATIONS, Symbol)
 Expression.algebra = ALGEBRA
+
 
 def normalize(operation, expr):
     """
@@ -891,6 +927,7 @@ def symbols(*args):
     """
     Symbol = ALGEBRA.symbol
     return tuple(Symbol(arg) for arg in args)
+
 
 PRECEDENCE = {
     NOT: 5,
@@ -978,38 +1015,47 @@ def parse(expr, eval=True):
     return expr
 
 
-class BooleanBase:
+class BooleanAlgebra:
     """
     Base class for user defined boolean algebras.
     """
+    # Stores for every user object a boolean object.
     bool_expr = None
     bool_base = None
 
     def __init__(self, *, bool_expr=None, bool_base=None):
-        self.bool_expr = Symbol(holder=self) if bool_expr is None else bool_expr
+        self.bool_expr = Symbol(obj=self) if bool_expr is None else bool_expr
         self.bool_base = BooleanBase if bool_base is None else bool_base
 
     def __hash__(self):
-        return hash(self.bool_expr) ^ id(self)
+        if isinstance(self.bool_expr, self.bool_expr.algebra.symbol):
+            return id(self)
+        else:
+            return hash(self.bool_expr) ^ id(self)
 
     def __eq__(self, other):
-        return self.bool_base(bool_expr=self.bool_expr == other.bool_expr)
+        if isinstance(self.bool_expr, self.bool_expr.algebra.symbol):
+            return True if self is other else False
+        else:
+            return self.bool_expr == other.bool_expr
 
     def __ne__(self, other):
         return not self == other
 
     def __lt__(self, other):
-        return self.bool_base(bool_expr=self.bool_expr < other.bool_expr)
+        if isinstance(self.bool_expr, self.bool_expr.algebra.symbol):
+            return id(self) < id(other)
+        return self.bool_expr < other.bool_expr
 
     def __gt__(self, other):
-        return self.bool_base(bool_expr=self.bool_expr > other.bool_expr)
+        return self.bool_expr > other.bool_expr
 
     def __mul__(self, other):
-        return self.bool_base(bool_expr=self.bool_expr * other.bool_expr)
+        return self.bool_base(bool_expr = self.bool_expr*other.bool_expr)
 
     def __invert__(self):
-        return self.bool_base(bool_expr= ~self.bool_expr)
+        return self.bool_base(bool_expr = ~self.bool_expr)
 
     def __add__(self, other):
-        return self.bool_base(bool_expr=self.bool_expr + other.bool_expr)
+        return self.bool_base(bool_expr = self.bool_expr+other.bool_expr)
 

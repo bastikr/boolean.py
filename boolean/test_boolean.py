@@ -408,17 +408,17 @@ class OtherTestCase(unittest.TestCase):
         self.assertEqual(expr.subs({c:boolean.TRUE}), boolean.TRUE)
 
 
-class BooleanBaseTestCase(unittest.TestCase):
+class BooleanAlgebraTestCase(unittest.TestCase):
     def test_implementation(self):
-        class Filter(boolean.BooleanBase):
+        class Filter(boolean.BooleanAlgebra):
             def __init__(self, *, bool_expr=None):
-                boolean.BooleanBase.__init__(self, bool_expr=bool_expr,
+                boolean.BooleanAlgebra.__init__(self, bool_expr=bool_expr,
                                              bool_base=Filter)
 
             def eval(self):
                 subs_dict = {}
-                for h in self.bool_expr.holders:
-                    subs_dict[h.bool_expr] = h.eval()
+                for obj in self.bool_expr.objects:
+                    subs_dict[obj.bool_expr] = obj.eval()
                 return self.bool_expr.subs(subs_dict)
 
         class ConstFilter(Filter):

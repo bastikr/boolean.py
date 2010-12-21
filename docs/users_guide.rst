@@ -31,7 +31,7 @@ when the module was tested a little bit more. However, it's easy enough to get
 it running by downloading **boolean.py** and either adding it's location to the
 *PYTHONPATH* or starting the python interpreter in the same directory.
 
-Then **boolean.py** can be used inside python by simply importing it:
+Then **boolean.py** can be used by simply importing it:
 
 .. doctest:: boolean
 
@@ -93,7 +93,7 @@ Yet another possibility is to parse a string into a boolean expression:
 .. note::
 
     When using :func:`parse` you don't have to define every symbol separately
-    and therefor you can save a bit of typing. This is especially usefull when
+    and therefor you can save a bit of typing. This is especially useful when
     using **boolean.py** interactively.
 
 
@@ -118,7 +118,8 @@ simplifications are carried out and then the result is returned:
     >>> print (x*y) + (x*~y)
     x
 
-In detail the following laws are used recursively on every subterm of + and \*:
+In detail the following laws are used recursively on every sub-term of +
+and \*:
 
 * :ref:`associativity`
 * :ref:`annihilator`
@@ -223,19 +224,78 @@ Here some examples of equal and unequal structures:
     False
 
 
+Analyzing a boolean expression
+------------------------------
+
+Getting sub-terms
+^^^^^^^^^^^^^^^^^
+
+All expressions have a property :attr:`args` which holds a tuple of sub-terms.
+For symbols and base elements this tuple is empty, for boolean functions it is
+holding the single terms, etc. ::
+
+    >>> parse("x+y+z").args
+    (Symbol('x'), Symbol('y'), Symbol('z'))
+
+Getting all symbols
+^^^^^^^^^^^^^^^^^^^
+
+To get all symbols in an expression, simply use its :attr:`symbol` attribute ::
+
+    >>> parse("x+y*(x+z)").symbols
+    {Symbol('y'), Symbol('x'), Symbol('z')}
+
+
+Literals
+^^^^^^^^
+
+Symbols and negations of symbols are called literals. There are several ways
+to work with them. An expression can be tested if it's a literal::
+
+    >>> x.isliteral
+    True
+    >>> (~x).isliteral
+    True
+    >>> (x+y).isliteral
+    False
+
+Or all literals contained in an expression can be obtained::
+
+    >>> x.literals
+    {Symbol('x')}
+    >>> (~(x+~y)).literals
+    {Symbol('x'), NOT(Symbol('y'))}
+
+To have negations only in literals and no negations of other expressions,
+:meth:`literalize` can be used::
+
+    >>> (~(x+~y)).literalize()
+    ~x*y
+
+
+Substitutions
+^^^^^^^^^^^^^
+
+To substitute parts of an expression, the :meth:`subs` method can be used::
+
+    >>> e = x+y*z
+    >>> e.subs({y*z:y})
+    x+y
+
 Using boolean.py to define your own boolean algebra
 ---------------------------------------------------
 
 The usage of boolean.py by its own is pretty limited. However, sometimes
 boolean algebras occur in completely different programming tasks. Here a small
-example how to implement a filters which can be mixed according to boolean
-algebra and have a common base class called "Filters" implementing the
-interface common to all filters in this example just a method :meth:`eval`::
+example shows how to implement filters which can be mixed according to boolean
+algebra.
+Let's define some basic interface which all specific filters should inherit
+from::
 
 
     import boolean
 
-    class Filter(boolean.BooleanBase):
+    class Filter(boolean.BooleanAlgebra):
         def __init__(self, *, bool_expr=None):
             boolean.BooleanBase.__init__(self, bool_expr=bool_expr,
                                             bool_base=Filter)
@@ -246,5 +306,4 @@ interface common to all filters in this example just a method :meth:`eval`::
                 subs_dict[h.bool_expr] = h.eval(*args, **kwargs)
             return self.bool_expr.subs(subs_dict)
 
-Then specific filters could inherit from this generic Filter and implement
-their own eval methods.
+

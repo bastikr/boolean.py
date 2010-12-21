@@ -13,8 +13,8 @@ Basic Definitions
 -----------------
 
 
-Set of Base Elements
-^^^^^^^^^^^^^^^^^^^^
+Boolean Domain
+^^^^^^^^^^^^^^
 
 S := {1, 0}
 
