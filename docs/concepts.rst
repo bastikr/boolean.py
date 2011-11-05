@@ -59,7 +59,7 @@ A boolean function of order 1 with following truth table:
 | 1 |   0    |
 +---+--------+
 
-Instead of :math:`NOT(x)` one can write :math:`~x`.
+Instead of :math:`NOT(x)` one can write :math:`\sim x`.
 
 *Implemented as class* :class:`NOT`.
 
@@ -101,9 +101,9 @@ elements
 +===+===+=========+
 | 0 | 0 |    0    |
 +---+---+---------+
-| 0 | 1 |    0    |
+| 0 | 1 |    1    |
 +---+---+---------+
-| 1 | 0 |    0    |
+| 1 | 0 |    1    |
 +---+---+---------+
 | 1 | 1 |    1    |
 +---+---+---------+
@@ -137,7 +137,7 @@ Full disjunctive normal form (FDNF)
 
 A DNF where all conjunctions have the same count of literals as the
 whole DNF has boolean variables. An example would be
-:math:`x*y*z + x*y*~z + x*~y*z`.
+:math:`x*y*z + x*y*(\sim z) + x*(\sim y)*z`.
 
 
 Conjunctive normal form (CNF)
@@ -153,7 +153,7 @@ Full conjunctive normal form (FCNF)
 
 A CNF where all disjunctions have the same count of literals as the
 whole CNF has boolean variables. An example would be:
-:math:`(x+y+z) * (x+y+~z) * (x+~y+z)`.
+:math:`(x+y+z) * (x+y+(\sim z)) * (x+(\sim y)+z)`.
 
 
 Laws
@@ -187,8 +187,8 @@ Commutativity
 Distributivity
 ^^^^^^^^^^^^^^
 
-* :math:`x*(y+z) = (x*y)+(x*z)`
-* :math:`x+(y*z) = (x+y)*(x+z)`
+* :math:`x*(y+z) = x*y + x*z`
+* :math:`x+y*z = (x+y)*(x+z)`
 
 
 .. _identity:
@@ -232,8 +232,8 @@ Absorption
 Negative absorption
 ^^^^^^^^^^^^^^^^^^^
 
-* :math:`x*(~x+y) = x*y`
-* :math:`x+(~x*y) = x+y`
+* :math:`x*((\sim x)+y) = x*y`
+* :math:`x+(\sim x)*y = x+y`
 
 
 .. _complementation:
@@ -241,8 +241,8 @@ Negative absorption
 Complementation
 ^^^^^^^^^^^^^^^
 
-* :math:`x*~x = 0`
-* :math:`x+~x = 1`
+* :math:`x*(\sim x) = 0`
+* :math:`x+(\sim x) = 1`
 
 
 .. _double-negation:
@@ -250,7 +250,7 @@ Complementation
 Double negation
 ^^^^^^^^^^^^^^^
 
-* :math:`~~x = x`
+* :math:`\sim (\sim x) = x`
 
 
 .. _de-morgan:
@@ -258,8 +258,8 @@ Double negation
 De Morgan
 ^^^^^^^^^
 
-* :math:`~(x*y) = ~x + ~y`
-* :math:`~(x+y) = ~x * ~y`
+* :math:`\sim (x*y) = (\sim x) + (\sim y)`
+* :math:`\sim (x+y) = (\sim x) * (\sim y)`
 
 
 .. _elimination:
@@ -267,5 +267,5 @@ De Morgan
 Elimination
 ^^^^^^^^^^^
 
-* :math:`(x*y) + (x*~y) = x`
-* :math:`(x+y) * (x+~y) = x`
+* :math:`x*y + x*(\sim y) = x`
+* :math:`(x+y) * (x+(\sim y)) = x`
