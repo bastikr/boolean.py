@@ -756,6 +756,8 @@ class DualBase(Function):
                     if ai in aj.args or\
                          (isdual and all(arg in aj.args for arg in ai.args)):
                         del args[j]
+                        if i >= len(args):
+                            break
                     elif isdual:
                         negated = None
                         for arg in ai.args:

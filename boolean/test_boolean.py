@@ -279,6 +279,9 @@ class DualBaseTestCase(unittest.TestCase):
                                 "(a*~b*c*d) + (a*b*~c*~d) + (a*b*c*d)")
         result = boolean.parse("(~b*~d*a) + (~c*~d*b) + (a*c*d)")
         self.assertTrue(expr == result)
+        expr = boolean.parse("(a*b*c*d) + (b*d)")
+        result = boolean.parse("b*d")
+        self.assertTrue(expr == result)
         expr = boolean.parse("(~a*~b*~c*~d) + (~a*~b*~c*d) + (~a*b*~c*~d) +"\
                         "(~a*b*c*d) + (~a*b*~c*d) + (~a*b*c*~d) +"\
                         "(a*~b*~c*d) + (~a*b*c*d) + (a*~b*c*d) + (a*b*c*d)")
