@@ -410,6 +410,13 @@ class OtherTestCase(unittest.TestCase):
         self.assertEqual(expr.subs({a*b:a}), a+c)
         self.assertEqual(expr.subs({c:boolean.TRUE}), boolean.TRUE)
 
+    def test_normalize(self):
+        parse = boolean.parse
+        expr = parse("((s+a)*(s+b)*(s+c)*(s+d)*(e+c+d))+(a*e*d)")
+        result = boolean.AND(*boolean.normalize(boolean.AND, expr))
+        sol = parse("(a+s)*(b+e+s)*(c+d+e)*(c+e+s)*(d+s)")
+        self.assertTrue(result == sol)
+
 
 class BooleanAlgebraTestCase(unittest.TestCase):
     def test_implementation(self):

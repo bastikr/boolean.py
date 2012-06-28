@@ -651,6 +651,17 @@ class DualBase(Function):
         else:
             raise AttributeError("Class must be in algebra.operations.")
 
+    def __contains__(self, expr):
+        """
+        Tests if expr is a subterm.
+        """
+        if expr in self.args:
+            return True
+        if isinstance(expr, self.__class__):
+            if all(arg in self.args for arg in expr.args):
+                return True
+        return False
+
     def eval(self, **evalkwargs):
         """
         Return a simplified expression in canonical form.
@@ -706,91 +717,50 @@ class DualBase(Function):
         while i < len(args)-1:
             j = i + 1
             ai = args[i]
-            if isinstance(ai, self.dual):
-                while j < len(args):
-                    aj = args[j]
-                    if isinstance(aj, self.dual) and\
-                                len(ai.args)==len(aj.args):
-                        # Find terms where only one arg is different.
-                        negated = None
-                        for arg in ai.args:
-                            if arg in aj.args:
-                                pass
-                            elif ops.NOT(arg, eval=False).cancel() in aj.args:
-                                if negated is None:
-                                    negated = arg
-                                else:
-                                    negated = None
-                                    break
-                            else:
-                                negated = None
-                                break
-                        # If the different arg is a negation simplify the term.
-                        if negated is not None:
-                            # Cancel out one of the two terms.
-                            del args[j]
-                            aiargs = list(ai.args)
-                            aiargs.remove(negated)
-                            if len(aiargs) == 1:
-                                args[i] = aiargs[0]
-                            else:
-                                args[i] = self.dual(*aiargs, eval=False)
-                            if len(args) == 1:
-                                return args[0]
-                            else:
-                                # Now the other simplifications have to be
-                                # redone.
-                                return self.__class__(*args, eval=True)
+            if not isinstance(ai, self.dual):
+                i += 1
+                continue
+            while j < len(args):
+                aj = args[j]
+                if not isinstance(aj, self.dual) or \
+                            len(ai.args)!=len(aj.args):
                     j += 1
+                    continue
+                # Find terms where only one arg is different.
+                negated = None
+                for arg in ai.args:
+                    if arg in aj.args:
+                        pass
+                    elif ops.NOT(arg, eval=False).cancel() in aj.args:
+                        if negated is None:
+                            negated = arg
+                        else:
+                            negated = None
+                            break
+                    else:
+                        negated = None
+                        break
+                # If the different arg is a negation simplify the term.
+                if negated is not None:
+                    # Cancel out one of the two terms.
+                    del args[j]
+                    aiargs = list(ai.args)
+                    aiargs.remove(negated)
+                    if len(aiargs) == 1:
+                        args[i] = aiargs[0]
+                    else:
+                        args[i] = self.dual(*aiargs, eval=False)
+                    if len(args) == 1:
+                        return args[0]
+                    else:
+                        # Now the other simplifications have to be
+                        # redone.
+                        return self.__class__(*args, eval=True)
+                j += 1
             i += 1
         # Absorption: A * (A + B) = A, A + (A * B) = A
         # Negative absorption: A * (~A + B) = A * B, A + (~A * B) = A + B
-        i = 0
-        while i < len(args):
-            j = 0 if i != 0 else 1
-            ai = args[i]
-            isdual = True if isinstance(ai, self.dual) else False
-            while j < len(args):
-                aj = args[j]
-                if isinstance(aj, self.dual):
-                    if ai in aj.args or\
-                         (isdual and all(arg in aj.args for arg in ai.args)):
-                        del args[j]
-                        if i >= len(args):
-                            break
-                    elif isdual:
-                        negated = None
-                        for arg in ai.args:
-                            if arg in aj.args:
-                                pass
-                            elif ops.NOT(arg, eval=False).cancel() in aj.args:
-                                if negated is None:
-                                    negated = arg
-                                else:
-                                    negated = None
-                                    break
-                            else:
-                                negated = None
-                                break
-                        if negated is not None:
-                            ajargs = list(aj.args)
-                            ajargs.remove(ops.NOT(negated, eval=False).cancel())
-                            args[j] = self.dual(*ajargs, eval=False)\
-                                        if len(ajargs) > 1 else ajargs[0]
-                            return self.__class__(*args, eval=True)
-                        else:
-                            j += 1 if i != j+1 else 2
-                    elif ops.NOT(ai, eval=False).cancel() in aj.args:
-                        ajargs = list(aj.args)
-                        ajargs.remove(ops.NOT(ai, eval=False).cancel())
-                        args[j] = self.dual(*ajargs, eval=False)\
-                                    if len(ajargs) > 1 else ajargs[0]
-                        return self.__class__(*args, eval=True)
-                    else:
-                        j += 1 if i != j+1 else 2
-                else:
-                    j += 1 if i != j+1 else 2
-            i += 1
+        args = self.absorb(args)
         if len(args) == 1:
             return args[0]
         # Commutivity: A * B = B * A, A + B = B + A
@@ -815,6 +785,84 @@ class DualBase(Function):
             else:
                 i += 1
         return self.__class__(*args, eval=False)
+
+    def absorb(self, useargs=None):
+        # Absorption: A * (A + B) = A, A + (A * B) = A
+        # Negative absorption: A * (~A + B) = A * B, A + (~A * B) = A + B
+        args = list(self.args) if useargs is None else list(useargs)
+        ops = self.algebra.operations
+        i = 0
+        while i < len(args):
+            absorber = args[i]
+            j = 0
+            while j < len(args):
+                if j == i:
+                    j += 1
+                    continue
+                target = args[j]
+                if not isinstance(target, self.dual):
+                    j += 1
+                    continue
+                # Absorption
+                if absorber in target:
+                    del args[j]
+                    if j<i:
+                        i-=1
+                    continue
+                # Negative absorption
+                neg_absorber = ops.NOT(absorber, eval=False).cancel()
+                if neg_absorber in target:
+                    b = target.remove(neg_absorber, eval=False)
+                    if b is None:
+                        del args[j]
+                        if j<i:
+                            i-=1
+                        continue
+                    else:
+                        args[j] = b
+                        j += 1
+                        continue
+                if isinstance(absorber, self.dual):
+                    remove = None
+                    for arg in absorber.args:
+                        narg = ops.NOT(arg, eval=False).cancel()
+                        if arg in target.args:
+                            pass
+                        elif narg in target.args:
+                            if remove is None:
+                                remove = narg
+                            else:
+                                remove = None
+                                break
+                        else:
+                            remove = None
+                            break
+                    if remove is not None:
+                        args[j] = target.remove(remove)
+                j += 1
+            i += 1
+        if useargs:
+            return args
+        if len(args) == 1:
+            return args[0]
+        else:
+            return self.__class__(*args, eval=False)
+
+    def remove(self, expr, eval=True):
+        args = self.args
+        if expr in self.args:
+            args = list(self.args)
+            args.remove(expr)
+        elif isinstance(expr, self.__class__):
+            if all(arg in self.args for arg in item.args):
+                args = tuple(arg for arg in self.args if arg not in expr)
+        if len(args) == 0:
+            return None
+        elif len(args) == 1:
+            return args[0]
+        else:
+            return self.__class__(*args, eval=eval)
+        return args
 
     def distributive(self):
         """
