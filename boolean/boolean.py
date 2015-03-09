@@ -3,7 +3,8 @@ Boolean Algebra.
 
 This module defines a Boolean Algebra over the set {TRUE, FALSE} with boolean
 variables and the boolean functions AND, OR, NOT. For extensive documentation
-look either into the docs directory or view it online.
+look either into the docs directory or view it online, at
+https://booleanpy.readthedocs.org/en/latest/.
 
 Copyright (c) 2009-2010 Sebastian Kraemer, basti.kr@gmail.com
 Released under revised BSD license.
@@ -689,6 +690,8 @@ class DualBase(Function):
         # be set False - otherwise infinite recursion!
         # TODO: Only create new class if some args changed.
         term = self.__class__(*args, eval=False)
+        #Literalize before doing anything, this also applies De Mogan's Law
+        term  = term.literalize()
         # Associativity:
         #     (A * B) * C = A * (B * C) = A * B * C
         #     (A + B) + C = A + (B + C) = A + B + C
