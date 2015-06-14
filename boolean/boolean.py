@@ -43,10 +43,11 @@ class Expression(object):
     # Holds an Algebra tuple which defines the boolean algebra.
     algebra = None
 
-    def __new__(cls, arg, eval=True):
+    def __new__(cls, arg, *args, **kwargs):
         if isinstance(arg, Expression):
             return arg
         if isinstance(arg, str):
+            eval = kwargs.get('eval', True)
             return parse(arg, eval=eval)
         elif arg in (0, False):
             return cls.algebra.domain.FALSE
@@ -88,7 +89,7 @@ class Expression(object):
         """
         Return True if object is a literal otherwise False.
         """
-        return False # This is overriden in all Literals.
+        return False  # This is overriden in all Literals.
 
     @property
     def literals(self):
@@ -153,8 +154,7 @@ class Expression(object):
                     changed_something = matched = True
                     break
             if not matched:
-                new_arg = None if arg.args is None else\
-                         arg._subs(subs_dict, eval)
+                new_arg = None if arg.args is None else arg._subs(subs_dict, eval)
                 if new_arg is None:
                     new_args.append(arg)
                 else:
@@ -300,8 +300,7 @@ class BaseElement(Expression):
         elif self is domain.FALSE:
             return domain.TRUE
         else:
-            raise AttributeError("Class should be TRUE or FALSE but is %s."\
-                                 % self.cls.__name__)
+            raise AttributeError("Class should be TRUE or FALSE but is %s." % self.cls.__name__)
 
     def __lt__(self, other):
         cmp = Expression.__lt__(self, other)
@@ -330,6 +329,7 @@ class _TRUE(BaseElement):
     """
     _str = "1"
     _repr = "TRUE"
+
 
 class _FALSE(BaseElement):
     """
@@ -388,11 +388,11 @@ class Symbol(Expression):
         Calculate a hash considering eventually associated objects.
         """
         if self._hash is not None:
-            return self._hash # Return cached hash.
+            return self._hash  # Return cached hash.
         else:
-            if self.obj is None: # Anonymous symbol.
+            if self.obj is None:  # Anonymous symbol.
                 myhash = id(self)
-            else: # Hash of associated object.
+            else:  # Hash of associated object.
                 myhash = hash(self.obj)
             self._hash = myhash
             return myhash
@@ -417,14 +417,14 @@ class Symbol(Expression):
         if isinstance(other, Symbol):
             if self.obj is None:
                 if other.obj is None:
-                    return hash(self) < hash(other) # 2 anonymous symbols.
+                    return hash(self) < hash(other)  # 2 anonymous symbols.
                 else:
-                    return False # Anonymous-Symbol < Named-Symbol.
+                    return False  # Anonymous-Symbol < Named-Symbol.
             else:
                 if other.obj is None:
-                    return True # Named-Symbol < Anonymous-Symbol.
+                    return True  # Named-Symbol < Anonymous-Symbol.
                 else:
-                    return self.obj < other.obj # 2 named symbols.
+                    return self.obj < other.obj  # 2 named symbols.
         return NotImplemented
 
     def __str__(self):
@@ -464,11 +464,9 @@ class Function(Expression):
         if eval:
             return cls(*args, eval=False).eval()
         if order[0] > length:
-            raise TypeError("Too few arguments. Got %s, but need at least %s."\
-                             % (length, order[0]))
+            raise TypeError("Too few arguments. Got %s, but need at least %s." % (length, order[0]))
         if order[1] < length:
-            raise TypeError("Too many arguments. Got %s, but need at most %s."\
-                             % (length, order[1]))
+            raise TypeError("Too many arguments. Got %s, but need at most %s." % (length, order[1]))
         return object.__new__(cls)
 
     def __init__(self, *args, **kwargs):
@@ -480,7 +478,7 @@ class Function(Expression):
             return
         eval = kwargs.pop("eval", True)
         assert len(kwargs) == 0
-        _args = [None]*len(args)
+        _args = [None] * len(args)
         # Make sure all arguments are boolean expressions.
         for i, arg in enumerate(args):
             if isinstance(arg, Expression):
@@ -592,8 +590,7 @@ class NOT(Function):
                 not isinstance(term.args[0], self.algebra.operations):
             return term
         op = term.args[0]
-        return op.dual(*tuple(self.__class__(arg, eval=False).cancel()\
-                for arg in op.args), eval=False)
+        return op.dual(*tuple(self.__class__(arg, eval=False).cancel() for arg in op.args), eval=False)
 
     def __lt__(self, other):
         if self.args[0] == other:
@@ -694,8 +691,8 @@ class DualBase(Function):
         # be set False - otherwise infinite recursion!
         # TODO: Only create new class if some args changed.
         term = self.__class__(*args, eval=False)
-        #Literalize before doing anything, this also applies De Mogan's Law
-        term  = term.literalize()
+        # Literalize before doing anything, this also applies De Mogan's Law
+        term = term.literalize()
         # Associativity:
         #     (A * B) * C = A * (B * C) = A * B * C
         #     (A + B) + C = A + (B + C) = A + B + C
@@ -721,7 +718,7 @@ class DualBase(Function):
                 return self.annihilator
         # Elemination: (A * B) + (A * ~B) = A, (A + B) * (A + ~B) = A
         i = 0
-        while i < len(args)-1:
+        while i < len(args) - 1:
             j = i + 1
             ai = args[i]
             if not isinstance(ai, self.dual):
@@ -729,8 +726,7 @@ class DualBase(Function):
                 continue
             while j < len(args):
                 aj = args[j]
-                if not isinstance(aj, self.dual) or \
-                            len(ai.args)!=len(aj.args):
+                if not isinstance(aj, self.dual) or len(ai.args) != len(aj.args):
                     j += 1
                     continue
                 # Find terms where only one arg is different.
@@ -787,7 +783,7 @@ class DualBase(Function):
         i = 0
         for arg in self.args:
             if isinstance(arg, self.__class__):
-                args[i:i+1] = arg.args
+                args[i:i + 1] = arg.args
                 i += len(arg.args)
             else:
                 i += 1
@@ -813,8 +809,8 @@ class DualBase(Function):
                 # Absorption
                 if absorber in target:
                     del args[j]
-                    if j<i:
-                        i-=1
+                    if j < i:
+                        i -= 1
                     continue
                 # Negative absorption
                 neg_absorber = ops.NOT(absorber, eval=False).cancel()
@@ -822,8 +818,8 @@ class DualBase(Function):
                     b = target.remove(neg_absorber, eval=False)
                     if b is None:
                         del args[j]
-                        if j<i:
-                            i-=1
+                        if j < i:
+                            i -= 1
                         continue
                     else:
                         args[j] = b
@@ -957,6 +953,7 @@ def normalize(operation, expr):
     # Simplify as much as possible, otherwise rdistributive may take
     # forever.
     expr = expr.eval()
+
     # Totally flatten everything.
     def rdistributive(expr):
         if expr.isliteral:
@@ -968,6 +965,7 @@ def normalize(operation, expr):
         if isinstance(expr, dualoperation):
             expr = expr.distributive()
         return expr
+
     expr = rdistributive(expr)
     # Canonicalize
     expr = expr.eval()
@@ -993,6 +991,7 @@ PRECEDENCE = {
     "(": 20,
 }
 
+
 def parse(expr, eval=True):
     """
     Returns a boolean expression created from the given string.
@@ -1006,18 +1005,18 @@ def parse(expr, eval=True):
         """
         op_prec = PRECEDENCE[operation]
         while True:
-            if ast[1] is None: # [None, None, x]
+            if ast[1] is None:  # [None, None, x]
                 ast[1] = operation
                 return ast
             prec = PRECEDENCE[ast[1]]
-            if prec > op_prec: # op=*, [ast, +, x, y] -> [[ast, +, x], *, y]
+            if prec > op_prec:  # op=*, [ast, +, x, y] -> [[ast, +, x], *, y]
                 ast = [ast, operation, ast.pop(-1)]
                 return ast
-            if prec == op_prec: # op=*, [ast, *, x] -> [ast, *, x]
+            if prec == op_prec:  # op=*, [ast, *, x] -> [ast, *, x]
                 return ast
-            if ast[0] is None: # op=+, [None, *, x, y] -> [None, +, x*y]
+            if ast[0] is None:  # op=+, [None, *, x, y] -> [None, +, x*y]
                 return [ast[0], operation, ast[1](*ast[2:], eval=eval)]
-            else: # op=+, [[ast, *, x], ~, y] -> [ast, *, x, ~y]
+            else:  # op=+, [[ast, *, x], ~, y] -> [ast, *, x, ~y]
                 ast[0].append(ast[1](*ast[2:], eval=eval))
                 ast = ast[0]
 
@@ -1033,9 +1032,9 @@ def parse(expr, eval=True):
             ast.append(FALSE)
         elif char.isalpha():
             j = 1
-            while i+j < length and expr[i+j].isalnum():
+            while i + j < length and expr[i + j].isalnum():
                 j += 1
-            ast.append(Symbol(expr[i:i+j]))
+            ast.append(Symbol(expr[i:i + j]))
             i += j - 1
         elif char == "(":
             ast = [ast, "("]
@@ -1061,7 +1060,7 @@ def parse(expr, eval=True):
     while True:
         if ast[0] is None:
             if ast[1] is None:
-                assert len(ast)==3
+                assert len(ast) == 3
                 expr = ast[2]
             else:
                 expr = ast[1](*ast[2:], eval=eval)
@@ -1108,11 +1107,10 @@ class BooleanAlgebra(object):
         return self.bool_expr > other.bool_expr
 
     def __mul__(self, other):
-        return self.bool_base(bool_expr = self.bool_expr*other.bool_expr)
+        return self.bool_base(bool_expr=self.bool_expr * other.bool_expr)
 
     def __invert__(self):
-        return self.bool_base(bool_expr = ~self.bool_expr)
+        return self.bool_base(bool_expr=~self.bool_expr)
 
     def __add__(self, other):
-        return self.bool_base(bool_expr = self.bool_expr+other.bool_expr)
-
+        return self.bool_base(bool_expr=self.bool_expr + other.bool_expr)
