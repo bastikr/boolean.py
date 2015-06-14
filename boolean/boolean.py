@@ -25,7 +25,7 @@ BooleanOperations = collections.namedtuple("BooleanOperations",
                                            ("NOT", "AND", "OR"))
 
 
-class Expression:
+class Expression(object):
     """
     Base class for all boolean expressions.
     """
@@ -43,10 +43,11 @@ class Expression:
     # Holds an Algebra tuple which defines the boolean algebra.
     algebra = None
 
-    def __new__(cls, arg, *, eval=True):
+    def __new__(cls, arg, *args, **kwargs):
         if isinstance(arg, Expression):
             return arg
         if isinstance(arg, str):
+            eval = kwargs.get('eval', True)
             return parse(arg, eval=eval)
         elif arg in (0, False):
             return cls.algebra.domain.FALSE
@@ -132,13 +133,14 @@ class Expression:
                 s |= arg.symbols
             return s
 
-    def subs(self, subs_dict, *, eval=True):
+    def subs(self, subs_dict, *args, **kwargs):
         """
         Return an expression where all subterms equal to a key are substituted.
         """
         for expr, substitution in subs_dict.items():
             if expr == self:
                 return substitution
+        eval = kwargs.get('eval', True)
         expr = self._subs(subs_dict, eval=eval)
         return self if expr is None else expr
 
@@ -264,7 +266,7 @@ class BaseElement(Expression):
     _str = None
     _repr = None
 
-    def __new__(cls, arg=None, *, eval=False):
+    def __new__(cls, arg=None, *args, **kwargs):
         if arg is not None:
             if isinstance(arg, BaseElement):
                 return arg
@@ -363,10 +365,13 @@ class Symbol(Expression):
 
     _obj = None
 
-    def __new__(cls, obj=None, *, eval=False):
+    def __new__(cls, obj=None, *args, **kwargs):
         return object.__new__(cls)
 
-    def __init__(self, obj=None, *, eval=False):
+    def __init__(self, obj=None, *args, **kwargs):
+        if args:
+            raise TypeError("Symbol() takes at most 1 positional "
+                            "arguments ({} given)".format(1 + len(args)))
         self._obj = obj
 
     @property
@@ -424,7 +429,7 @@ class Symbol(Expression):
                 if other.obj is None:
                     return True # Named-Symbol < Anonymous-Symbol.
                 else:
-                    return self.obj.__lt__(other.obj) # 2 named symbols.
+                    return self.obj < other.obj  # 2 named symbols.
         return NotImplemented
 
     def __str__(self):
@@ -456,9 +461,10 @@ class Function(Expression):
     # Specifies an infix notation of an operator for printing.
     operator = None
 
-    def __new__(cls, *args, eval=True):
+    def __new__(cls, *args, **kwargs):
         length = len(args)
         order = cls.order
+        eval = kwargs.get('eval', True)
         if eval:
             return cls(*args, eval=False).eval()
         if order[0] > length:
@@ -469,7 +475,7 @@ class Function(Expression):
                              % (length, order[1]))
         return object.__new__(cls)
 
-    def __init__(self, *args, eval=True):
+    def __init__(self, *args, **kwargs):
         # If a function in the __new__ method is evaluated the __init__ method
         # will be called twice. First with the simplified then with original
         # arguments. The following "if" prevents that the simplified ones are
@@ -594,7 +600,7 @@ class NOT(Function):
     def __lt__(self, other):
         if self.args[0] == other:
             return False
-        return self.args[0].__lt__(other)
+        return self.args[0] < other
 
 
 class DualBase(Function):
@@ -899,7 +905,7 @@ class DualBase(Function):
             for i in range(min(lenself, lenother)):
                 if self.args[i] == other.args[i]:
                     continue
-                cmp = self.args[i].__lt__(other.args[i])
+                cmp = self.args[i] < other.args[i]
                 if cmp is not NotImplemented:
                     return cmp
             if lenself != lenother:
@@ -1068,7 +1074,7 @@ def parse(expr, eval=True):
     return expr
 
 
-class BooleanAlgebra:
+class BooleanAlgebra(object):
     """
     Base class for user defined boolean algebras.
     """
@@ -1076,9 +1082,9 @@ class BooleanAlgebra:
     bool_expr = None
     bool_base = None
 
-    def __init__(self, *, bool_expr=None, bool_base=None):
+    def __init__(self, bool_expr=None, bool_base=None):
         self.bool_expr = Symbol(obj=self) if bool_expr is None else bool_expr
-        self.bool_base = BooleanBase if bool_base is None else bool_base
+        self.bool_base = BooleanAlgebra if bool_base is None else bool_base
 
     def __hash__(self):
         if isinstance(self.bool_expr, self.bool_expr.algebra.symbol):

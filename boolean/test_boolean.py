@@ -421,7 +421,7 @@ class OtherTestCase(unittest.TestCase):
 class BooleanAlgebraTestCase(unittest.TestCase):
     def test_implementation(self):
         class Filter(boolean.BooleanAlgebra):
-            def __init__(self, *, bool_expr=None):
+            def __init__(self, bool_expr=None):
                 boolean.BooleanAlgebra.__init__(self, bool_expr=bool_expr,
                                              bool_base=Filter)
 
