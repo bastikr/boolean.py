@@ -3,6 +3,7 @@ import boolean
 
 
 class ExpressionTestCase(unittest.TestCase):
+
     def test_creation(self):
         E = boolean.Expression
         expr_str = "(a+b+c)*d*(~e+(f*g))"
@@ -16,6 +17,7 @@ class ExpressionTestCase(unittest.TestCase):
 
 
 class BaseElementTestCase(unittest.TestCase):
+
     def test_creation(self):
         BE = boolean.BaseElement
         self.assertTrue(BE(1) is boolean.TRUE)
@@ -63,13 +65,14 @@ class BaseElementTestCase(unittest.TestCase):
 
 
 class SymbolTestCase(unittest.TestCase):
+
     def test_init(self):
         boolean.Symbol(1)
         boolean.Symbol("a")
         boolean.Symbol(None)
         boolean.Symbol(sum)
-        boolean.Symbol((1,2,3))
-        boolean.Symbol([1,2])
+        boolean.Symbol((1, 2, 3))
+        boolean.Symbol([1, 2])
         self.assertRaises(TypeError, boolean.Symbol, 1, 2)
 
     def test_isliteral(self):
@@ -119,8 +122,8 @@ class SymbolTestCase(unittest.TestCase):
         self.assertTrue(S(1) < S(2))
         self.assertTrue(S(2) > S(1))
         s1, s2 = S(), S()
-        self.assertTrue((s1<s2)==(hash(s1)<hash(s2)))
-        self.assertTrue((s1>s2)==(hash(s1)>hash(s2)))
+        self.assertTrue((s1 < s2) == (hash(s1) < hash(s2)))
+        self.assertTrue((s1 > s2) == (hash(s1) > hash(s2)))
 
     def test_printing(self):
         self.assertTrue(str(boolean.Symbol("a")) == "a")
@@ -130,13 +133,16 @@ class SymbolTestCase(unittest.TestCase):
 
 
 class NOTTestCase(unittest.TestCase):
+
     def test_init(self):
         NOT = boolean.NOT
         self.assertRaises(TypeError, NOT)
         self.assertRaises(TypeError, NOT, "a", "b")
         NOT("a")
-        self.assertTrue(NOT(1)==NOT(True)==NOT(boolean.TRUE)==boolean.FALSE)
-        self.assertTrue(NOT(0)==NOT(False)==NOT(boolean.FALSE)==boolean.TRUE)
+        self.assertTrue(
+            NOT(1) == NOT(True) == NOT(boolean.TRUE) == boolean.FALSE)
+        self.assertTrue(
+            NOT(0) == NOT(False) == NOT(boolean.FALSE) == boolean.TRUE)
 
     def test_isliteral(self):
         s = boolean.Symbol(1)
@@ -167,11 +173,11 @@ class NOTTestCase(unittest.TestCase):
         self.assertTrue(a == ~~a)
         self.assertTrue(~a, ~~~a)
         self.assertTrue(a, ~~~~a)
-        self.assertTrue(~(a*a*a) == ~(a*a*a))
+        self.assertTrue(~(a * a * a) == ~(a * a * a))
 
     def test_cancel(self):
         a = boolean.Symbol("a")
-        parse = lambda x:boolean.parse(x, eval=False)
+        parse = lambda x: boolean.parse(x, eval=False)
         self.assertTrue(~a == (~a).cancel())
         self.assertTrue(a == parse("~~a").cancel())
         self.assertTrue(~a == parse("~~~a").cancel())
@@ -179,19 +185,19 @@ class NOTTestCase(unittest.TestCase):
 
     def test_demorgan(self):
         a, b, c = boolean.symbols("a", "b", "c")
-        parse = lambda x:boolean.parse(x, eval=False)
-        self.assertTrue(parse("~(a*b)").demorgan() == ~a+~b)
-        self.assertTrue(parse("~(a+b+c)").demorgan()\
-                     == parse("~a*~b*~c"))
-        self.assertTrue(parse("~(~a*b)").demorgan() == a+~b)
+        parse = lambda x: boolean.parse(x, eval=False)
+        self.assertTrue(parse("~(a*b)").demorgan() == ~a + ~b)
+        self.assertTrue(parse("~(a+b+c)").demorgan()
+                        == parse("~a*~b*~c"))
+        self.assertTrue(parse("~(~a*b)").demorgan() == a + ~b)
 
     def test_order(self):
         x = boolean.Symbol(1)
         y = boolean.Symbol(2)
-        self.assertTrue(x<~x)
-        self.assertTrue(~x>x)
-        self.assertTrue(~x<y)
-        self.assertTrue(y>~x)
+        self.assertTrue(x < ~x)
+        self.assertTrue(~x > x)
+        self.assertTrue(~x < y)
+        self.assertTrue(y > ~x)
 
     def test_printing(self):
         a = boolean.Symbol("a")
@@ -203,6 +209,7 @@ class NOTTestCase(unittest.TestCase):
 
 
 class DualBaseTestCase(unittest.TestCase):
+
     def setUp(self):
         self.a, self.b, self.c = boolean.symbols("a", "b", "c")
         self.t1 = boolean.DualBase(self.a, self.b, eval=False)
@@ -233,7 +240,7 @@ class DualBaseTestCase(unittest.TestCase):
 
     def test_annihilator(self):
         a = boolean.Symbol("a")
-        p = lambda x:boolean.parse(x, eval=False)
+        p = lambda x: boolean.parse(x, eval=False)
         self.assertTrue(p("a*a").annihilator is boolean.FALSE)
         self.assertTrue(p("a+a").annihilator is boolean.TRUE)
 
@@ -254,9 +261,9 @@ class DualBaseTestCase(unittest.TestCase):
         _0 = boolean.FALSE
         _1 = boolean.TRUE
         # Idempotence
-        self.assertTrue(a == a*a)
+        self.assertTrue(a == a * a)
         # Idempotence + Associativity
-        self.assertTrue(a+b == a+(a+b))
+        self.assertTrue(a + b == a + (a + b))
         # Annihilation
         self.assertTrue(_0 == (a * _0))
         self.assertTrue(_1 == (a + _1))
@@ -267,28 +274,28 @@ class DualBaseTestCase(unittest.TestCase):
         self.assertTrue(_0 == a * ~a)
         self.assertTrue(_1 == a + ~a)
         # Absorption
-        self.assertTrue(a == a * (a+b))
-        self.assertTrue(a == a + (a*b))
-        self.assertTrue(b*a == (b*a) + (b*a*c))
+        self.assertTrue(a == a * (a + b))
+        self.assertTrue(a == a + (a * b))
+        self.assertTrue(b * a == (b * a) + (b * a * c))
         # Elimination
-        self.assertTrue(a == (a*~b)+(a*b))
+        self.assertTrue(a == (a * ~b) + (a * b))
         expr = boolean.parse("(~a*b*c) + (a*~b*c) + (a*b*~c) + (a*b*c)")
         result = boolean.parse("(a*b)+(b*c)+(a*c)")
         self.assertTrue(expr == result)
-        expr = boolean.parse("(~a*b*~c*~d) + (a*~b*~c*~d) + (a*~b*c*~d) +"\
-                                "(a*~b*c*d) + (a*b*~c*~d) + (a*b*c*d)")
+        expr = boolean.parse("(~a*b*~c*~d) + (a*~b*~c*~d) + (a*~b*c*~d) +"
+                             "(a*~b*c*d) + (a*b*~c*~d) + (a*b*c*d)")
         result = boolean.parse("(~b*~d*a) + (~c*~d*b) + (a*c*d)")
         self.assertTrue(expr == result)
         expr = boolean.parse("(a*b*c*d) + (b*d)")
         result = boolean.parse("b*d")
         self.assertTrue(expr == result)
-        expr = boolean.parse("(~a*~b*~c*~d) + (~a*~b*~c*d) + (~a*b*~c*~d) +"\
-                        "(~a*b*c*d) + (~a*b*~c*d) + (~a*b*c*~d) +"\
-                        "(a*~b*~c*d) + (~a*b*c*d) + (a*~b*c*d) + (a*b*c*d)")
+        expr = boolean.parse("(~a*~b*~c*~d) + (~a*~b*~c*d) + (~a*b*~c*~d) +"
+                             "(~a*b*c*d) + (~a*b*~c*d) + (~a*b*c*~d) +"
+                             "(a*~b*~c*d) + (~a*b*c*d) + (a*~b*c*d) + (a*b*c*d)")
         # TODO: Test the last expr in DualBaseTestCase.test_eval.
 
     def test_flatten(self):
-        p = lambda x:boolean.parse(x, eval=False)
+        p = lambda x: boolean.parse(x, eval=False)
         a = self.a
         b = self.b
         c = self.c
@@ -309,8 +316,8 @@ class DualBaseTestCase(unittest.TestCase):
         c = self.c
         d = boolean.Symbol("d")
         e = boolean.Symbol("e")
-        self.assertTrue((a*(b+c)).distributive() == (a*b)+(a*c))
-        t1 = boolean.AND(a, (b+c), (d+e))
+        self.assertTrue((a * (b + c)).distributive() == (a * b) + (a * c))
+        t1 = boolean.AND(a, (b + c), (d + e))
         t2 = boolean.OR(boolean.AND(a, b, d), boolean.AND(a, b, e),
                         boolean.AND(a, c, d), boolean.AND(a, c, e))
         self.assertTrue(t1.distributive() == t2)
@@ -324,16 +331,16 @@ class DualBaseTestCase(unittest.TestCase):
         self.assertTrue(self.t2 == t2)
         self.assertFalse(t1 == t2)
         self.assertFalse(t1 == 1)
-        self.assertFalse(t1 == True)
-        self.assertFalse(t1 == None)
+        self.assertFalse(t1 is True)
+        self.assertFalse(t1 is None)
         # Test __ne__.
         self.assertFalse(t1 != t1)
         self.assertFalse(self.t1 != t1)
         self.assertFalse(self.t2 != t2)
         self.assertTrue(t1 != t2)
         self.assertTrue(t1 != 1)
-        self.assertTrue(t1 != True)
-        self.assertTrue(t1 != None)
+        self.assertTrue(t1 is not True)
+        self.assertTrue(t1 is not None)
 
     def test_order(self):
         x, y, z = boolean.symbols(1, 2, 3)
@@ -356,10 +363,12 @@ class DualBaseTestCase(unittest.TestCase):
         self.assertTrue(str(parse("a+a")) == "a+a")
         self.assertTrue(repr(parse("a+a")) == "OR(Symbol('a'), Symbol('a'))")
         self.assertTrue(str(parse("(a+b)*c")) == "(a+b)*c")
-        self.assertTrue(repr(parse("(a+b)*c")) ==\
-                "AND(OR(Symbol('a'), Symbol('b')), Symbol('c'))")
+        self.assertTrue(repr(parse("(a+b)*c")) ==
+                        "AND(OR(Symbol('a'), Symbol('b')), Symbol('c'))")
+
 
 class OtherTestCase(unittest.TestCase):
+
     def test_class_order(self):
         order = ((boolean.TRUE, boolean.FALSE),
                  (boolean.Symbol(), boolean.Symbol("x")),
@@ -368,7 +377,7 @@ class OtherTestCase(unittest.TestCase):
                  )
         for i, tests in enumerate(order):
             for case1 in tests:
-                for j in range(i+1, len(order)):
+                for j in range(i + 1, len(order)):
                     for case2 in order[j]:
                         self.assertTrue(case1 < case2)
                         self.assertTrue(case2 > case1)
@@ -381,34 +390,34 @@ class OtherTestCase(unittest.TestCase):
         self.assertTrue(parse("a") == parse("(a)") == a)
         self.assertTrue(parse("~a") == parse("~(a)") == parse("(~a)") == ~a)
         self.assertTrue(parse("~~a") == ~~a)
-        self.assertTrue(parse("a*b") == a*b)
-        self.assertTrue(parse("~a*b") == ~a*b)
-        self.assertTrue(parse("a*~b") == a*~b)
-        self.assertTrue(parse("a*b*c") == parse("a*b*c", eval=False) ==\
+        self.assertTrue(parse("a*b") == a * b)
+        self.assertTrue(parse("~a*b") == ~a * b)
+        self.assertTrue(parse("a*~b") == a * ~b)
+        self.assertTrue(parse("a*b*c") == parse("a*b*c", eval=False) ==
                         boolean.AND(a, b, c))
-        self.assertTrue(parse("~a*~b*~c") == parse("~a*~b*~c", eval=False) ==\
+        self.assertTrue(parse("~a*~b*~c") == parse("~a*~b*~c", eval=False) ==
                         boolean.AND(~a, ~b, ~c))
-        self.assertTrue(parse("a+b") == a+b)
-        self.assertTrue(parse("~a+b") == ~a+b)
-        self.assertTrue(parse("a+~b") == a+~b)
-        self.assertTrue(parse("a+b+c") == parse("a+b+c", eval=False) ==\
+        self.assertTrue(parse("a+b") == a + b)
+        self.assertTrue(parse("~a+b") == ~a + b)
+        self.assertTrue(parse("a+~b") == a + ~b)
+        self.assertTrue(parse("a+b+c") == parse("a+b+c", eval=False) ==
                         boolean.OR(a, b, c))
         self.assertTrue(parse("~a+~b+~c") == boolean.OR(~a, ~b, ~c))
-        self.assertTrue(parse("(a+b)") == a+b)
-        self.assertTrue(parse("a*(a+b)") == a*(a+b))
-        self.assertTrue(parse("a*(a+~b)") == a*(a+~b))
-        self.assertTrue(parse("(a*b)+(b*((c+a)*(b+(c*a))))") ==\
-                        parse("a*b + b*(c+a)*(b+c*a)") ==\
-                        (a*b)+(b*((c+a)*(b+(c*a)))))
+        self.assertTrue(parse("(a+b)") == a + b)
+        self.assertTrue(parse("a*(a+b)") == a * (a + b))
+        self.assertTrue(parse("a*(a+~b)") == a * (a + ~b))
+        self.assertTrue(parse("(a*b)+(b*((c+a)*(b+(c*a))))") ==
+                        parse("a*b + b*(c+a)*(b+c*a)") ==
+                        (a * b) + (b * ((c + a) * (b + (c * a)))))
 
     def test_subs(self):
         a, b, c = boolean.symbols("a", "b", "c")
-        expr = a*b+c
-        self.assertEqual(expr.subs({a:b}), b+c)
-        self.assertEqual(expr.subs({a:a}), expr)
-        self.assertEqual(expr.subs({a:b+c}), boolean.parse("(b+c)*b+c"))
-        self.assertEqual(expr.subs({a*b:a}), a+c)
-        self.assertEqual(expr.subs({c:boolean.TRUE}), boolean.TRUE)
+        expr = a * b + c
+        self.assertEqual(expr.subs({a: b}), b + c)
+        self.assertEqual(expr.subs({a: a}), expr)
+        self.assertEqual(expr.subs({a: b + c}), boolean.parse("(b+c)*b+c"))
+        self.assertEqual(expr.subs({a * b: a}), a + c)
+        self.assertEqual(expr.subs({c: boolean.TRUE}), boolean.TRUE)
 
     def test_normalize(self):
         parse = boolean.parse
@@ -419,11 +428,13 @@ class OtherTestCase(unittest.TestCase):
 
 
 class BooleanAlgebraTestCase(unittest.TestCase):
+
     def test_implementation(self):
         class Filter(boolean.BooleanAlgebra):
-            def __init__(self, *, bool_expr=None):
+
+            def __init__(self, bool_expr=None):
                 boolean.BooleanAlgebra.__init__(self, bool_expr=bool_expr,
-                                             bool_base=Filter)
+                                                bool_base=Filter)
 
             def eval(self):
                 subs_dict = {}
@@ -432,6 +443,7 @@ class BooleanAlgebraTestCase(unittest.TestCase):
                 return self.bool_expr.subs(subs_dict)
 
         class ConstFilter(Filter):
+
             def __init__(self, value):
                 Filter.__init__(self)
                 self.value = boolean.BaseElement(value)
@@ -441,9 +453,9 @@ class BooleanAlgebraTestCase(unittest.TestCase):
 
         a = ConstFilter(True)
         b = ConstFilter(False)
-        self.assertEqual(type(a+b), Filter)
-        self.assertEqual((a+b).eval(), boolean.TRUE)
-        self.assertEqual((a*b).eval(), boolean.FALSE)
+        self.assertEqual(type(a + b), Filter)
+        self.assertEqual((a + b).eval(), boolean.TRUE)
+        self.assertEqual((a * b).eval(), boolean.FALSE)
 
 
 if __name__ == "__main__":
