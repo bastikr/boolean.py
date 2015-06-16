@@ -12,6 +12,11 @@ Released under revised BSD license.
 import itertools
 import collections
 
+try:
+    basestring  # Python 2
+except NameError:
+    basestring = str  # Python 3
+
 # A boolean algebra is defined by its base elements (=domain), its operations
 # (in this case only NOT, AND and OR) and an additional "symbol" type.
 Algebra = collections.namedtuple("Algebra",
@@ -46,7 +51,7 @@ class Expression(object):
     def __new__(cls, arg, *args, **kwargs):
         if isinstance(arg, Expression):
             return arg
-        if isinstance(arg, str):
+        if isinstance(arg, basestring):
             eval = kwargs.get('eval', True)
             return parse(arg, eval=eval)
         elif arg in (0, False):
@@ -483,7 +488,7 @@ class Function(Expression):
         for i, arg in enumerate(args):
             if isinstance(arg, Expression):
                 _args[i] = arg
-            elif isinstance(arg, str):
+            elif isinstance(arg, basestring):
                 _args[i] = parse(arg)
             elif arg in (0, False):
                 _args[i] = FALSE
@@ -996,7 +1001,7 @@ def parse(expr, eval=True):
     """
     Returns a boolean expression created from the given string.
     """
-    if not isinstance(expr, str):
+    if not isinstance(expr, basestring):
         raise TypeError("Argument must be string but it is %s." % type(expr))
 
     def start_operation(ast, operation):
