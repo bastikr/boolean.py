@@ -9,6 +9,9 @@ https://booleanpy.readthedocs.org/en/latest/.
 Copyright (c) 2009-2010 Sebastian Kraemer, basti.kr@gmail.com
 Released under revised BSD license.
 """
+
+from __future__ import absolute_import
+
 import itertools
 import collections
 

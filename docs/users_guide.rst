@@ -23,15 +23,18 @@ defines two base elements, *TRUE* and *FALSE*, and a class :class:`Symbol`
 which can take on one of these two values. Calculations are done in terms
 of AND, OR and NOT - other compositions like XOR and NAND are not implemented.
 
+
 Installation
 ------------
 
-At the moment there is no installable package available - this will be done
-when the module was tested a little bit more. However, it's easy enough to get
-it running by downloading **boolean.py** and either adding it's location to the
-*PYTHONPATH* or starting the python interpreter in the same directory.
+Locally from a checkout or download::
+    pip install .
 
-Then **boolean.py** can be used by simply importing it:
+Remotely::
+    pip install https://github.com/bastikr/boolean.py/archive/master.zip
+
+
+Then import it:
 
 .. doctest:: boolean
 
@@ -71,29 +74,32 @@ These defined Symbols can be composed in different ways:
     >>> x*y
     AND(Symbol('x'), Symbol('y'))
     >>> OR(NOT(y), x)
-    OR(NOT(Symbol('y')), Symbol('x'))
+    OR(Symbol('x'), NOT(Symbol('y')))
     >>> x + ~y
-    OR(NOT(Symbol('y')), Symbol('x'))
+    OR(Symbol('x'), NOT(Symbol('y')))
 
 The output above maybe seems to be a little long, but this is only the result
 of :func:`repr`. Printing looks a lot nicer:
 
 .. doctest:: boolean
 
-    >>> print x+y
+    >>> print(x+y)
     x+y
 
 Yet another possibility is to parse a string into a boolean expression:
 
 .. doctest:: boolean
 
-    >>> print parse("x+y")
+    >>> print(parse("x+y"))
     x+y
+
+    >>> parse('(apple + banana * (orange + anana * (lemon + cherry)))')
+    OR(Symbol('apple'), AND(Symbol('banana'), OR(Symbol('orange'), AND(Symbol('anana'), OR(Symbol('cherry'), Symbol('lemon'))))))
 
 .. note::
 
     When using :func:`parse` you don't have to define every symbol separately
-    and therefor you can save a bit of typing. This is especially useful when
+    and therefore you can save a bit of typing. This is especially useful when
     using **boolean.py** interactively.
 
 
@@ -105,17 +111,17 @@ simplifications are carried out and then the result is returned:
 
 .. doctest:: boolean
 
-    >>> print x*~x
+    >>> print(x*~x)
     0
-    >>> print x+~x
+    >>> print(x+~x)
     1
-    >>> print x+x
+    >>> print(x+x)
     x
-    >>> print x*x
+    >>> print(x*x)
     x
-    >>> print x*(x+y)
+    >>> print(x*(x+y))
     x
-    >>> print (x*y) + (x*~y)
+    >>> print((x*y) + (x*~y))
     x
 
 In detail the following laws are used recursively on every sub-term of +
@@ -137,14 +143,14 @@ Be aware that you can still have nested expressions:
 
 .. doctest:: boolean
 
-    >>> print ((x+y)*z)+x*y
-    ((x+y)*z)+(x*y)
+    >>> print(((x+y)*z)+x*y)
+    (x*y)+(z*(x+y))
 
 If this automatic evaluation is unwanted, the keyword *eval* can be used:
 
 .. doctest:: boolean
 
-    >>> print AND(x, NOT(x), eval=False)
+    >>> print(AND(x, NOT(x), eval=False))
     x*~x
 
 Since it can be very tedious to write *eval*\=\ :keyword:`False` and the
@@ -153,7 +159,7 @@ be much easier to use the function *parse* instead:
 
 .. doctest:: boolean
 
-    >>> print parse("x*~x", eval=False)
+    >>> print(parse("x*~x", eval=False))
     x*~x
 
 
