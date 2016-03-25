@@ -1008,7 +1008,17 @@ PRECEDENCE = {
 }
 
 
-def parse(expr, simplify=True, symbol_class=None):
+def issymbolchar(char, pos):
+    """
+    Determines if the passed character is a valid symbol character.
+    """
+    if pos == 0:
+        return char.isalpha() or char == "_"
+    else:
+        return char.isalnum() or char in (".", ":", "_")
+
+
+def parse(expr, simplify=True, symbol_class=None, issymbolchar=issymbolchar):
     """
     Returns a boolean expression created from the given string.
     """
@@ -1049,9 +1059,9 @@ def parse(expr, simplify=True, symbol_class=None):
             ast.append(TRUE)
         elif char == "0":
             ast.append(FALSE)
-        elif char.isalpha():
+        elif issymbolchar(char, 0):
             j = 1
-            while i + j < length and expr[i + j].isalnum():
+            while i + j < length and issymbolchar(expr[i + j], j):
                 j += 1
             ast.append(symbol_class(expr[i:i + j]))
             i += j - 1
