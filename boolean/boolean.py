@@ -330,6 +330,8 @@ class _TRUE(BaseElement):
     _str = "1"
     _repr = "TRUE"
 
+    __nonzero__ = __bool__ = lambda s: True
+
 
 class _FALSE(BaseElement):
     """
@@ -339,6 +341,8 @@ class _FALSE(BaseElement):
     """
     _str = "0"
     _repr = "FALSE"
+
+    __nonzero__ = __bool__ = lambda s: False
 
 
 # Initialize two singletons which will be used as base elements for the
