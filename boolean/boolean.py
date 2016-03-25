@@ -1008,12 +1008,15 @@ PRECEDENCE = {
 }
 
 
-def parse(expr, simplify=True):
+def parse(expr, simplify=True, symbol_class=None):
     """
     Returns a boolean expression created from the given string.
     """
     if not isinstance(expr, basestring):
         raise TypeError("Argument must be string but it is %s." % type(expr))
+
+    if symbol_class is None:
+        symbol_class = Symbol
 
     def start_operation(ast, operation):
         """
@@ -1050,7 +1053,7 @@ def parse(expr, simplify=True):
             j = 1
             while i + j < length and expr[i + j].isalnum():
                 j += 1
-            ast.append(Symbol(expr[i:i + j]))
+            ast.append(symbol_class(expr[i:i + j]))
             i += j - 1
         elif char == "(":
             ast = [ast, "("]
