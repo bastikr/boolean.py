@@ -89,7 +89,7 @@ class Expression(object):
         """
         Return True if object is a literal otherwise False.
         """
-        return False  # This is overriden in all Literals.
+        return False  # This is overridden in all Literals.
 
     @property
     def literals(self):
@@ -108,7 +108,7 @@ class Expression(object):
 
     def literalize(self):
         """
-        Return an expression where NOTs are only occuring as literals.
+        Return an expression where NOTs are only occurring as literals.
         """
         if self.isliteral or self.args is None:
             return self
@@ -356,7 +356,7 @@ class Symbol(Expression):
     These are called "named symbols". Alternatively it's possible to create
     symbols without any argument (or the argument None). That will result in
     "anonymous symbols", which will always be unequal to any other symbol but
-    themselfs.
+    themselves.
     """
     _cls_order = 5
     _iscanonical = True
@@ -518,7 +518,7 @@ class NOT(Function):
 
     The NOT operation takes exactly one argument. If this argument is a Symbol
     the resulting expression is also called a literal.
-    The operator "~" can be used as abbrevation for NOT, e.g. instead of
+    The operator "~" can be used as abbreviation for NOT, e.g. instead of
     NOT(x) one can write ~x (where x is some boolean expression). Also for
     printing "~" is used for better readability.
     """
@@ -537,7 +537,7 @@ class NOT(Function):
 
     def literalize(self):
         """
-        Return an expression where NOTs are only occuring as literals.
+        Return an expression where NOTs are only occurring as literals.
         """
         expr = self.demorgan()
         if isinstance(expr, self.__class__):
@@ -583,7 +583,7 @@ class NOT(Function):
         """
         Return a term where the NOT function is moved inward.
 
-        This is achieved by canceling double NOTs and using de Morgan laws.
+        This is achieved by canceling double NOTs and using De Morgan laws.
         """
         term = self.cancel()
         if term.isliteral or\
@@ -671,7 +671,7 @@ class DualBase(Function):
         For simplification of AND and OR following rules are used
         recursively bottom up:
          - Idempotence
-         - Commutivity (output is always sorted)
+         - Commutativity (output is always sorted)
          - Associativity (output doesn't contain same operations nested)
          - Annihilation
          - Identity
@@ -716,7 +716,7 @@ class DualBase(Function):
         for arg in args:
             if ops.NOT(arg) in args:
                 return self.annihilator
-        # Elemination: (A * B) + (A * ~B) = A, (A + B) * (A + ~B) = A
+        # Elimination: (A * B) + (A * ~B) = A, (A + B) * (A + ~B) = A
         i = 0
         while i < len(args) - 1:
             j = i + 1
@@ -766,7 +766,7 @@ class DualBase(Function):
         args = self.absorb(args)
         if len(args) == 1:
             return args[0]
-        # Commutivity: A * B = B * A, A + B = B + A
+        # Commutativity: A * B = B * A, A + B = B + A
         args.sort()
         # Create new (now canonical) expression.
         term = self.__class__(*args, eval=False)
@@ -950,7 +950,7 @@ def normalize(operation, expr):
     dualoperation = operation.getdual()
     # Move NOT inwards.
     expr = expr.literalize()
-    # Simplify as much as possible, otherwise rdistributive may take
+    # Simplify as much as possible, otherwise rdistributive() may take
     # forever.
     expr = expr.eval()
 
@@ -1001,7 +1001,7 @@ def parse(expr, eval=True):
 
     def start_operation(ast, operation):
         """
-        Returns an ast where all operations of lower precedence are finalized.
+        Returns an AST where all operations of lower precedence are finalized.
         """
         op_prec = PRECEDENCE[operation]
         while True:
