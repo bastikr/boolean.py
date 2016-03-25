@@ -457,6 +457,22 @@ class BooleanAlgebraTestCase(unittest.TestCase):
         self.assertEqual((a * b).eval(), boolean.FALSE)
 
 
+class BooleanEvalTestCase(unittest.TestCase):
+
+    def test_eval(self):
+        f = boolean.parse('a&b', eval=False)
+        self.assertEqual(f.eval(dict(a=0, b=0)), boolean.FALSE)
+        self.assertEqual(f.eval(dict(a=0, b=1)), boolean.FALSE)
+        self.assertEqual(f.eval(dict(a=1, b=0)), boolean.FALSE)
+        self.assertEqual(f.eval(dict(a=1, b=1)), boolean.TRUE)
+
+        f = boolean.parse('a|b', eval=False)
+        self.assertEqual(f.eval(dict(a=0, b=0)), boolean.FALSE)
+        self.assertEqual(f.eval(dict(a=0, b=1)), boolean.TRUE)
+        self.assertEqual(f.eval(dict(a=1, b=0)), boolean.TRUE)
+        self.assertEqual(f.eval(dict(a=1, b=1)), boolean.TRUE)
+
+
 if __name__ == "__main__":
     unittest.main()
 

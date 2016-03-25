@@ -173,11 +173,17 @@ class Expression(object):
         """
         return self._iscanonical
 
-    def eval(self, **evalkwargs):
+    def eval(self, evalvalues={}):
         """
         Return a possibly simplified, canonical form of the boolean object.
         """
-        return self
+        if self.iscanonical is True or self.iscanonical == evalvalues:
+            return self
+        domain = self.algebra.domain
+        try:
+            return domain.TRUE if evalvalues[self.obj] else domain.FALSE
+        except KeyError:
+            return self
 
     def __hash__(self):
         """
@@ -359,7 +365,6 @@ class Symbol(Expression):
     themselfs.
     """
     _cls_order = 5
-    _iscanonical = True
 
     _obj = None
 
@@ -462,7 +467,8 @@ class Function(Expression):
         length = len(args)
         order = cls.order
         if eval:
-            return cls(*args, eval=False).eval()
+            evalvalues = eval if isinstance(eval, dict) else {}
+            return cls(*args, eval=False).eval(evalvalues=evalvalues)
         if order[0] > length:
             raise TypeError("Too few arguments. Got %s, but need at least %s." % (length, order[0]))
         if order[1] < length:
@@ -544,24 +550,23 @@ class NOT(Function):
             return expr
         return expr.literalize()
 
-    def eval(self, **evalkwargs):
+    def eval(self, evalvalues={}):
         """
         Return a simplified term in canonical form.
 
         This means double negations are canceled out and all contained boolean
         objects are in their canonical form.
         """
-        if self.iscanonical:
+        if self.iscanonical is True or self.iscanonical == evalvalues:
             return self
         term = self.cancel()
         if not isinstance(term, self.__class__):
-            return term.eval()
+            return term.eval(evalvalues)
         elif term.args[0] in self.algebra.domain:
             return term.args[0].dual
         else:
-            expr = self.__class__(term.args[0].eval(**evalkwargs),
-                                  eval=False)
-            expr._iscanonical = True
+            expr = self.__class__(term.args[0].eval(evalvalues), eval=evalvalues)
+            expr._iscanonical = evalvalues
             return expr
 
     def cancel(self):
@@ -664,7 +669,7 @@ class DualBase(Function):
                 return True
         return False
 
-    def eval(self, **evalkwargs):
+    def eval(self, evalvalues={}):
         """
         Return a simplified expression in canonical form.
 
@@ -682,11 +687,11 @@ class DualBase(Function):
         """
         # TODO: Refactor DualBase.eval into different "sub-evals".
         # If self is already canonical do nothing.
-        if self.iscanonical:
+        if self.iscanonical is True or self.iscanonical == evalvalues:
             return self
         ops = self.algebra.operations
         # Otherwise bring arguments into canonical form.
-        args = tuple(arg.eval() for arg in self.args)
+        args = tuple(arg.eval(evalvalues) for arg in self.args)
         # Create new instance of own class with canonical args. "eval" has to
         # be set False - otherwise infinite recursion!
         # TODO: Only create new class if some args changed.
@@ -769,8 +774,8 @@ class DualBase(Function):
         # Commutivity: A * B = B * A, A + B = B + A
         args.sort()
         # Create new (now canonical) expression.
-        term = self.__class__(*args, eval=False)
-        term._iscanonical = True
+        term = self.__class__(*args, eval=evalvalues)
+        term._iscanonical = evalvalues
         return term
 
     def flatten(self):
