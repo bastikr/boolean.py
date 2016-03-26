@@ -26,6 +26,74 @@ class ExpressionTestCase(unittest.TestCase):
         self.assertTrue(E(0) is boolean.FALSE)
         self.assertTrue(E(False) is boolean.FALSE)
 
+    def test_parse_with_mixed_operators_multilines_and_custom_symbol(self):
+
+        class MySymbol(boolean.Symbol):
+            pass
+
+        expr_str = """(a or ~ b +_c  ) and #some comment 
+                      d & ( ! e_ 
+                      | (AND * g or 1 or 0) ) """
+
+        expr = boolean.parse(expr_str, eval=False)
+
+        expected = boolean.AND(
+            boolean.OR(
+                MySymbol('a'),
+                boolean.NOT(boolean.Symbol('b')),
+                MySymbol('_c'),
+            eval=False),
+            MySymbol('d'),
+            boolean.OR(
+                boolean.NOT(MySymbol('e_')),
+                boolean.OR(
+                    boolean.AND(
+                        MySymbol('AND'),
+                        MySymbol('g'),
+                        eval=False
+                    ),
+                    boolean.TRUE,
+                    boolean.FALSE,
+                    eval=False),
+                eval=False),
+            eval=False
+        )
+
+        self.assertEqual(expected, expr)
+
+    def test_parse_can_use_alternative_tokenizer(self):
+
+        class CustomSymbol(boolean.Symbol):
+            pass
+
+        def tokenizer(s):
+            "Sample tokenizer using custom operators and custom Symbols"
+            cutsom_ops = {'WHY_NOT': 'or', 'ALSO': 'and', 'NEITHER': 'not'}
+            for row, line in enumerate(s.splitlines(False)):
+                for col, tok in enumerate(line.split()):
+                    if tok.lower() in ('and', 'or', 'not', '(', ')'):
+                        yield False, tok.lower(), row, col
+                    elif tok in cutsom_ops:
+                        yield False, cutsom_ops[tok], row, col
+                    elif tok == 'Custom':
+                        yield True, CustomSymbol(tok), row, col
+                    else:
+                        yield True, tok, row, col
+
+        class MySymbol(boolean.Symbol):
+            pass
+
+        expr_str = """( Custom OR regular ) ALSO ( 
+                      not_custom NEITHER standard )
+                    """
+        expr = boolean.parse(expr_str, eval=False, tokenizer=tokenizer)
+        expected = boolean.AND(
+                        boolean.OR(
+                            CustomSymbol('Custom'), 
+                            boolean.Symbol('regular')), 
+                        boolean.Symbol('not_custom'))
+        self.assertEqual(expected, expr)
+
 
 class BaseElementTestCase(unittest.TestCase):
 
@@ -181,8 +249,12 @@ class NOTTestCase(unittest.TestCase):
         self.assertTrue(~a == ~a)
         self.assertFalse(a == boolean.parse("~~a", simplify=False))
         self.assertTrue(a == ~~a)
-        self.assertTrue(~a, ~~~a)
-        self.assertTrue(a, ~~~~a)
+        self.assertTrue(~a == ~~~a)
+        self.assertTrue(a == ~~~~a)
+        self.assertFalse(a == boolean.parse("~ ~a", eval=False))
+        self.assertTrue(a == ~ ~a)
+        self.assertTrue(~a == ~ ~ ~a)
+        self.assertTrue(a == ~ ~ ~ ~a)
         self.assertTrue(~(a * a * a) == ~(a * a * a))
 
     def test_cancel(self):
@@ -194,7 +266,7 @@ class NOTTestCase(unittest.TestCase):
         self.assertTrue(a == parse("~~~~a").cancel())
 
     def test_demorgan(self):
-        a, b, c = boolean.symbols("a", "b", "c")
+        a, b  = boolean.symbols("a", "b")
         parse = lambda x: boolean.parse(x, simplify=False)
         self.assertTrue(parse("~(a*b)").demorgan() == ~a + ~b)
         self.assertTrue(parse("~(a+b+c)").demorgan()
@@ -249,7 +321,6 @@ class DualBaseTestCase(unittest.TestCase):
         self.assertTrue(p("a+~(b+c)").literalize() == p("a+(~b*~c)"))
 
     def test_annihilator(self):
-        a = boolean.Symbol("a")
         p = lambda x: boolean.parse(x, simplify=False)
         self.assertTrue(p("a*a").annihilator is boolean.FALSE)
         self.assertTrue(p("a+a").annihilator is boolean.TRUE)
@@ -314,9 +385,6 @@ class DualBaseTestCase(unittest.TestCase):
 
     def test_flatten(self):
         p = lambda x: boolean.parse(x, simplify=False)
-        a = self.a
-        b = self.b
-        c = self.c
 
         t1 = p("a * (b*c)")
         t2 = p("a*b*c")
@@ -373,9 +441,6 @@ class DualBaseTestCase(unittest.TestCase):
 
     def test_printing(self):
         parse = lambda x: boolean.parse(x, simplify=False)
-        a = self.a
-        b = self.b
-        c = self.c
         self.assertTrue(str(parse("a*a")) == "a*a")
         self.assertTrue(repr(parse("a*a")) == "AND(Symbol('a'), Symbol('a'))")
         self.assertTrue(str(parse("a+a")) == "a+a")
@@ -407,7 +472,7 @@ class OtherTestCase(unittest.TestCase):
         self.assertTrue(parse("1") == parse("(1)") == boolean.TRUE)
         self.assertTrue(parse("a") == parse("(a)") == a)
         self.assertTrue(parse("~a") == parse("~(a)") == parse("(~a)") == ~a)
-        self.assertTrue(parse("~~a") == ~~a)
+        self.assertTrue(parse("~~a") == ~ ~a)
         self.assertTrue(parse("a*b") == a * b)
         self.assertTrue(parse("~a*b") == ~a * b)
         self.assertTrue(parse("a*~b") == a * ~b)

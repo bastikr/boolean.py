@@ -11,9 +11,15 @@ Released under revised BSD license.
 """
 
 from __future__ import absolute_import
+from __future__ import unicode_literals
 
 import itertools
 import collections
+import tokenize
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
 
 try:
     basestring  # Python 2
@@ -1007,13 +1013,68 @@ PRECEDENCE = {
     "(": 20,
 }
 
+ANDS = ('*', '&', 'and')
+ORS = ('+', '|', 'or')
+NOTS = ('~', '!', 'not')
+PARENS = ('(', ')')
+OPS = ANDS + ORS + NOTS + PARENS
+ZERO_OR_ONE = ('0', '1')
 
-def parse(expr, simplify=True):
+
+def tokenizer(expr):
     """
-    Returns a boolean expression created from the given string.
+    Return an iterable of tokens as tuples of (is_symbol, token, start row,
+    start column) given an `expr`.
+    `is_symbol` must be True if the token is a symbol. 
+    
+    If `is_symbol` the token must of an operation token or and opening '(' or
+    closing parenthesis ')'.
+
+    Recognized operations tokens are:
+    - for and:  '*', '&', 'and'
+    - for or: '+', '|', 'or'
+    - for not: '~', '!', 'not'
     """
     if not isinstance(expr, basestring):
         raise TypeError("Argument must be string but it is %s." % type(expr))
+
+    ignored_token_types = (
+        tokenize.NL, tokenize.NEWLINE, tokenize.COMMENT,
+        tokenize.INDENT, tokenize.DEDENT,
+        tokenize.ENDMARKER
+    )
+
+    OPS = ANDS + ORS + NOTS + PARENS
+
+    # note: unbalanced expression may raise a TokenError here.
+    tokens = tokenize.generate_tokens(StringIO(expr).readline)
+
+    for toktype, tok, (srow, scol,), _, _ in tokens:
+        if toktype in ignored_token_types or not tok.strip():
+            continue
+
+        is_symbol = False
+        if tok in OPS:
+            is_symbol = False
+        elif toktype == tokenize.NAME or tok in ZERO_OR_ONE:
+            is_symbol = True
+        else:
+            raise TypeError("Unknown token: %(tok)s at line: %(srow)d, column: %(scol)d" % locals())
+
+        yield is_symbol, tok, srow, scol
+
+
+def parse(expr, simplify=True, symbol=Symbol, tokenizer=tokenizer):
+    """
+    Returns a boolean expression created from the given `expr` string or
+    iterable of tokens.
+    Optionally evaluate the expression if `eval` is True.
+    If `expr` is a string, use the provided `tokenizer` to tokenization.
+    If `expr` is an iterable, it should have the same semantics as the tokenizer
+    function and contain tuples of (is_symbol, token, start row, start column).
+    In an iterable a `token` can be either a string or a Symbol.
+    Use the provided `symbol` Symbol class or or subclass for symbol token strings creation.
+    """
 
     def start_operation(ast, operation):
         """
@@ -1036,55 +1097,61 @@ def parse(expr, simplify=True):
                 ast[0].append(ast[1](*ast[2:], simplify=simplify))
                 ast = ast[0]
 
-    expr = expr.replace(" ", "")
-    length = len(expr)
+    if isinstance(expr, str):
+        tokenized = tokenizer(expr)
+    else:
+        try:
+            tokenized = list(expr)
+        except:
+            raise TypeError("Argument must be string or an iterable of tokens but it is %s." % type(expr))
+
     ast = [None, None]
-    i = 0
-    while i < length:
-        char = expr[i]
-        if char == "1":
-            ast.append(TRUE)
-        elif char == "0":
-            ast.append(FALSE)
-        elif char.isalpha():
-            j = 1
-            while i + j < length and expr[i + j].isalnum():
-                j += 1
-            ast.append(Symbol(expr[i:i + j]))
-            i += j - 1
-        elif char == "(":
-            ast = [ast, "("]
-        elif char == ")":
-            while True:
-                if ast[0] is None:
-                    raise TypeError("Bad closing bracket at position %s." % i)
-                if ast[1] is "(":
-                    ast[0].append(ast[2])
-                    ast = ast[0]
-                    break
-                ast[0].append(ast[1](*ast[2:], simplify=simplify))
-                ast = ast[0]
-        elif char in ("~", "!"):
-            ast = [ast, NOT]
-        elif char in ("&", "*"):
-            ast = start_operation(ast, AND)
-        elif char in ("|", "+"):
-            ast = start_operation(ast, OR)
+    for is_symbol, tok, srow, scol in tokenized:
+        if is_symbol:
+            if tok == "1":
+                ast.append(TRUE)
+            elif tok == "0":
+                ast.append(FALSE)
+            else:
+                # reuse Symbol as-is if provided
+                if isinstance(tok, Symbol):
+                    ast.append(tok)
+                else:
+                    ast.append(symbol(tok))
         else:
-            raise TypeError("Unknown character %s at position %s." % (char, i))
-        i += 1
+            if tok in NOTS:
+                ast = [ast, NOT]
+            elif tok in ANDS:
+                ast = start_operation(ast, AND)
+            elif tok in ORS:
+                ast = start_operation(ast, OR)
+            elif tok == "(":
+                ast = [ast, "("]
+            elif tok == ")":
+                while True:
+                    if ast[0] is None:
+                        raise TypeError("Bad closing parenthesis at line: %(srow)d, column: %(scol)d" % locals())
+                    if ast[1] is "(":
+                        ast[0].append(ast[2])
+                        ast = ast[0]
+                        break
+                    ast[0].append(ast[1](*ast[2:], simplify=simplify))
+                    ast = ast[0]
+            else:
+                raise TypeError("Unknown token: %(tok)s at line: %(srow)d, column: %(scol)d" % locals())
+
     while True:
         if ast[0] is None:
             if ast[1] is None:
                 assert len(ast) == 3
-                expr = ast[2]
+                parsed = ast[2]
             else:
-                expr = ast[1](*ast[2:], simplify=simplify)
+                parsed = ast[1](*ast[2:], simplify=simplify)
             break
         else:
             ast[0].append(ast[1](*ast[2:], simplify=simplify))
             ast = ast[0]
-    return expr
+    return parsed
 
 
 class BooleanAlgebra(object):
