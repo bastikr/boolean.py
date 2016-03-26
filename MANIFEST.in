@@ -1,0 +1,10 @@
+graft docs
+graft boolean
+
+include LICENSE.txt
+include setup.py
+include setup.cfg
+include README.md
+include MANIFEST.in
+
+global-exclude *.py[co] __pycache__

@@ -1,3 +1,14 @@
+"""
+Boolean Algebra.
+
+Tests
+
+Copyright (c) 2009-2010 Sebastian Kraemer, basti.kr@gmail.com
+Released under revised BSD license.
+"""
+
+from __future__ import absolute_import
+
 import unittest
 import boolean
 
@@ -452,7 +463,7 @@ class BooleanAlgebraTestCase(unittest.TestCase):
 
         a = ConstFilter(True)
         b = ConstFilter(False)
-        self.assertEqual(type(a + b), Filter)
+        self.assertTrue(isinstance(a + b, Filter))
         self.assertEqual((a + b).eval(), boolean.TRUE)
         self.assertEqual((a * b).eval(), boolean.FALSE)
 
