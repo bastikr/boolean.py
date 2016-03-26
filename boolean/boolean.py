@@ -1054,8 +1054,9 @@ def tokenizer(expr):
             continue
 
         is_symbol = False
-        if tok in OPS:
+        if tok.lower() in OPS:
             is_symbol = False
+            tok = tok.lower()
         elif toktype == tokenize.NAME or tok in ZERO_OR_ONE:
             is_symbol = True
         else:

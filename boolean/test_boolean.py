@@ -33,9 +33,9 @@ class ExpressionTestCase(unittest.TestCase):
 
         expr_str = """(a or ~ b +_c  ) and #some comment 
                       d & ( ! e_ 
-                      | (AND * g or 1 or 0) ) """
+                      | (my * g OR 1 or 0) ) AND that """
 
-        expr = boolean.parse(expr_str, eval=False)
+        expr = boolean.parse(expr_str, eval=False, symbol=MySymbol)
 
         expected = boolean.AND(
             boolean.OR(
@@ -48,7 +48,7 @@ class ExpressionTestCase(unittest.TestCase):
                 boolean.NOT(MySymbol('e_')),
                 boolean.OR(
                     boolean.AND(
-                        MySymbol('AND'),
+                        MySymbol('my'),
                         MySymbol('g'),
                         eval=False
                     ),
@@ -56,6 +56,7 @@ class ExpressionTestCase(unittest.TestCase):
                     boolean.FALSE,
                     eval=False),
                 eval=False),
+            MySymbol('that'),
             eval=False
         )
 
