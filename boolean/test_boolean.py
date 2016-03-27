@@ -10,6 +10,8 @@ Released under revised BSD license.
 from __future__ import absolute_import
 
 import unittest
+from unittest.case import expectedFailure
+
 import boolean
 
 
@@ -35,14 +37,14 @@ class ExpressionTestCase(unittest.TestCase):
                       d & ( ! e_ 
                       | (my * g OR 1 or 0) ) AND that """
 
-        expr = boolean.parse(expr_str, eval=False, symbol=MySymbol)
+        expr = boolean.parse(expr_str, simplify=False, symbol=MySymbol)
 
         expected = boolean.AND(
             boolean.OR(
                 MySymbol('a'),
                 boolean.NOT(boolean.Symbol('b')),
                 MySymbol('_c'),
-            eval=False),
+            simplify=False),
             MySymbol('d'),
             boolean.OR(
                 boolean.NOT(MySymbol('e_')),
@@ -50,14 +52,14 @@ class ExpressionTestCase(unittest.TestCase):
                     boolean.AND(
                         MySymbol('my'),
                         MySymbol('g'),
-                        eval=False
+                        simplify=False
                     ),
                     boolean.TRUE,
                     boolean.FALSE,
-                    eval=False),
-                eval=False),
+                    simplify=False),
+                simplify=False),
             MySymbol('that'),
-            eval=False
+            simplify=False
         )
 
         self.assertEqual(expected, expr)
@@ -87,11 +89,11 @@ class ExpressionTestCase(unittest.TestCase):
         expr_str = """( Custom OR regular ) ALSO ( 
                       not_custom NEITHER standard )
                     """
-        expr = boolean.parse(expr_str, eval=False, tokenizer=tokenizer)
+        expr = boolean.parse(expr_str, simplify=False, tokenizer=tokenizer)
         expected = boolean.AND(
                         boolean.OR(
-                            CustomSymbol('Custom'), 
-                            boolean.Symbol('regular')), 
+                            CustomSymbol('Custom'),
+                            boolean.Symbol('regular')),
                         boolean.Symbol('not_custom'))
         self.assertEqual(expected, expr)
 
@@ -207,7 +209,7 @@ class SymbolTestCase(unittest.TestCase):
     def test_printing(self):
         self.assertTrue(str(boolean.Symbol("a")) == "a")
         self.assertTrue(str(boolean.Symbol(1)) == "1")
-        self.assertTrue(repr(boolean.Symbol("a")), "Symbol('a')")
+        self.assertTrue(repr(boolean.Symbol("a")) == "Symbol('a')")
         self.assertTrue(repr(boolean.Symbol(1)) == "Symbol(1)")
 
 
@@ -252,7 +254,7 @@ class NOTTestCase(unittest.TestCase):
         self.assertTrue(a == ~~a)
         self.assertTrue(~a == ~~~a)
         self.assertTrue(a == ~~~~a)
-        self.assertFalse(a == boolean.parse("~ ~a", eval=False))
+        self.assertFalse(a == boolean.parse("~ ~a", simplify=False))
         self.assertTrue(a == ~ ~a)
         self.assertTrue(~a == ~ ~ ~a)
         self.assertTrue(a == ~ ~ ~ ~a)
@@ -267,7 +269,7 @@ class NOTTestCase(unittest.TestCase):
         self.assertTrue(a == parse("~~~~a").cancel())
 
     def test_demorgan(self):
-        a, b  = boolean.symbols("a", "b")
+        a, b = boolean.symbols("a", "b")
         parse = lambda x: boolean.parse(x, simplify=False)
         self.assertTrue(parse("~(a*b)").demorgan() == ~a + ~b)
         self.assertTrue(parse("~(a+b+c)").demorgan()
@@ -371,10 +373,108 @@ class DualBaseTestCase(unittest.TestCase):
         expr = boolean.parse("(a*b*c*d) + (b*d)")
         result = boolean.parse("b*d")
         self.assertTrue(expr == result)
-        expr = boolean.parse("(~a*~b*~c*~d) + (~a*~b*~c*d) + (~a*b*~c*~d) +"
-                             "(~a*b*c*d) + (~a*b*~c*d) + (~a*b*c*~d) +"
-                             "(a*~b*~c*d) + (~a*b*c*d) + (a*~b*c*d) + (a*b*c*d)")
-        # TODO: Test the last expr in DualBaseTestCase.test_simplify.
+
+    @expectedFailure
+    def test_simplify_complex_expression_failing(self):
+        a = boolean.Symbol('a')
+        b = boolean.Symbol('b')
+        c = boolean.Symbol('c')
+        d = boolean.Symbol('d')
+
+        test_expression = ("(~a*~b*~c*~d) + (~a*~b*~c*d) + (~a*b*~c*~d) +"
+                           "(~a*b*c*d) + (~a*b*~c*d) + (~a*b*c*~d) +"
+                           "(a*~b*~c*d) + (~a*b*c*d) + (a*~b*c*d) + (a*b*c*d)")
+        test_expression = ''.join(test_expression.split())
+        
+        # FIXME: THIS SHOULD NOT FAIL
+        # we have a different simplify behavior for expressions built from python expressions
+        # vs. expression built from an object tree vs. expression built from a parse
+        expected = (~a*~b*~c*~d)+(~a*~b*~c*d)+(~a*b*~c*~d)+(~a*b*c*d)+(~a*b*~c*d)+(~a*b*c*~d)+(a*~b*~c*d)+(~a*b*c*d)+(a*~b*c*d)+(a*b*c*d)
+        self.assertEqual(str(expected), str(boolean.parse(test_expression, simplify=True)))
+
+    def test_simplify_complex_expression(self):
+        a = boolean.Symbol('a')
+        b = boolean.Symbol('b')
+        c = boolean.Symbol('c')
+        d = boolean.Symbol('d')
+        test_expression = ("(~a*~b*~c*~d) + (~a*~b*~c*d) + (~a*b*~c*~d) +"
+                           "(~a*b*c*d) + (~a*b*~c*d) + (~a*b*c*~d) +"
+                           "(a*~b*~c*d) + (~a*b*c*d) + (a*~b*c*d) + (a*b*c*d)")
+        test_expression = ''.join(test_expression.split())
+        
+        expected = (a*~b*d)+(~a*b)+(~a*~c)+(b*c*d)
+        self.assertEqual(expected, boolean.parse(test_expression, simplify=True))
+
+        expected = '(~a*~b*~c*~d)+(~a*~b*~c*d)+(~a*b*~c*~d)+(~a*b*c*d)+(~a*b*~c*d)+(~a*b*c*~d)+(a*~b*~c*d)+(~a*b*c*d)+(a*~b*c*d)+(a*b*c*d)'
+        self.assertEqual(test_expression, str(boolean.parse(test_expression, simplify=False)))
+
+        expected = '(a*~b*d)+(~a*b)+(~a*~c)+(b*c*d)'
+        self.assertEqual(expected, str(boolean.parse(test_expression, simplify=True)))
+
+        from boolean import OR, AND, NOT, Symbol
+        expected = OR(
+            AND(
+                NOT(Symbol('a')), 
+                NOT(Symbol('b')), 
+                NOT(Symbol('c')), 
+                NOT(Symbol('d'))
+            ),
+            AND(
+                NOT(Symbol('a')), 
+                NOT(Symbol('b')), 
+                NOT(Symbol('c')), 
+                Symbol('d')
+            ), 
+            AND(
+                NOT(Symbol('a')), 
+                Symbol('b'), 
+                NOT(Symbol('c')), 
+                NOT(Symbol('d'))
+            ), 
+            AND(
+                NOT(Symbol('a')), 
+                Symbol('b'), 
+                Symbol('c'), 
+                Symbol('d')), 
+            AND(
+                NOT(Symbol('a')), 
+                Symbol('b'), 
+                NOT(Symbol('c')), 
+                Symbol('d')
+            ), 
+            AND(
+                NOT(Symbol('a')), 
+                Symbol('b'), 
+                Symbol('c'), 
+                NOT(Symbol('d'))
+            ), 
+            AND(
+                Symbol('a'), 
+                NOT(Symbol('b')), 
+                NOT(Symbol('c')), 
+                Symbol('d')
+            ), 
+            AND(
+                NOT(Symbol('a')), 
+                Symbol('b'), 
+                Symbol('c'), 
+                Symbol('d')
+            ), 
+            AND(
+                Symbol('a'), 
+                NOT(Symbol('b')), 
+                Symbol('c'), 
+                Symbol('d')
+            ), 
+            AND(
+                Symbol('a'), 
+                Symbol('b'), 
+                Symbol('c'), 
+                Symbol('d')
+            )
+        )
+        
+        self.assertEqual(expected, boolean.parse(test_expression, simplify=True))
 
     def test_remove(self):
         expr = boolean.parse("a*b*c")
