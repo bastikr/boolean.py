@@ -181,7 +181,7 @@ class Expression(object):
         """
         return self._iscanonical
 
-    def simplify(self, **evalkwargs):
+    def simplify(self):
         """
         Return a possibly simplified, canonical form of the boolean object.
         """
@@ -556,7 +556,7 @@ class NOT(Function):
             return expr
         return expr.literalize()
 
-    def simplify(self, **evalkwargs):
+    def simplify(self):
         """
         Return a simplified term in canonical form.
 
@@ -571,7 +571,7 @@ class NOT(Function):
         elif term.args[0] in self.algebra.domain:
             return term.args[0].dual
         else:
-            expr = self.__class__(term.args[0].simplify(**evalkwargs),
+            expr = self.__class__(term.args[0].simplify(),
                                   simplify=False)
             expr._iscanonical = True
             return expr
@@ -676,7 +676,7 @@ class DualBase(Function):
                 return True
         return False
 
-    def simplify(self, **evalkwargs):
+    def simplify(self):
         """
         Return a simplified expression in canonical form.
 
