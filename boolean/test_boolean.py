@@ -304,6 +304,14 @@ class DualBaseTestCase(unittest.TestCase):
                              "(a*~b*~c*d) + (~a*b*c*d) + (a*~b*c*d) + (a*b*c*d)")
         # TODO: Test the last expr in DualBaseTestCase.test_simplify.
 
+    def test_remove(self):
+        expr = boolean.parse("a*b*c")
+        p1 = boolean.parse("b*d")
+        p2 = boolean.parse("a*c")
+        result = boolean.parse("b")
+        self.assertTrue(expr.remove(p1) == expr)
+        self.assertTrue(expr.remove(p2) == result)
+
     def test_flatten(self):
         p = lambda x: boolean.parse(x, simplify=False)
         a = self.a

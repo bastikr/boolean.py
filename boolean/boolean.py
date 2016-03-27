@@ -873,7 +873,7 @@ class DualBase(Function):
             args = list(self.args)
             args.remove(expr)
         elif isinstance(expr, self.__class__):
-            if all(arg in self.args for arg in item.args):
+            if all(arg in self.args for arg in expr.args):
                 args = tuple(arg for arg in self.args if arg not in expr)
         if len(args) == 0:
             return None
