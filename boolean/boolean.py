@@ -47,6 +47,8 @@ class Expression(object):
     _hash = None
     # Stores an object associated to this boolean expression.
     _obj = None
+    # Caches simplified form of the expression
+    _simplified = None
 
     # Holds an Algebra tuple which defines the boolean algebra.
     algebra = None
@@ -185,7 +187,7 @@ class Expression(object):
         """
         Return a possibly simplified, canonical form of the boolean object.
         """
-        return self
+        return self  # No need for _simplified, always returns self
 
     def __hash__(self):
         """
@@ -569,18 +571,23 @@ class NOT(Function):
         This means double negations are canceled out and all contained boolean
         objects are in their canonical form.
         """
+        if self._simplified is not None:
+            return self._simplified
         if self.iscanonical:
-            return self
+            self._simplified = self
+            return self._simplified
         term = self.cancel()
         if not isinstance(term, self.__class__):
-            return term.simplify()
+            self._simplified = term.simplify()
+            return self._simplified
         elif term.args[0] in self.algebra.domain:
-            return term.args[0].dual
+            self._simplified = term.args[0].dual
+            return self._simplified
         else:
-            expr = self.__class__(term.args[0].simplify(),
-                                  simplify=False)
+            expr = self.__class__(term.args[0].simplify(), simplify=False)
             expr._iscanonical = True
-            return expr
+            self._simplified = expr
+            return self._simplified
 
     def cancel(self):
         """
@@ -699,9 +706,12 @@ class DualBase(Function):
         Other boolean objects are also in their canonical form.
         """
         # TODO: Refactor DualBase.simplify into different "sub-evals".
+        if self._simplified is not None:
+            return self._simplified
         # If self is already canonical do nothing.
         if self.iscanonical:
-            return self
+            self._simplified = self
+            return self._simplified
         ops = self.algebra.operations
         # Otherwise bring arguments into canonical form.
         args = tuple(arg.simplify() for arg in self.args)
@@ -717,23 +727,27 @@ class DualBase(Function):
         term = term.flatten()
         # Annihilation: A * 0 = 0, A + 1 = 1
         if self.annihilator in term.args:
-            return self.annihilator
+            self._simplified = self.annihilator
+            return self._simplified
         # Idempotence: A * A = A, A + A = A
         args = []
         for arg in term.args:
             if arg not in args:
                 args.append(arg)
         if len(args) == 1:
-            return args[0]
+            self._simplified = args[0]
+            return self._simplified
         # Identity: A * 1 = A, A + 0 = A
         if self.identity in args:
             args.remove(self.identity)
             if len(args) == 1:
-                return args[0]
+                self._simplified = args[0]
+                return self._simplified
         # Complementation: A * ~A = 0, A + ~A = 1
         for arg in args:
             if ops.NOT(arg) in args:
-                return self.annihilator
+                self._simplified = self.annihilator
+                return self._simplified
         # Elimination: (A * B) + (A * ~B) = A, (A + B) * (A + ~B) = A
         i = 0
         while i < len(args) - 1:
@@ -772,24 +786,28 @@ class DualBase(Function):
                     else:
                         args[i] = self.dual(*aiargs, simplify=False)
                     if len(args) == 1:
-                        return args[0]
+                        self._simplified = args[0]
+                        return self._simplified
                     else:
                         # Now the other simplifications have to be
                         # redone.
-                        return self.__class__(*args, simplify=True)
+                        self._simplified = self.__class__(*args, simplify=True)
+                        return self._simplified
                 j += 1
             i += 1
         # Absorption: A * (A + B) = A, A + (A * B) = A
         # Negative absorption: A * (~A + B) = A * B, A + (~A * B) = A + B
         args = self.absorb(args)
         if len(args) == 1:
-            return args[0]
+            self._simplified = args[0]
+            return self._simplified
         # Commutativity: A * B = B * A, A + B = B + A
         args.sort()
         # Create new (now canonical) expression.
         term = self.__class__(*args, simplify=False)
         term._iscanonical = True
-        return term
+        self._simplified = term
+        return self._simplified
 
     def flatten(self):
         """
