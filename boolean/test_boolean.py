@@ -37,7 +37,7 @@ class ExpressionTestCase(unittest.TestCase):
                       d & ( ! e_ 
                       | (my * g OR 1 or 0) ) AND that """
 
-        expr = boolean.parse(expr_str, simplify=False, symbol=MySymbol)
+        expr = boolean.parse(expr_str, simplify=False, symbol_class=MySymbol)
 
         expected = boolean.AND(
             boolean.OR(
@@ -62,6 +62,13 @@ class ExpressionTestCase(unittest.TestCase):
             simplify=False
         )
 
+        self.assertEqual(expected, expr)
+
+    def test_parse_recognizes_trueish_and_falsish_symbol_tokens(self):
+        expr_str = 'True or False or None or 0 or 1 or TRue or FalSE or NONe'
+        expr = boolean.parse(expr_str, simplify=False)
+        from boolean import OR, TRUE, FALSE
+        expected = OR(TRUE, FALSE, FALSE, FALSE, TRUE, TRUE, FALSE, FALSE, simplify=False)
         self.assertEqual(expected, expr)
 
     def test_parse_can_use_alternative_tokenizer(self):
@@ -89,12 +96,12 @@ class ExpressionTestCase(unittest.TestCase):
         expr_str = """( Custom OR regular ) ALSO ( 
                       not_custom NEITHER standard )
                     """
-        expr = boolean.parse(expr_str, simplify=False, tokenizer=tokenizer)
+        expr = boolean.parse(expr_str, simplify=False, tokenizer=tokenizer, symbol_class=MySymbol)
         expected = boolean.AND(
                         boolean.OR(
                             CustomSymbol('Custom'),
-                            boolean.Symbol('regular')),
-                        boolean.Symbol('not_custom'))
+                            MySymbol('regular')),
+                        MySymbol('not_custom'))
         self.assertEqual(expected, expr)
 
 

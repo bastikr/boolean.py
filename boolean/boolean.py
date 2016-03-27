@@ -1018,22 +1018,46 @@ ORS = ('+', '|', 'or')
 NOTS = ('~', '!', 'not')
 PARENS = ('(', ')')
 OPS = ANDS + ORS + NOTS + PARENS
-ZERO_OR_ONE = ('0', '1')
+
+TRUES = ('true', '1',)
+FALSES = ('false', '0', 'none')
+TRUES_AND_FALSES = TRUES + FALSES
 
 
 def tokenizer(expr):
     """
     Return an iterable of tokens as tuples of (is_symbol, token, start row,
-    start column) given an `expr`.
-    `is_symbol` must be True if the token is a symbol. 
-    
-    If `is_symbol` the token must of an operation token or and opening '(' or
-    closing parenthesis ')'.
+    start column) given an `expr` string.
 
-    Recognized operations tokens are:
+    The expr can span multiple lines and contain #comments using Python conventions.
+    Whitespace is not-significant.
+
+    Raise TypeError or TokenError on errors.
+
+    In the returned tokens stream, `is_symbol` is True if the token is a symbol.
+    If `is_symbol` is False, the token must of an operation token or and 
+    opening '(' or closing parenthesis')'.
+
+    A symbol token is created for valid Python identifiers.
+    These are not identifiers:
+    - dotted names : foo.bar consist of three tokens, not one.
+    - names with colons: foo:bar consist of three tokens, not one
+    - quoted strings.
+    - any punctuation which is not an operation
+
+    Recognized operations tokens are (in any upper/lower case combinations):
     - for and:  '*', '&', 'and'
     - for or: '+', '|', 'or'
     - for not: '~', '!', 'not'
+
+    Recognized special tokens are (in any upper/lower case combinations):
+    - Trueish values: 1 and True
+    - Falsih values: 0, False and None
+
+    
+    You can use this tokenizer function as a base to create more sophisticated
+    tokenizers for your algebra, for instance to return single tokens for dotted
+    names and quoted strings.
     """
     if not isinstance(expr, basestring):
         raise TypeError("Argument must be string but it is %s." % type(expr))
@@ -1044,37 +1068,39 @@ def tokenizer(expr):
         tokenize.ENDMARKER
     )
 
-    OPS = ANDS + ORS + NOTS + PARENS
 
-    # note: unbalanced expression may raise a TokenError here.
+    # note: an unbalanced expression may raise a TokenError here.
     tokens = tokenize.generate_tokens(StringIO(expr).readline)
 
-    for toktype, tok, (srow, scol,), _, _ in tokens:
+    for toktype, tok, (row, col,), _, _ in tokens:
         if toktype in ignored_token_types or not tok.strip():
             continue
 
-        is_symbol = False
         if tok.lower() in OPS:
             is_symbol = False
-            tok = tok.lower()
-        elif toktype == tokenize.NAME or tok in ZERO_OR_ONE:
+        elif toktype == tokenize.NAME or tok.lower() in TRUES_AND_FALSES:
             is_symbol = True
         else:
-            raise TypeError("Unknown token: %(tok)s at line: %(srow)d, column: %(scol)d" % locals())
+            raise TypeError('Unknown token: %(tok)s at line: %(srow)d, column: %(scol)d' % locals())
 
-        yield is_symbol, tok, srow, scol
+        yield is_symbol, tok, row, col
 
 
-def parse(expr, simplify=True, symbol=Symbol, tokenizer=tokenizer):
+def parse(expr, simplify=True, symbol_class=Symbol, tokenizer=tokenizer):
     """
-    Returns a boolean expression created from the given `expr` string or
-    iterable of tokens.
-    Optionally evaluate the expression if `eval` is True.
-    If `expr` is a string, use the provided `tokenizer` to tokenization.
-    If `expr` is an iterable, it should have the same semantics as the tokenizer
-    function and contain tuples of (is_symbol, token, start row, start column).
-    In an iterable a `token` can be either a string or a Symbol.
-    Use the provided `symbol` Symbol class or or subclass for symbol token strings creation.
+    Return a boolean expression created from the given `expr` string or tokens
+    iterable.
+
+    Optionally simplify the expression if `simplify` is True.
+    If `expr` is a string, use the provided `tokenizer` for tokenization.
+  
+    If `expr` is an iterable, it should have the same semantics as the iterable
+    returned by the boolean.tokenizer function and contain tuples of:
+    (is_symbol, token, start row, start column). And symbol `tokens` can be
+    either a string or a Symbol instance.
+
+    Use the provided `symbol_class` Symbol class or or subclass to create
+    symbols from token strings.
     """
 
     def start_operation(ast, operation):
@@ -1101,45 +1127,50 @@ def parse(expr, simplify=True, symbol=Symbol, tokenizer=tokenizer):
     if isinstance(expr, str):
         tokenized = tokenizer(expr)
     else:
-        try:
-            tokenized = list(expr)
-        except:
-            raise TypeError("Argument must be string or an iterable of tokens but it is %s." % type(expr))
+        tokenized = iter(expr)
 
     ast = [None, None]
-    for is_symbol, tok, srow, scol in tokenized:
+    for is_symbol, tok, row, col in tokenized:
         if is_symbol:
-            if tok == "1":
-                ast.append(TRUE)
-            elif tok == "0":
-                ast.append(FALSE)
-            else:
-                # reuse Symbol as-is if provided
-                if isinstance(tok, Symbol):
-                    ast.append(tok)
+            if isinstance(tok, Symbol):
+                # if provided, reuse Symbol as-is
+                ast.append(tok)
+            elif isinstance(tok, basestring):
+                # build falsigh and trueish common symbols
+                if tok.lower() in TRUES:
+                    ast.append(TRUE)
+                elif tok.lower() in FALSES:
+                    ast.append(FALSE)
                 else:
-                    ast.append(symbol(tok))
+                    # otherwise create a symbol with the provided class arg
+                    ast.append(symbol_class(tok))
+            else:
+                raise TypeError('Invalid token type: %(tok)r at line: %(row)d, column: %(col)d: must be a string or a Symbol subclass.' % locals())
+
         else:
-            if tok in NOTS:
+            if not isinstance(tok, basestring):
+                raise TypeError('Invalid operator token type: %(tok)r at line: %(row)d, column: %(col)d: must be a string.' % locals())
+
+            if tok.lower() in NOTS:
                 ast = [ast, NOT]
-            elif tok in ANDS:
+            elif tok.lower() in ANDS:
                 ast = start_operation(ast, AND)
-            elif tok in ORS:
+            elif tok.lower() in ORS:
                 ast = start_operation(ast, OR)
-            elif tok == "(":
-                ast = [ast, "("]
-            elif tok == ")":
+            elif tok == '(':
+                ast = [ast, '(']
+            elif tok == ')':
                 while True:
                     if ast[0] is None:
-                        raise TypeError("Bad closing parenthesis at line: %(srow)d, column: %(scol)d" % locals())
-                    if ast[1] is "(":
+                        raise TypeError('Bad closing parenthesis at line: %(row)d, column: %(col)d' % locals())
+                    if ast[1] is '(':
                         ast[0].append(ast[2])
                         ast = ast[0]
                         break
                     ast[0].append(ast[1](*ast[2:], simplify=simplify))
                     ast = ast[0]
             else:
-                raise TypeError("Unknown token: %(tok)s at line: %(srow)d, column: %(scol)d" % locals())
+                raise TypeError('Unknown token: %(tok)s at line: %(row)d, column: %(col)d' % locals())
 
     while True:
         if ast[0] is None:
