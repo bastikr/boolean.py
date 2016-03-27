@@ -138,7 +138,7 @@ class SymbolTestCase(unittest.TestCase):
     def test_printing(self):
         self.assertTrue(str(boolean.Symbol("a")) == "a")
         self.assertTrue(str(boolean.Symbol(1)) == "1")
-        self.assertTrue(repr(boolean.Symbol("a")), "Symbol('a')")
+        self.assertTrue(repr(boolean.Symbol("a")) == "Symbol('a')")
         self.assertTrue(repr(boolean.Symbol(1)) == "Symbol(1)")
 
 
