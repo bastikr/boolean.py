@@ -242,14 +242,18 @@ class Expression(object):
         else:
             return lt
 
-    def __mul__(self, other):
+    def __and__(self, other):
         return self.algebra.operations.AND(self, other)
+
+    __mul__ = __and__
 
     def __invert__(self):
         return self.algebra.operations.NOT(self)
 
-    def __add__(self, other):
+    def __or__(self, other):
         return self.algebra.operations.OR(self, other)
+
+    __add__ = __or__
 
 
 class BaseElement(Expression):
@@ -1048,11 +1052,11 @@ def parse(expr, eval=True):
                     break
                 ast[0].append(ast[1](*ast[2:], eval=eval))
                 ast = ast[0]
-        elif char == "~":
+        elif char in ("~", "!"):
             ast = [ast, NOT]
-        elif char == "*":
+        elif char in ("&", "*"):
             ast = start_operation(ast, AND)
-        elif char == "+":
+        elif char in ("|", "+"):
             ast = start_operation(ast, OR)
         else:
             raise TypeError("Unknown character %s at position %s." % (char, i))
@@ -1106,11 +1110,15 @@ class BooleanAlgebra(object):
     def __gt__(self, other):
         return self.bool_expr > other.bool_expr
 
-    def __mul__(self, other):
-        return self.bool_base(bool_expr=self.bool_expr * other.bool_expr)
+    def __and__(self, other):
+        return self.bool_base(bool_expr=self.bool_expr & other.bool_expr)
+
+    __mul__ = __and__
 
     def __invert__(self):
         return self.bool_base(bool_expr=~self.bool_expr)
 
-    def __add__(self, other):
-        return self.bool_base(bool_expr=self.bool_expr + other.bool_expr)
+    def __or__(self, other):
+        return self.bool_base(bool_expr=self.bool_expr | other.bool_expr)
+
+    __add__ = __or__
