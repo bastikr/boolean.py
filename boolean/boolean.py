@@ -55,8 +55,8 @@ class Expression(object):
         if isinstance(arg, Expression):
             return arg
         if isinstance(arg, basestring):
-            eval = kwargs.get('eval', True)
-            return parse(arg, eval=eval)
+            simplify = kwargs.get('simplify', True)
+            return parse(arg, simplify=simplify)
         elif arg in (0, False):
             return cls.algebra.domain.FALSE
         elif arg in (1, True):
@@ -124,7 +124,7 @@ class Expression(object):
         if all(arg is self.args[i] for i, arg in enumerate(args)):
             return self
         else:
-            return self.__class__(*args, eval=False)
+            return self.__class__(*args, simplify=False)
 
     @property
     def symbols(self):
@@ -141,17 +141,17 @@ class Expression(object):
                 s |= arg.symbols
             return s
 
-    def subs(self, subs_dict, eval=True):
+    def subs(self, subs_dict, simplify=True):
         """
         Return an expression where all subterms equal to a key are substituted.
         """
         for expr, substitution in subs_dict.items():
             if expr == self:
                 return substitution
-        expr = self._subs(subs_dict, eval=eval)
+        expr = self._subs(subs_dict, simplify=simplify)
         return self if expr is None else expr
 
-    def _subs(self, subs_dict, eval):
+    def _subs(self, subs_dict, simplify):
         new_args = []
         changed_something = False
         for arg in self.args:
@@ -162,7 +162,7 @@ class Expression(object):
                     changed_something = matched = True
                     break
             if not matched:
-                new_arg = None if arg.args is None else arg._subs(subs_dict, eval)
+                new_arg = None if arg.args is None else arg._subs(subs_dict, simplify)
                 if new_arg is None:
                     new_args.append(arg)
                 else:
@@ -170,7 +170,7 @@ class Expression(object):
                     new_args.append(new_arg)
 
         if changed_something:
-            return self.__class__(*new_args, eval=eval)
+            return self.__class__(*new_args, simplify=simplify)
         else:
             return None
 
@@ -181,7 +181,7 @@ class Expression(object):
         """
         return self._iscanonical
 
-    def eval(self, **evalkwargs):
+    def simplify(self, **evalkwargs):
         """
         Return a possibly simplified, canonical form of the boolean object.
         """
@@ -272,7 +272,7 @@ class BaseElement(Expression):
     _str = None
     _repr = None
 
-    def __new__(cls, arg=None, eval=False):
+    def __new__(cls, arg=None, simplify=False):
         if arg is not None:
             if isinstance(arg, BaseElement):
                 return arg
@@ -375,10 +375,10 @@ class Symbol(Expression):
 
     _obj = None
 
-    def __new__(cls, obj=None, eval=False):
+    def __new__(cls, obj=None, simplify=False):
         return object.__new__(cls)
 
-    def __init__(self, obj=None, eval=False):
+    def __init__(self, obj=None, simplify=False):
         self._obj = obj
 
     @property
@@ -469,12 +469,12 @@ class Function(Expression):
     operator = None
 
     def __new__(cls, *args, **kwargs):
-        eval = kwargs.pop("eval", True)
+        simplify = kwargs.pop("simplify", True)
         assert len(kwargs) == 0
         length = len(args)
         order = cls.order
-        if eval:
-            return cls(*args, eval=False).eval()
+        if simplify:
+            return cls(*args, simplify=False).simplify()
         if order[0] > length:
             raise TypeError("Too few arguments. Got %s, but need at least %s." % (length, order[0]))
         if order[1] < length:
@@ -488,7 +488,7 @@ class Function(Expression):
         # overwritten.
         if self._args:
             return
-        eval = kwargs.pop("eval", True)
+        simplify = kwargs.pop("simplify", True)
         assert len(kwargs) == 0
         _args = [None] * len(args)
         # Make sure all arguments are boolean expressions.
@@ -556,7 +556,7 @@ class NOT(Function):
             return expr
         return expr.literalize()
 
-    def eval(self, **evalkwargs):
+    def simplify(self, **evalkwargs):
         """
         Return a simplified term in canonical form.
 
@@ -567,12 +567,12 @@ class NOT(Function):
             return self
         term = self.cancel()
         if not isinstance(term, self.__class__):
-            return term.eval()
+            return term.simplify()
         elif term.args[0] in self.algebra.domain:
             return term.args[0].dual
         else:
-            expr = self.__class__(term.args[0].eval(**evalkwargs),
-                                  eval=False)
+            expr = self.__class__(term.args[0].simplify(**evalkwargs),
+                                  simplify=False)
             expr._iscanonical = True
             return expr
 
@@ -602,7 +602,7 @@ class NOT(Function):
                 not isinstance(term.args[0], self.algebra.operations):
             return term
         op = term.args[0]
-        return op.dual(*tuple(self.__class__(arg, eval=False).cancel() for arg in op.args), eval=False)
+        return op.dual(*tuple(self.__class__(arg, simplify=False).cancel() for arg in op.args), simplify=False)
 
     def __lt__(self, other):
         if self.args[0] == other:
@@ -676,7 +676,7 @@ class DualBase(Function):
                 return True
         return False
 
-    def eval(self, **evalkwargs):
+    def simplify(self, **evalkwargs):
         """
         Return a simplified expression in canonical form.
 
@@ -692,17 +692,17 @@ class DualBase(Function):
 
         Other boolean objects are also in their canonical form.
         """
-        # TODO: Refactor DualBase.eval into different "sub-evals".
+        # TODO: Refactor DualBase.simplify into different "sub-evals".
         # If self is already canonical do nothing.
         if self.iscanonical:
             return self
         ops = self.algebra.operations
         # Otherwise bring arguments into canonical form.
-        args = tuple(arg.eval() for arg in self.args)
-        # Create new instance of own class with canonical args. "eval" has to
+        args = tuple(arg.simplify() for arg in self.args)
+        # Create new instance of own class with canonical args. "simplify" has to
         # be set False - otherwise infinite recursion!
         # TODO: Only create new class if some args changed.
-        term = self.__class__(*args, eval=False)
+        term = self.__class__(*args, simplify=False)
         # Literalize before doing anything, this also applies De Mogan's Law
         term = term.literalize()
         # Associativity:
@@ -746,7 +746,7 @@ class DualBase(Function):
                 for arg in ai.args:
                     if arg in aj.args:
                         pass
-                    elif ops.NOT(arg, eval=False).cancel() in aj.args:
+                    elif ops.NOT(arg, simplify=False).cancel() in aj.args:
                         if negated is None:
                             negated = arg
                         else:
@@ -764,13 +764,13 @@ class DualBase(Function):
                     if len(aiargs) == 1:
                         args[i] = aiargs[0]
                     else:
-                        args[i] = self.dual(*aiargs, eval=False)
+                        args[i] = self.dual(*aiargs, simplify=False)
                     if len(args) == 1:
                         return args[0]
                     else:
                         # Now the other simplifications have to be
                         # redone.
-                        return self.__class__(*args, eval=True)
+                        return self.__class__(*args, simplify=True)
                 j += 1
             i += 1
         # Absorption: A * (A + B) = A, A + (A * B) = A
@@ -781,7 +781,7 @@ class DualBase(Function):
         # Commutativity: A * B = B * A, A + B = B + A
         args.sort()
         # Create new (now canonical) expression.
-        term = self.__class__(*args, eval=False)
+        term = self.__class__(*args, simplify=False)
         term._iscanonical = True
         return term
 
@@ -799,7 +799,7 @@ class DualBase(Function):
                 i += len(arg.args)
             else:
                 i += 1
-        return self.__class__(*args, eval=False)
+        return self.__class__(*args, simplify=False)
 
     def absorb(self, useargs=None):
         # Absorption: A * (A + B) = A, A + (A * B) = A
@@ -825,9 +825,9 @@ class DualBase(Function):
                         i -= 1
                     continue
                 # Negative absorption
-                neg_absorber = ops.NOT(absorber, eval=False).cancel()
+                neg_absorber = ops.NOT(absorber, simplify=False).cancel()
                 if neg_absorber in target:
-                    b = target.remove(neg_absorber, eval=False)
+                    b = target.remove(neg_absorber, simplify=False)
                     if b is None:
                         del args[j]
                         if j < i:
@@ -840,7 +840,7 @@ class DualBase(Function):
                 if isinstance(absorber, self.dual):
                     remove = None
                     for arg in absorber.args:
-                        narg = ops.NOT(arg, eval=False).cancel()
+                        narg = ops.NOT(arg, simplify=False).cancel()
                         if arg in target.args:
                             pass
                         elif narg in target.args:
@@ -861,9 +861,9 @@ class DualBase(Function):
         if len(args) == 1:
             return args[0]
         else:
-            return self.__class__(*args, eval=False)
+            return self.__class__(*args, simplify=False)
 
-    def remove(self, expr, eval=True):
+    def remove(self, expr, simplify=True):
         args = self.args
         if expr in self.args:
             args = list(self.args)
@@ -876,7 +876,7 @@ class DualBase(Function):
         elif len(args) == 1:
             return args[0]
         else:
-            return self.__class__(*args, eval=eval)
+            return self.__class__(*args, simplify=simplify)
         return args
 
     def distributive(self):
@@ -899,7 +899,7 @@ class DualBase(Function):
         if len(args) == 1:
             return args[0]
         else:
-            return dual(*args, eval=False)
+            return dual(*args, simplify=False)
 
     def __lt__(self, other):
         cmp = Expression.__lt__(self, other)
@@ -964,13 +964,13 @@ def normalize(operation, expr):
     expr = expr.literalize()
     # Simplify as much as possible, otherwise rdistributive() may take
     # forever.
-    expr = expr.eval()
+    expr = expr.simplify()
 
     # Totally flatten everything.
     def rdistributive(expr):
         if expr.isliteral:
             return expr
-        args = tuple(rdistributive(arg).eval() for arg in expr.args)
+        args = tuple(rdistributive(arg).simplify() for arg in expr.args)
         if len(args) == 1:
             return args[0]
         expr = expr.__class__(*args)
@@ -980,7 +980,7 @@ def normalize(operation, expr):
 
     expr = rdistributive(expr)
     # Canonicalize
-    expr = expr.eval()
+    expr = expr.simplify()
     if isinstance(expr, operation):
         args = expr.args
     else:
@@ -1004,7 +1004,7 @@ PRECEDENCE = {
 }
 
 
-def parse(expr, eval=True):
+def parse(expr, simplify=True):
     """
     Returns a boolean expression created from the given string.
     """
@@ -1027,9 +1027,9 @@ def parse(expr, eval=True):
             if prec == op_prec:  # op=*, [ast, *, x] -> [ast, *, x]
                 return ast
             if ast[0] is None:  # op=+, [None, *, x, y] -> [None, +, x*y]
-                return [ast[0], operation, ast[1](*ast[2:], eval=eval)]
+                return [ast[0], operation, ast[1](*ast[2:], simplify=simplify)]
             else:  # op=+, [[ast, *, x], ~, y] -> [ast, *, x, ~y]
-                ast[0].append(ast[1](*ast[2:], eval=eval))
+                ast[0].append(ast[1](*ast[2:], simplify=simplify))
                 ast = ast[0]
 
     expr = expr.replace(" ", "")
@@ -1058,7 +1058,7 @@ def parse(expr, eval=True):
                     ast[0].append(ast[2])
                     ast = ast[0]
                     break
-                ast[0].append(ast[1](*ast[2:], eval=eval))
+                ast[0].append(ast[1](*ast[2:], simplify=simplify))
                 ast = ast[0]
         elif char == "~":
             ast = [ast, NOT]
@@ -1075,10 +1075,10 @@ def parse(expr, eval=True):
                 assert len(ast) == 3
                 expr = ast[2]
             else:
-                expr = ast[1](*ast[2:], eval=eval)
+                expr = ast[1](*ast[2:], simplify=simplify)
             break
         else:
-            ast[0].append(ast[1](*ast[2:], eval=eval))
+            ast[0].append(ast[1](*ast[2:], simplify=simplify))
             ast = ast[0]
     return expr
 
