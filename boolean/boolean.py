@@ -1008,61 +1008,73 @@ def symbols(*args):
     return tuple(Symbol(arg) for arg in args)
 
 
-PRECEDENCE = {
-    NOT: 5,
-    AND: 10,
-    OR: 15,
-    "(": 20,
+# Token objects for standard operators and parens
+TOKEN_AND = 1
+TOKEN_OR = 2
+TOKEN_NOT = 3
+TOKEN_LPAR = 4
+TOKEN_RPAR = 5
+
+# mapping of lowercase token strings to a token object instance for standard
+# operators, parens and common true or false symbols
+TOKENS = {
+    '*': TOKEN_AND,
+    '&': TOKEN_AND,
+    'and': TOKEN_AND,
+    '+': TOKEN_OR,
+    '|': TOKEN_OR,
+    'or': TOKEN_OR,
+    '~': TOKEN_NOT,
+    '!': TOKEN_NOT,
+    'not': TOKEN_NOT,
+    '(': TOKEN_LPAR,
+    ')': TOKEN_RPAR,
+    'true': TRUE,
+     '1': TRUE,
+     'false': FALSE,
+     '0': FALSE,
+     'none': FALSE
 }
 
-ANDS = ('*', '&', 'and')
-ORS = ('+', '|', 'or')
-NOTS = ('~', '!', 'not')
-PARENS = ('(', ')')
-OPS = ANDS + ORS + NOTS + PARENS
 
-TRUES = ('true', '1',)
-FALSES = ('false', '0', 'none')
-TRUES_AND_FALSES = TRUES + FALSES
-
-
-def tokenizer(expr):
+def tokenizer(expr, symbol_class=Symbol):
     """
-    Return an iterable of tokens as tuples of (is_symbol, token, start row,
-    start column) given an `expr` string.
+    Return an iterable of 4-tuple describing each tokens given an `expr` string.
+    This tuple contains (token, token string, row, column):
+    - token: either a Symbol or BaseElement instance or one of TOKENS values. 
+    - token string: the original token string
+    - row: int, starting row (aka line) of the original token string in `expr`
+    - col: int, starting column of the original token string in `expr`
 
-    The expr can span multiple lines and contain #comments using Python conventions.
-    Whitespace is not-significant.
+    Note that token string, row and col are used only for error reporting.
+
+    The `expr` string can span multiple lines and contain #comments using Python
+    conventions. Whitespace is not-significant.
 
     Raise TypeError or TokenError on errors.
 
-    In the returned tokens stream, `is_symbol` is True if the token is a symbol.
-    If `is_symbol` is False, the token must of an operation token or and 
-    opening '(' or closing parenthesis')'.
-
-    A symbol token is created for valid Python identifiers.
+    A symbol instance is created for valid Python identifiers.
     These are not identifiers:
     - dotted names : foo.bar consist of three tokens, not one.
     - names with colons: foo:bar consist of three tokens, not one
     - quoted strings.
     - any punctuation which is not an operation
 
-    Recognized operations tokens are (in any upper/lower case combinations):
+    Recognized operator are (in any upper/lower case combinations):
     - for and:  '*', '&', 'and'
     - for or: '+', '|', 'or'
     - for not: '~', '!', 'not'
 
-    Recognized special tokens are (in any upper/lower case combinations):
-    - Trueish values: 1 and True
-    - Falsih values: 0, False and None
+    Recognized special symbols are (in any upper/lower case combinations):
+    - True symbols: 1 and True
+    - False symbols: 0, False and None
 
-    
-    You can use this tokenizer function as a base to create more sophisticated
-    tokenizers for your algebra, for instance to return single tokens for dotted
-    names and quoted strings.
+    You can use this tokenizer as a base to create specialized custom tokenizers
+    for your algebra, for example to return Symbols for dotted names or quoted
+    strings.
     """
     if not isinstance(expr, basestring):
-        raise TypeError("Argument must be string but it is %s." % type(expr))
+        raise TypeError("expr must be string but it is %s." % type(expr))
 
     ignored_token_types = (
         tokenize.NL, tokenize.NEWLINE, tokenize.COMMENT,
@@ -1077,31 +1089,39 @@ def tokenizer(expr):
         if toktype in ignored_token_types or not tok.strip():
             continue
 
-        if tok.lower() in OPS:
-            is_symbol = False
-        elif toktype == tokenize.NAME or tok.lower() in TRUES_AND_FALSES:
-            is_symbol = True
+        std_token = TOKENS.get(tok.lower())
+        if std_token is not None:
+            yield std_token, tok, row, col
+
+        elif toktype == tokenize.NAME:
+            yield symbol_class(tok), tok, row, col
+
         else:
-            raise TypeError('Unknown token: %(tok)s at line: %(srow)d, column: %(scol)d' % locals())
-
-        yield is_symbol, tok, row, col
+            raise TypeError('Unknown token: %(tok)r at line: %(row)r, column: %(col)r' % locals())
 
 
-def parse(expr, simplify=True, symbol_class=Symbol, tokenizer=tokenizer):
+PRECEDENCE = {
+    NOT: 5,
+    AND: 10,
+    OR: 15,
+    TOKEN_LPAR: 20,
+}
+
+
+def parse(expr, simplify=True, symbol_class=Symbol):
     """
-    Return a boolean expression created from the given `expr` string or tokens
-    iterable.
+    Return a boolean expression parsed from the given `expr` string or iterable
+    of tokens.
 
-    Optionally simplify the expression if `simplify` is True.
-    If `expr` is a string, use the provided `tokenizer` for tokenization.
-  
-    If `expr` is an iterable, it should have the same semantics as the iterable
-    returned by the boolean.tokenizer function and contain tuples of:
-    (is_symbol, token, start row, start column). And symbol `tokens` can be
-    either a string or a Symbol instance.
-
-    Use the provided `symbol_class` Symbol class or or subclass to create
-    symbols from token strings.
+    Optionally simplify the expression if `simplify` is True. 
+    
+    If `expr` is a string, the standard `tokenizer` is used for tokenization and
+    the given `symbol_class` Symbol class or subclass is used to create symbol
+    instances from symbol token strings.
+ 
+    If `expr` is an iterable, it should contain 4-tuples of: (token, token
+    string, row, column). See the standard tokenizer boolean.tokenizer function
+    for details and example.
     """
 
     def start_operation(ast, operation):
@@ -1126,56 +1146,40 @@ def parse(expr, simplify=True, symbol_class=Symbol, tokenizer=tokenizer):
                 ast = ast[0]
 
     if isinstance(expr, str):
-        tokenized = tokenizer(expr)
+        tokenized = tokenizer(expr, symbol_class=symbol_class)
     else:
         tokenized = iter(expr)
 
     ast = [None, None]
-    for is_symbol, tok, row, col in tokenized:
-        if is_symbol:
-            if isinstance(tok, Symbol):
-                # if provided, reuse Symbol as-is
-                ast.append(tok)
-            elif isinstance(tok, basestring):
-                # build falsigh and trueish common symbols
-                if tok.lower() in TRUES:
-                    ast.append(TRUE)
-                elif tok.lower() in FALSES:
-                    ast.append(FALSE)
-                else:
-                    # otherwise create a symbol with the provided class arg
-                    ast.append(symbol_class(tok))
-            else:
-                raise TypeError('Invalid token type: %(tok)r at line: %(row)d, column: %(col)d: must be a string or a Symbol subclass.' % locals())
-        else:
-            if not isinstance(tok, basestring):
-                raise TypeError('Invalid operator token type: %(tok)r at line: %(row)d, column: %(col)d: must be a string.' % locals())
 
-            if tok.lower() in NOTS:
-                ast = [ast, NOT]
-            elif tok.lower() in ANDS:
-                ast = start_operation(ast, AND)
-            elif tok.lower() in ORS:
-                ast = start_operation(ast, OR)
-            elif tok == '(':
-                ast = [ast, '(']
-            elif tok == ')':
-                while True:
-                    if ast[0] is None:
-                        raise TypeError('Bad closing parenthesis at line: %(row)d, column: %(col)d' % locals())
-                    if ast[1] is '(':
-                        ast[0].append(ast[2])
-                        ast = ast[0]
-                        break
-                    ast[0].append(ast[1](*ast[2:], simplify=simplify))
+    for token, tokstr, row, col in tokenized:
+        if isinstance(token, Symbol) or token in (TRUE, FALSE,):
+            ast.append(token)
+        elif token == TOKEN_NOT:
+            ast = [ast, NOT]
+        elif token == TOKEN_AND:
+            ast = start_operation(ast, AND)
+        elif token == TOKEN_OR:
+            ast = start_operation(ast, OR)
+        elif token == TOKEN_LPAR:
+            ast = [ast, TOKEN_LPAR]
+        elif token == TOKEN_RPAR:
+            while True:
+                if ast[0] is None:
+                    raise TypeError('Bad closing parenthesis at line: %(row)d, column: %(col)d' % locals())
+                if ast[1] is TOKEN_LPAR:
+                    ast[0].append(ast[2])
                     ast = ast[0]
-            else:
-                raise TypeError('Unknown token: %(tok)s at line: %(row)d, column: %(col)d' % locals())
+                    break
+                ast[0].append(ast[1](*ast[2:], simplify=simplify))
+                ast = ast[0]
+        else:
+            raise TypeError('Unknown token: %(token)r: %(tokstr)r at line: %(row)r, column: %(col)r' % locals())
 
     while True:
         if ast[0] is None:
             if ast[1] is None:
-                assert len(ast) == 3
+                assert len(ast) == 3, 'Invalid boolean expression'
                 parsed = ast[2]
             else:
                 parsed = ast[1](*ast[2:], simplify=simplify)

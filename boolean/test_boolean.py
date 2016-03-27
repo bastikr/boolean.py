@@ -71,37 +71,50 @@ class ExpressionTestCase(unittest.TestCase):
         expected = OR(TRUE, FALSE, FALSE, FALSE, TRUE, TRUE, FALSE, FALSE, simplify=False)
         self.assertEqual(expected, expr)
 
-    def test_parse_can_use_alternative_tokenizer(self):
+    def test_parse_can_use_iterable_from_alternative_tokenizer(self):
 
         class CustomSymbol(boolean.Symbol):
             pass
 
         def tokenizer(s):
-            "Sample tokenizer using custom operators and custom Symbols"
-            cutsom_ops = {'WHY_NOT': 'or', 'ALSO': 'and', 'NEITHER': 'not'}
+            "Sample tokenizer using custom operators and symbols"
+            from boolean.boolean import (TOKEN_AND, TOKEN_OR, TOKEN_NOT, 
+                                         TOKEN_LPAR, TOKEN_RPAR)
+            ops = {
+                'WHY_NOT': TOKEN_OR,
+                'ALSO': TOKEN_AND,
+                'NEITHER': TOKEN_NOT,
+                '(': TOKEN_LPAR,
+                ')': TOKEN_RPAR,
+            }
+
             for row, line in enumerate(s.splitlines(False)):
                 for col, tok in enumerate(line.split()):
-                    if tok.lower() in ('and', 'or', 'not', '(', ')'):
-                        yield False, tok.lower(), row, col
-                    elif tok in cutsom_ops:
-                        yield False, cutsom_ops[tok], row, col
+                    if tok in ops:
+                        yield ops[tok], tok, row, col
                     elif tok == 'Custom':
-                        yield True, CustomSymbol(tok), row, col
+                        yield CustomSymbol(tok), tok, row, col
                     else:
-                        yield True, tok, row, col
+                        yield boolean.Symbol(tok), tok, row, col
 
-        class MySymbol(boolean.Symbol):
-            pass
-
-        expr_str = """( Custom OR regular ) ALSO ( 
-                      not_custom NEITHER standard )
+        expr_str = """( Custom WHY_NOT regular ) ALSO NEITHER  ( 
+                      not_custom ALSO standard )
                     """
-        expr = boolean.parse(expr_str, simplify=False, tokenizer=tokenizer, symbol_class=MySymbol)
+
+        tokenized = tokenizer(expr_str)
+        expr = boolean.parse(tokenized, simplify=False)
         expected = boolean.AND(
-                        boolean.OR(
-                            CustomSymbol('Custom'),
-                            MySymbol('regular')),
-                        MySymbol('not_custom'))
+            boolean.OR(
+                CustomSymbol('Custom'), 
+                boolean.Symbol('regular'),
+            simplify=False), 
+            boolean.NOT(
+                boolean.AND(
+                    boolean.Symbol('not_custom'), 
+                    boolean.Symbol('standard'),
+                simplify=False),
+            simplify=False),
+        simplify=False)
         self.assertEqual(expected, expr)
 
 
