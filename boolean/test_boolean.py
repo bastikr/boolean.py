@@ -181,8 +181,8 @@ class NOTTestCase(unittest.TestCase):
         self.assertTrue(~a == ~a)
         self.assertFalse(a == boolean.parse("~~a", simplify=False))
         self.assertTrue(a == ~~a)
-        self.assertTrue(~a, ~~~a)
-        self.assertTrue(a, ~~~~a)
+        self.assertTrue(~a == ~~~a)
+        self.assertTrue(a == ~~~~a)
         self.assertTrue(~(a * a * a) == ~(a * a * a))
 
     def test_cancel(self):
@@ -474,6 +474,17 @@ class BooleanAlgebraTestCase(unittest.TestCase):
         self.assertTrue(isinstance(a + b, Filter))
         self.assertEqual((a + b).simplify(), boolean.TRUE)
         self.assertEqual((a * b).simplify(), boolean.FALSE)
+
+
+class BooleanBoolTestCase(unittest.TestCase):
+
+    def test_bool(self):
+        a, b, c = boolean.symbols("a", "b", "c")
+        expr = a * b + c
+        self.assertRaises(TypeError, bool, expr.subs({a: boolean.TRUE}, simplify=False))
+        self.assertRaises(TypeError, bool, expr.subs({b: boolean.TRUE}, simplify=False))
+        self.assertTrue(expr.subs({c: boolean.TRUE}, simplify=False))
+        self.assertTrue(expr.subs({a: boolean.TRUE, b: boolean.TRUE}, simplify=False))
 
 
 if __name__ == "__main__":

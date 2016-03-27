@@ -263,6 +263,14 @@ class Expression(object):
 
     __add__ = __or__
 
+    def __bool__(self):
+        simplified = self.simplify()
+        if simplified is self:
+            raise TypeError("Cannot evaluate as boolean: %s" % simplified)
+        return bool(simplified)
+
+    __nonzero__ = __bool__
+
 
 class BaseElement(Expression):
     """
