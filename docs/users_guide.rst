@@ -146,20 +146,20 @@ Be aware that you can still have nested expressions:
     >>> print(((x+y)*z)+x*y)
     (x*y)+(z*(x+y))
 
-If this automatic evaluation is unwanted, the keyword *eval* can be used:
+If this automatic evaluation is unwanted, the keyword *simplify* can be used:
 
 .. doctest:: boolean
 
-    >>> print(AND(x, NOT(x), eval=False))
+    >>> print(AND(x, NOT(x), simplify=False))
     x*~x
 
-Since it can be very tedious to write *eval*\=\ :keyword:`False` and the
+Since it can be very tedious to write *simplify*\=\ :keyword:`False` and the
 class-names instead of the abbreviations * and + for every operation, it can
 be much easier to use the function *parse* instead:
 
 .. doctest:: boolean
 
-    >>> print(parse("x*~x", eval=False))
+    >>> print(parse("x*~x", simplify=False))
     x*~x
 
 
@@ -217,15 +217,15 @@ Here some examples of equal and unequal structures:
 
 .. doctest:: boolean
 
-    >>> expr1 = parse("x+y", eval=False)
-    >>> expr2 = parse("y+x", eval=False)
+    >>> expr1 = parse("x+y", simplify=False)
+    >>> expr2 = parse("y+x", simplify=False)
     >>> expr1 == expr2
     True
-    >>> expr = parse("x+~x", eval=False)
+    >>> expr = parse("x+~x", simplify=False)
     >>> expr == TRUE
     False
-    >>> expr1 = parse("x*(~x+y)", eval=False)
-    >>> expr2 = parse("x*y", eval=False)
+    >>> expr1 = parse("x*(~x+y)", simplify=False)
+    >>> expr2 = parse("x*y", simplify=False)
     >>> expr1 == expr2
     False
 
@@ -306,10 +306,10 @@ from::
             boolean.BooleanBase.__init__(self, bool_expr=bool_expr,
                                             bool_base=Filter)
 
-        def eval(self, *args, **kwargs):
+        def simplify(self, *args, **kwargs):
             subs_dict = {}
             for h in self.bool_expr.holders:
-                subs_dict[h.bool_expr] = h.eval(*args, **kwargs)
+                subs_dict[h.bool_expr] = h.simplify(*args, **kwargs)
             return self.bool_expr.subs(subs_dict)
 
 
