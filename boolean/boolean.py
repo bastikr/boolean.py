@@ -276,7 +276,7 @@ class BaseElement(Expression):
     _str = None
     _repr = None
 
-    def __new__(cls, arg=None, simplify=False):
+    def __new__(cls, arg=None, simplify=True):
         if arg is not None:
             if isinstance(arg, BaseElement):
                 return arg
@@ -379,10 +379,10 @@ class Symbol(Expression):
 
     _obj = None
 
-    def __new__(cls, obj=None, simplify=False):
+    def __new__(cls, obj=None, simplify=True):
         return object.__new__(cls)
 
-    def __init__(self, obj=None, simplify=False):
+    def __init__(self, obj=None, simplify=True):
         self._obj = obj
 
     @property
@@ -473,8 +473,9 @@ class Function(Expression):
     operator = None
 
     def __new__(cls, *args, **kwargs):
-        simplify = kwargs.pop("simplify", True)
-        assert len(kwargs) == 0
+        simplify = kwargs.pop('simplify', True)
+        if kwargs:
+            raise TypeError("Got an unexpected keyword argument %r" % kwargs.keys()[0])
         length = len(args)
         order = cls.order
         if simplify:
@@ -490,10 +491,11 @@ class Function(Expression):
         # will be called twice. First with the simplified then with original
         # arguments. The following "if" prevents that the simplified ones are
         # overwritten.
+        kwargs.pop('simplify', True)
+        if kwargs:
+            raise TypeError("Got an unexpected keyword argument %r" % kwargs.keys()[0])
         if self._args:
             return
-        simplify = kwargs.pop("simplify", True)
-        assert len(kwargs) == 0
         _args = [None] * len(args)
         # Make sure all arguments are boolean expressions.
         for i, arg in enumerate(args):
