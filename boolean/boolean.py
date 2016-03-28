@@ -264,10 +264,7 @@ class Expression(object):
     __add__ = __or__
 
     def __bool__(self):
-        simplified = self.simplify()
-        if simplified is self:
-            raise TypeError("Cannot evaluate as boolean: %s" % simplified)
-        return bool(simplified)
+        raise TypeError("Cannot evaluate expression as boolean, please simplify using simplify() or subs()")
 
     __nonzero__ = __bool__
 

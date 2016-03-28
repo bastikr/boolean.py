@@ -483,8 +483,10 @@ class BooleanBoolTestCase(unittest.TestCase):
         expr = a * b + c
         self.assertRaises(TypeError, bool, expr.subs({a: boolean.TRUE}, simplify=False))
         self.assertRaises(TypeError, bool, expr.subs({b: boolean.TRUE}, simplify=False))
-        self.assertTrue(expr.subs({c: boolean.TRUE}, simplify=False))
-        self.assertTrue(expr.subs({a: boolean.TRUE, b: boolean.TRUE}, simplify=False))
+        self.assertRaises(TypeError, bool, expr.subs({c: boolean.TRUE}, simplify=False))
+        self.assertRaises(TypeError, bool, expr.subs({a: boolean.TRUE, b: boolean.TRUE}, simplify=False))
+        self.assertTrue(expr.subs({c: boolean.TRUE}, simplify=True))
+        self.assertTrue(expr.subs({a: boolean.TRUE, b: boolean.TRUE}, simplify=True))
 
 
 if __name__ == "__main__":
