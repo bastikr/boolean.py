@@ -820,5 +820,18 @@ class BooleanBoolTestCase(unittest.TestCase):
         self.assertTrue(expr.subs({a: boolean.TRUE, b: boolean.TRUE}, simplify=True))
 
 
+class CustomSymbolTestCase(unittest.TestCase):
+
+    def test_custom_symbol(self):
+        class CustomSymbol(boolean.Symbol):
+            def __init__(self, name, value='value'):
+                self.var = value
+                super(CustomSymbol, self).__init__(name)
+        try:
+            CustomSymbol('a', value='This is A')
+        except TypeError as e:
+            self.fail(e)
+
+
 if __name__ == "__main__":
     unittest.main()
