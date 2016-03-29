@@ -116,11 +116,11 @@ class ExpressionTestCase(unittest.TestCase):
             for row, line in enumerate(s.splitlines(False)):
                 for col, tok in enumerate(line.split()):
                     if tok in ops:
-                        yield ops[tok], tok, row, col
+                        yield ops[tok], tok, (row, col)
                     elif tok == 'Custom':
-                        yield CustomSymbol(tok), tok, row, col
+                        yield CustomSymbol(tok), tok, (row, col)
                     else:
-                        yield boolean.Symbol(tok), tok, row, col
+                        yield boolean.Symbol(tok), tok, (row, col)
 
         expr_str = """( Custom WHY_NOT regular ) ALSO NEITHER  (
                       not_custom ALSO standard )
@@ -216,7 +216,7 @@ class ExpressionTestCase(unittest.TestCase):
                     # we reached a break point and should yield the current dotted
                     symbol = build_symbol(dotted)
                     if symbol is not None:
-                        yield symbol, dotted, srow, scol
+                        yield symbol, dotted, (srow, scol)
                         dotted, srow, scol = '', None, None
 
                     continue
@@ -226,10 +226,10 @@ class ExpressionTestCase(unittest.TestCase):
                     # we reached a break point and should yield the current dotted
                     symbol = build_symbol(dotted)
                     if symbol is not None:
-                        yield symbol, dotted, srow, scol
+                        yield symbol, dotted, (srow, scol)
                         dotted, srow, scol = '', 0, 0
 
-                    yield std_token, tok, row, col
+                    yield std_token, tok, (row, col)
 
                     continue
 

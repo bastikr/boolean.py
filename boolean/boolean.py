@@ -1048,19 +1048,28 @@ TOKENS = {
 
 def tokenizer(expr, symbol_class=Symbol):
     """
-    Return an iterable of 4-tuple describing each tokens given an `expr` string.
-    This tuple contains (token, token string, row, column):
+    A tokenizer is a callable that returns an iterable of 3-tuple describing
+    each token given an `expr` string.
+
+    This tuple must contain (token, token string, position):
     - token: either a Symbol or BaseElement instance or one of TOKENS values.
-    - token string: the original token string
-    - row: int, starting row (aka line) of the original token string in `expr`
-    - col: int, starting column of the original token string in `expr`
-
-    Note that token string, row and col are used only for error reporting.
-
-    The `expr` string can span multiple lines and contain #comments using Python
-    conventions. Whitespace is not-significant.
+    - token string: the original token string.
+    - position: some simple object describing the starting position of the
+      original token string in the `expr` string. It could be an int for a
+      character offset, or a tuple of starting (row/line, column).
+    Note that token string and position are used only for error reporting
+    and can be None or empty.
 
     Raise TypeError or TokenError on errors.
+
+    You can use this tokenizer as a base to create specialized custom tokenizers
+    for your algebra, for example to return Symbols for dotted names or quoted
+    strings.
+
+    In this tokenizer, the `expr` string can span multiple lines and contain
+    #comments using Python conventions. Whitespace is not-significant. The
+    position is a tuple of (start line, start column). It uses the Python
+    standard library `tokenize` module behind the scenes.
 
     A symbol instance is created for valid Python identifiers.
     These are not identifiers:
@@ -1078,9 +1087,6 @@ def tokenizer(expr, symbol_class=Symbol):
     - True symbols: 1 and True
     - False symbols: 0, False and None
 
-    You can use this tokenizer as a base to create specialized custom tokenizers
-    for your algebra, for example to return Symbols for dotted names or quoted
-    strings.
     """
     if not isinstance(expr, basestring):
         raise TypeError("expr must be string but it is %s." % type(expr))
@@ -1097,16 +1103,16 @@ def tokenizer(expr, symbol_class=Symbol):
     for toktype, tok, (row, col,), _, _ in tokens:
         if toktype in ignored_token_types or not tok.strip():
             continue
-
+        position = (row, col,)
         std_token = TOKENS.get(tok.lower())
         if std_token is not None:
-            yield std_token, tok, row, col
+            yield std_token, tok, position
 
         elif toktype == tokenize.NAME:
-            yield symbol_class(tok), tok, row, col
+            yield symbol_class(tok), tok, position
 
         else:
-            raise TypeError('Unknown token: %(tok)r at line: %(row)r, column: %(col)r' % locals())
+            raise TypeError('Unknown token: %(tok)r at position: %(position)r' % locals())
 
 
 PRECEDENCE = {
@@ -1128,9 +1134,8 @@ def parse(expr, simplify=True, symbol_class=Symbol):
     the given `symbol_class` Symbol class or subclass is used to create symbol
     instances from symbol token strings.
 
-    If `expr` is an iterable, it should contain 4-tuples of: (token, token
-    string, row, column). See the standard tokenizer boolean.tokenizer function
-    for details and example.
+    If `expr` is an iterable, it should contain 3-tuples of: (token, token
+    string, position). See the boolean.tokenizer function for details and example.
     """
 
     def start_operation(ast, operation):
@@ -1161,7 +1166,7 @@ def parse(expr, simplify=True, symbol_class=Symbol):
 
     ast = [None, None]
 
-    for token, tokstr, row, col in tokenized:
+    for token, tokstr, position in tokenized:
         if isinstance(token, Symbol) or token in (TRUE, FALSE,):
             ast.append(token)
         elif token == TOKEN_NOT:
@@ -1175,7 +1180,7 @@ def parse(expr, simplify=True, symbol_class=Symbol):
         elif token == TOKEN_RPAR:
             while True:
                 if ast[0] is None:
-                    raise TypeError('Bad closing parenthesis at line: %(row)d, column: %(col)d' % locals())
+                    raise TypeError('Bad closing parenthesis at position: %(position)r.' % locals())
                 if ast[1] is TOKEN_LPAR:
                     ast[0].append(ast[2])
                     ast = ast[0]
@@ -1183,7 +1188,7 @@ def parse(expr, simplify=True, symbol_class=Symbol):
                 ast[0].append(ast[1](*ast[2:], simplify=simplify))
                 ast = ast[0]
         else:
-            raise TypeError('Unknown token: %(token)r: %(tokstr)r at line: %(row)r, column: %(col)r' % locals())
+            raise TypeError('Unknown token: %(token)r: %(tokstr)r at position: %(position)r.' % locals())
 
     while True:
         if ast[0] is None:
