@@ -7,10 +7,25 @@ Copyright (c) 2009-2010 Sebastian Kraemer, basti.kr@gmail.com
 Released under revised BSD license.
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 
 import unittest
 from unittest.case import expectedFailure
+
+import tokenize
+
+try:
+    from io import StringIO
+except ImportError:
+    try:
+        from cStringIO import StringIO
+    except ImportError:
+        from StringIO import StringIO
+
+try:
+    basestring  # Python 2
+except NameError:
+    basestring = str  # Python 3
 
 import boolean
 
@@ -33,8 +48,8 @@ class ExpressionTestCase(unittest.TestCase):
         class MySymbol(boolean.Symbol):
             pass
 
-        expr_str = """(a or ~ b +_c  ) and #some comment 
-                      d & ( ! e_ 
+        expr_str = """(a or ~ b +_c  ) and #some comment
+                      d & ( ! e_
                       | (my * g OR 1 or 0) ) AND that """
 
         expr = boolean.parse(expr_str, simplify=False, symbol_class=MySymbol)
@@ -44,7 +59,8 @@ class ExpressionTestCase(unittest.TestCase):
                 MySymbol('a'),
                 boolean.NOT(boolean.Symbol('b')),
                 MySymbol('_c'),
-            simplify=False),
+                simplify=False
+            ),
             MySymbol('d'),
             boolean.OR(
                 boolean.NOT(MySymbol('e_')),
@@ -56,8 +72,10 @@ class ExpressionTestCase(unittest.TestCase):
                     ),
                     boolean.TRUE,
                     boolean.FALSE,
-                    simplify=False),
-                simplify=False),
+                    simplify=False
+                ),
+                simplify=False
+            ),
             MySymbol('that'),
             simplify=False
         )
@@ -67,8 +85,17 @@ class ExpressionTestCase(unittest.TestCase):
     def test_parse_recognizes_trueish_and_falsish_symbol_tokens(self):
         expr_str = 'True or False or None or 0 or 1 or TRue or FalSE or NONe'
         expr = boolean.parse(expr_str, simplify=False)
-        from boolean import OR, TRUE, FALSE
-        expected = OR(TRUE, FALSE, FALSE, FALSE, TRUE, TRUE, FALSE, FALSE, simplify=False)
+        expected = boolean.OR(
+            boolean.TRUE,
+            boolean.FALSE,
+            boolean.FALSE,
+            boolean.FALSE,
+            boolean.TRUE,
+            boolean.TRUE,
+            boolean.FALSE,
+            boolean.FALSE,
+            simplify=False
+        )
         self.assertEqual(expected, expr)
 
     def test_parse_can_use_iterable_from_alternative_tokenizer(self):
@@ -78,14 +105,12 @@ class ExpressionTestCase(unittest.TestCase):
 
         def tokenizer(s):
             "Sample tokenizer using custom operators and symbols"
-            from boolean.boolean import (TOKEN_AND, TOKEN_OR, TOKEN_NOT,
-                                         TOKEN_LPAR, TOKEN_RPAR)
             ops = {
-                'WHY_NOT': TOKEN_OR,
-                'ALSO': TOKEN_AND,
-                'NEITHER': TOKEN_NOT,
-                '(': TOKEN_LPAR,
-                ')': TOKEN_RPAR,
+                'WHY_NOT': boolean.TOKEN_OR,
+                'ALSO': boolean.TOKEN_AND,
+                'NEITHER': boolean.TOKEN_NOT,
+                '(': boolean.TOKEN_LPAR,
+                ')': boolean.TOKEN_RPAR,
             }
 
             for row, line in enumerate(s.splitlines(False)):
@@ -97,7 +122,7 @@ class ExpressionTestCase(unittest.TestCase):
                     else:
                         yield boolean.Symbol(tok), tok, row, col
 
-        expr_str = """( Custom WHY_NOT regular ) ALSO NEITHER  ( 
+        expr_str = """( Custom WHY_NOT regular ) ALSO NEITHER  (
                       not_custom ALSO standard )
                     """
 
@@ -107,16 +132,19 @@ class ExpressionTestCase(unittest.TestCase):
             boolean.OR(
                 CustomSymbol('Custom'),
                 boolean.Symbol('regular'),
-            simplify=False),
+                simplify=False
+            ),
             boolean.NOT(
                 boolean.AND(
                     boolean.Symbol('not_custom'),
                     boolean.Symbol('standard'),
-                simplify=False),
-            simplify=False),
-        simplify=False)
+                    simplify=False
+                ),
+                simplify=False
+            ),
+            simplify=False
+        )
         self.assertEqual(expected, expr)
-
 
     def test_parse_with_advanced_tokenizer_example(self):
 
@@ -133,7 +161,7 @@ class ExpressionTestCase(unittest.TestCase):
             and stored in a custom symbol. Also, in contrast with the standard
             tokenizer, only these boolean operators are recognized : & | ! and
             or not.
-            
+
             For more advanced tokenization you could also consider forking the
             `tokenize` standard library module.
             """
@@ -141,33 +169,22 @@ class ExpressionTestCase(unittest.TestCase):
             if not isinstance(expr, basestring):
                 raise TypeError("expr must be string but it is %s." % type(expr))
 
-            from collections import namedtuple
-            import tokenize
-
-            try:
-                from cStringIO import StringIO
-            except ImportError:
-                from StringIO import StringIO
-
-            from boolean.boolean import TOKEN_AND, TOKEN_OR, TOKEN_NOT, TOKEN_LPAR, TOKEN_RPAR
-            from boolean import TRUE, FALSE, Symbol
-
             # mapping of lowercase token strings to a token object instance for
             # standard operators, parens and common true or false symbols
             TOKENS = {
-                '&': TOKEN_AND,
-                'and': TOKEN_AND,
-                '|': TOKEN_OR,
-                'or': TOKEN_OR,
-                '!': TOKEN_NOT,
-                'not': TOKEN_NOT,
-                '(': TOKEN_LPAR,
-                ')': TOKEN_RPAR,
-                'true': TRUE,
-                 '1': TRUE,
-                 'false': FALSE,
-                 '0': FALSE,
-                 'none': FALSE
+                '&': boolean.TOKEN_AND,
+                'and': boolean.TOKEN_AND,
+                '|': boolean.TOKEN_OR,
+                'or': boolean.TOKEN_OR,
+                '!': boolean.TOKEN_NOT,
+                'not': boolean.TOKEN_NOT,
+                '(': boolean.TOKEN_LPAR,
+                ')': boolean.TOKEN_RPAR,
+                'true': boolean.TRUE,
+                '1': boolean.TRUE,
+                'false': boolean.FALSE,
+                '0': boolean.FALSE,
+                'none': boolean.FALSE,
             }
 
             ignored_token_types = (
@@ -198,7 +215,7 @@ class ExpressionTestCase(unittest.TestCase):
                 if toktype in ignored_token_types:
                     # we reached a break point and should yield the current dotted
                     symbol = build_symbol(dotted)
-                    if symbol:
+                    if symbol is not None:
                         yield symbol, dotted, srow, scol
                         dotted, srow, scol = '', None, None
 
@@ -208,7 +225,7 @@ class ExpressionTestCase(unittest.TestCase):
                 if std_token is not None:
                     # we reached a break point and should yield the current dotted
                     symbol = build_symbol(dotted)
-                    if symbol:
+                    if symbol is not None:
                         yield symbol, dotted, srow, scol
                         dotted, srow, scol = '', 0, 0
 
@@ -221,15 +238,14 @@ class ExpressionTestCase(unittest.TestCase):
                         srow = row
                         scol = col
                     dotted += tok
-                    
+
                 else:
                     raise TypeError('Unknown token: %(tok)r at line: %(row)r, column: %(col)r' % locals())
 
-
         test_expr = """
-        (colon1:dot1.dot2 or colon2_name:col_on3:do_t1.do_t2.do_t3 ) 
-        and
-        ( plain_symbol & !Custom )
+            (colon1:dot1.dot2 or colon2_name:col_on3:do_t1.do_t2.do_t3 )
+            and
+            ( plain_symbol & !Custom )
         """
 
         tokenized = advanced_tokenizer_example(test_expr)
@@ -237,13 +253,16 @@ class ExpressionTestCase(unittest.TestCase):
         expected = boolean.AND(
             boolean.OR(
                 ColonDotVar('colon1:dot1.dot2'),
-                ColonDotVar('colon2_name:col_on3:do_t1.do_t2.do_t3')
-            , simplify=False),
+                ColonDotVar('colon2_name:col_on3:do_t1.do_t2.do_t3'),
+                simplify=False
+            ),
             boolean.AND(
                 PlainVar('plain_symbol'),
-                boolean.NOT(PlainVar('Custom'))
-            , simplify=False)
-        , simplify=False)
+                boolean.NOT(PlainVar('Custom')),
+                simplify=False
+            ),
+            simplify=False
+        )
         self.assertEqual(expected, expr)
 
 
@@ -358,7 +377,7 @@ class SymbolTestCase(unittest.TestCase):
     def test_printing(self):
         self.assertTrue(str(boolean.Symbol("a")) == "a")
         self.assertTrue(str(boolean.Symbol(1)) == "1")
-        self.assertTrue(repr(boolean.Symbol("a")) == "Symbol('a')")
+        self.assertEqual(repr(boolean.Symbol("a")), "Symbol('a')")
         self.assertTrue(repr(boolean.Symbol(1)) == "Symbol(1)")
 
 
@@ -527,26 +546,27 @@ class DualBaseTestCase(unittest.TestCase):
         c = boolean.Symbol('c')
         d = boolean.Symbol('d')
 
-        test_expression = ("(~a*~b*~c*~d) + (~a*~b*~c*d) + (~a*b*~c*~d) +"
+        test_expression = ''.join(("(~a*~b*~c*~d) + (~a*~b*~c*d) + (~a*b*~c*~d) +"
                            "(~a*b*c*d) + (~a*b*~c*d) + (~a*b*c*~d) +"
-                           "(a*~b*~c*d) + (~a*b*c*d) + (a*~b*c*d) + (a*b*c*d)")
-        test_expression = ''.join(test_expression.split())
+                           "(a*~b*~c*d) + (~a*b*c*d) + (a*~b*c*d) + (a*b*c*d)").split())
+
+        expected = eval(test_expression, None, dict(a=a, b=b, c=c, d=d))
+        parsed = boolean.parse(test_expression, simplify=True)
 
         # FIXME: THIS SHOULD NOT FAIL
         # we have a different simplify behavior for expressions built from python expressions
         # vs. expression built from an object tree vs. expression built from a parse
-        expected = (~a * ~b * ~c * ~d) + (~a * ~b * ~c * d) + (~a * b * ~c * ~d) + (~a * b * c * d) + (~a * b * ~c * d) + (~a * b * c * ~d) + (a * ~b * ~c * d) + (~a * b * c * d) + (a * ~b * c * d) + (a * b * c * d)
-        self.assertEqual(str(expected), str(boolean.parse(test_expression, simplify=True)))
+        self.assertEqual(str(parsed), str(expected))
 
     def test_simplify_complex_expression(self):
         a = boolean.Symbol('a')
         b = boolean.Symbol('b')
         c = boolean.Symbol('c')
         d = boolean.Symbol('d')
-        test_expression = ("(~a*~b*~c*~d) + (~a*~b*~c*d) + (~a*b*~c*~d) +"
+
+        test_expression = ''.join(("(~a*~b*~c*~d) + (~a*~b*~c*d) + (~a*b*~c*~d) +"
                            "(~a*b*c*d) + (~a*b*~c*d) + (~a*b*c*~d) +"
-                           "(a*~b*~c*d) + (~a*b*c*d) + (a*~b*c*d) + (a*b*c*d)")
-        test_expression = ''.join(test_expression.split())
+                           "(a*~b*~c*d) + (~a*b*c*d) + (a*~b*c*d) + (a*b*c*d)").split())
 
         expected = (a * ~b * d) + (~a * b) + (~a * ~c) + (b * c * d)
         self.assertEqual(expected, boolean.parse(test_expression, simplify=True))
@@ -557,66 +577,65 @@ class DualBaseTestCase(unittest.TestCase):
         expected = '(a*~b*d)+(~a*b)+(~a*~c)+(b*c*d)'
         self.assertEqual(expected, str(boolean.parse(test_expression, simplify=True)))
 
-        from boolean import OR, AND, NOT, Symbol
-        expected = OR(
-            AND(
-                NOT(Symbol('a')),
-                NOT(Symbol('b')),
-                NOT(Symbol('c')),
-                NOT(Symbol('d'))
+        expected = boolean.OR(
+            boolean.AND(
+                boolean.NOT(boolean.Symbol('a')),
+                boolean.NOT(boolean.Symbol('b')),
+                boolean.NOT(boolean.Symbol('c')),
+                boolean.NOT(boolean.Symbol('d'))
             ),
-            AND(
-                NOT(Symbol('a')),
-                NOT(Symbol('b')),
-                NOT(Symbol('c')),
-                Symbol('d')
+            boolean.AND(
+                boolean.NOT(boolean.Symbol('a')),
+                boolean.NOT(boolean.Symbol('b')),
+                boolean.NOT(boolean.Symbol('c')),
+                boolean.Symbol('d')
             ),
-            AND(
-                NOT(Symbol('a')),
-                Symbol('b'),
-                NOT(Symbol('c')),
-                NOT(Symbol('d'))
+            boolean.AND(
+                boolean.NOT(boolean.Symbol('a')),
+                boolean.Symbol('b'),
+                boolean.NOT(boolean.Symbol('c')),
+                boolean.NOT(boolean.Symbol('d'))
             ),
-            AND(
-                NOT(Symbol('a')),
-                Symbol('b'),
-                Symbol('c'),
-                Symbol('d')),
-            AND(
-                NOT(Symbol('a')),
-                Symbol('b'),
-                NOT(Symbol('c')),
-                Symbol('d')
+            boolean.AND(
+                boolean.NOT(boolean.Symbol('a')),
+                boolean.Symbol('b'),
+                boolean.Symbol('c'),
+                boolean.Symbol('d')),
+            boolean.AND(
+                boolean.NOT(boolean.Symbol('a')),
+                boolean.Symbol('b'),
+                boolean.NOT(boolean.Symbol('c')),
+                boolean.Symbol('d')
             ),
-            AND(
-                NOT(Symbol('a')),
-                Symbol('b'),
-                Symbol('c'),
-                NOT(Symbol('d'))
+            boolean.AND(
+                boolean.NOT(boolean.Symbol('a')),
+                boolean.Symbol('b'),
+                boolean.Symbol('c'),
+                boolean.NOT(boolean.Symbol('d'))
             ),
-            AND(
-                Symbol('a'),
-                NOT(Symbol('b')),
-                NOT(Symbol('c')),
-                Symbol('d')
+            boolean.AND(
+                boolean.Symbol('a'),
+                boolean.NOT(boolean.Symbol('b')),
+                boolean.NOT(boolean.Symbol('c')),
+                boolean.Symbol('d')
             ),
-            AND(
-                NOT(Symbol('a')),
-                Symbol('b'),
-                Symbol('c'),
-                Symbol('d')
+            boolean.AND(
+                boolean.NOT(boolean.Symbol('a')),
+                boolean.Symbol('b'),
+                boolean.Symbol('c'),
+                boolean.Symbol('d')
             ),
-            AND(
-                Symbol('a'),
-                NOT(Symbol('b')),
-                Symbol('c'),
-                Symbol('d')
+            boolean.AND(
+                boolean.Symbol('a'),
+                boolean.NOT(boolean.Symbol('b')),
+                boolean.Symbol('c'),
+                boolean.Symbol('d')
             ),
-            AND(
-                Symbol('a'),
-                Symbol('b'),
-                Symbol('c'),
-                Symbol('d')
+            boolean.AND(
+                boolean.Symbol('a'),
+                boolean.Symbol('b'),
+                boolean.Symbol('c'),
+                boolean.Symbol('d')
             )
         )
 
