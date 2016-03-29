@@ -394,7 +394,7 @@ class Symbol(Expression):
 
     _obj = None
 
-    def __new__(cls, obj=None, simplify=True):
+    def __new__(cls, *args, **kwargs):
         return object.__new__(cls)
 
     def __init__(self, obj=None, simplify=True):
