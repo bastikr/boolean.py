@@ -11,9 +11,15 @@ Released under revised BSD license.
 """
 
 from __future__ import absolute_import
+from __future__ import unicode_literals
 
 import itertools
 import collections
+import tokenize
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
 
 try:
     basestring  # Python 2
@@ -1007,33 +1013,121 @@ def symbols(*args):
     return tuple(Symbol(arg) for arg in args)
 
 
+# Token objects for standard operators and parens
+TOKEN_AND = 1
+TOKEN_OR = 2
+TOKEN_NOT = 3
+TOKEN_LPAR = 4
+TOKEN_RPAR = 5
+
+# mapping of lowercase token strings to a token object instance for standard
+# operators, parens and common true or false symbols
+TOKENS = {
+    '*': TOKEN_AND,
+    '&': TOKEN_AND,
+    'and': TOKEN_AND,
+    '+': TOKEN_OR,
+    '|': TOKEN_OR,
+    'or': TOKEN_OR,
+    '~': TOKEN_NOT,
+    '!': TOKEN_NOT,
+    'not': TOKEN_NOT,
+    '(': TOKEN_LPAR,
+    ')': TOKEN_RPAR,
+    'true': TRUE,
+     '1': TRUE,
+     'false': FALSE,
+     '0': FALSE,
+     'none': FALSE
+}
+
+
+def tokenizer(expr, symbol_class=Symbol):
+    """
+    Return an iterable of 4-tuple describing each tokens given an `expr` string.
+    This tuple contains (token, token string, row, column):
+    - token: either a Symbol or BaseElement instance or one of TOKENS values. 
+    - token string: the original token string
+    - row: int, starting row (aka line) of the original token string in `expr`
+    - col: int, starting column of the original token string in `expr`
+
+    Note that token string, row and col are used only for error reporting.
+
+    The `expr` string can span multiple lines and contain #comments using Python
+    conventions. Whitespace is not-significant.
+
+    Raise TypeError or TokenError on errors.
+
+    A symbol instance is created for valid Python identifiers.
+    These are not identifiers:
+    - dotted names : foo.bar consist of three tokens, not one.
+    - names with colons: foo:bar consist of three tokens, not one
+    - quoted strings.
+    - any punctuation which is not an operation
+
+    Recognized operator are (in any upper/lower case combinations):
+    - for and:  '*', '&', 'and'
+    - for or: '+', '|', 'or'
+    - for not: '~', '!', 'not'
+
+    Recognized special symbols are (in any upper/lower case combinations):
+    - True symbols: 1 and True
+    - False symbols: 0, False and None
+
+    You can use this tokenizer as a base to create specialized custom tokenizers
+    for your algebra, for example to return Symbols for dotted names or quoted
+    strings.
+    """
+    if not isinstance(expr, basestring):
+        raise TypeError("expr must be string but it is %s." % type(expr))
+
+    ignored_token_types = (
+        tokenize.NL, tokenize.NEWLINE, tokenize.COMMENT,
+        tokenize.INDENT, tokenize.DEDENT,
+        tokenize.ENDMARKER
+    )
+
+    # note: an unbalanced expression may raise a TokenError here.
+    tokens = tokenize.generate_tokens(StringIO(expr).readline)
+
+    for toktype, tok, (row, col,), _, _ in tokens:
+        if toktype in ignored_token_types or not tok.strip():
+            continue
+
+        std_token = TOKENS.get(tok.lower())
+        if std_token is not None:
+            yield std_token, tok, row, col
+
+        elif toktype == tokenize.NAME:
+            yield symbol_class(tok), tok, row, col
+
+        else:
+            raise TypeError('Unknown token: %(tok)r at line: %(row)r, column: %(col)r' % locals())
+
+
 PRECEDENCE = {
     NOT: 5,
     AND: 10,
     OR: 15,
-    "(": 20,
+    TOKEN_LPAR: 20,
 }
 
 
-def issymbolchar(char, pos):
+def parse(expr, simplify=True, symbol_class=Symbol):
     """
-    Determines if the passed character is a valid symbol character.
-    """
-    if pos == 0:
-        return char.isalpha() or char == "_"
-    else:
-        return char.isalnum() or char in (".", ":", "_")
+    Return a boolean expression parsed from the given `expr` string or iterable
+    of tokens.
 
-
-def parse(expr, simplify=True, symbol_class=None, issymbolchar=issymbolchar):
+    Optionally simplify the expression if `simplify` is True. 
+    
+    If `expr` is a string, the standard `tokenizer` is used for tokenization and
+    the given `symbol_class` Symbol class or subclass is used to create symbol
+    instances from symbol token strings.
+ 
+    If `expr` is an iterable, it should contain 4-tuples of: (token, token
+    string, row, column). See the standard tokenizer boolean.tokenizer function
+    for details and example.
     """
-    Returns a boolean expression created from the given string.
-    """
-    if not isinstance(expr, basestring):
-        raise TypeError("Argument must be string but it is %s." % type(expr))
-
-    if symbol_class is None:
-        symbol_class = Symbol
 
     def start_operation(ast, operation):
         """
@@ -1056,55 +1150,49 @@ def parse(expr, simplify=True, symbol_class=None, issymbolchar=issymbolchar):
                 ast[0].append(ast[1](*ast[2:], simplify=simplify))
                 ast = ast[0]
 
-    expr = expr.replace(" ", "")
-    length = len(expr)
+    if isinstance(expr, str):
+        tokenized = tokenizer(expr, symbol_class=symbol_class)
+    else:
+        tokenized = iter(expr)
+
     ast = [None, None]
-    i = 0
-    while i < length:
-        char = expr[i]
-        if char == "1":
-            ast.append(TRUE)
-        elif char == "0":
-            ast.append(FALSE)
-        elif issymbolchar(char, 0):
-            j = 1
-            while i + j < length and issymbolchar(expr[i + j], j):
-                j += 1
-            ast.append(symbol_class(expr[i:i + j]))
-            i += j - 1
-        elif char == "(":
-            ast = [ast, "("]
-        elif char == ")":
+
+    for token, tokstr, row, col in tokenized:
+        if isinstance(token, Symbol) or token in (TRUE, FALSE,):
+            ast.append(token)
+        elif token == TOKEN_NOT:
+            ast = [ast, NOT]
+        elif token == TOKEN_AND:
+            ast = start_operation(ast, AND)
+        elif token == TOKEN_OR:
+            ast = start_operation(ast, OR)
+        elif token == TOKEN_LPAR:
+            ast = [ast, TOKEN_LPAR]
+        elif token == TOKEN_RPAR:
             while True:
                 if ast[0] is None:
-                    raise TypeError("Bad closing bracket at position %s." % i)
-                if ast[1] is "(":
+                    raise TypeError('Bad closing parenthesis at line: %(row)d, column: %(col)d' % locals())
+                if ast[1] is TOKEN_LPAR:
                     ast[0].append(ast[2])
                     ast = ast[0]
                     break
                 ast[0].append(ast[1](*ast[2:], simplify=simplify))
                 ast = ast[0]
-        elif char in ("~", "!"):
-            ast = [ast, NOT]
-        elif char in ("&", "*"):
-            ast = start_operation(ast, AND)
-        elif char in ("|", "+"):
-            ast = start_operation(ast, OR)
         else:
-            raise TypeError("Unknown character %s at position %s." % (char, i))
-        i += 1
+            raise TypeError('Unknown token: %(token)r: %(tokstr)r at line: %(row)r, column: %(col)r' % locals())
+
     while True:
         if ast[0] is None:
             if ast[1] is None:
-                assert len(ast) == 3
-                expr = ast[2]
+                assert len(ast) == 3, 'Invalid boolean expression'
+                parsed = ast[2]
             else:
-                expr = ast[1](*ast[2:], simplify=simplify)
+                parsed = ast[1](*ast[2:], simplify=simplify)
             break
         else:
             ast[0].append(ast[1](*ast[2:], simplify=simplify))
             ast = ast[0]
-    return expr
+    return parsed
 
 
 class BooleanAlgebra(object):
