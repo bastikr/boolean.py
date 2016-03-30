@@ -16,10 +16,14 @@ from __future__ import unicode_literals
 import itertools
 import collections
 import tokenize
+
 try:
-    from cStringIO import StringIO
+    from io import StringIO
 except ImportError:
-    from StringIO import StringIO
+    try:
+        from cStringIO import StringIO
+    except ImportError:
+        from StringIO import StringIO
 
 try:
     basestring  # Python 2
@@ -390,7 +394,7 @@ class Symbol(Expression):
 
     _obj = None
 
-    def __new__(cls, obj=None, simplify=True):
+    def __new__(cls, *args, **kwargs):
         return object.__new__(cls)
 
     def __init__(self, obj=None, simplify=True):
@@ -456,13 +460,13 @@ class Symbol(Expression):
 
     def __str__(self):
         if self.obj is None:
-            return "S<%s>" % str(hash(self))
+            return "S<%s>" % hash(self)
         else:
             return str(self.obj)
 
     def __repr__(self):
         if self.obj is not None:
-            obj = repr(self.obj)
+            obj = "'%s'" % self.obj if isinstance(self.obj, basestring) else repr(self.obj)
         else:
             obj = hash(self)
         return "%s(%s)" % (self.__class__.__name__, obj)
@@ -529,11 +533,11 @@ class Function(Expression):
                                ", ".join(str(arg) for arg in args))
         elif len(args) == 1:
             if self.isliteral:
-                return self.operator + str(args[0])
+                return "%s%s" % (self.operator, args[0])
             else:
-                return "%s(%s)" % (self.operator, str(args[0]))
+                return "%s(%s)" % (self.operator, args[0])
         else:
-            args = (str(arg) if arg.isliteral else "(%s)" % arg for arg in args)
+            args = ("%s" % arg if arg.isliteral else "(%s)" % arg for arg in args)
             return self.operator.join(args)
 
     def __repr__(self):
@@ -1035,10 +1039,10 @@ TOKENS = {
     '(': TOKEN_LPAR,
     ')': TOKEN_RPAR,
     'true': TRUE,
-     '1': TRUE,
-     'false': FALSE,
-     '0': FALSE,
-     'none': FALSE
+    '1': TRUE,
+    'false': FALSE,
+    '0': FALSE,
+    'none': FALSE
 }
 
 
@@ -1046,7 +1050,7 @@ def tokenizer(expr, symbol_class=Symbol):
     """
     Return an iterable of 4-tuple describing each tokens given an `expr` string.
     This tuple contains (token, token string, row, column):
-    - token: either a Symbol or BaseElement instance or one of TOKENS values. 
+    - token: either a Symbol or BaseElement instance or one of TOKENS values.
     - token string: the original token string
     - row: int, starting row (aka line) of the original token string in `expr`
     - col: int, starting column of the original token string in `expr`
@@ -1118,12 +1122,12 @@ def parse(expr, simplify=True, symbol_class=Symbol):
     Return a boolean expression parsed from the given `expr` string or iterable
     of tokens.
 
-    Optionally simplify the expression if `simplify` is True. 
-    
+    Optionally simplify the expression if `simplify` is True.
+
     If `expr` is a string, the standard `tokenizer` is used for tokenization and
     the given `symbol_class` Symbol class or subclass is used to create symbol
     instances from symbol token strings.
- 
+
     If `expr` is an iterable, it should contain 4-tuples of: (token, token
     string, row, column). See the standard tokenizer boolean.tokenizer function
     for details and example.
@@ -1150,7 +1154,7 @@ def parse(expr, simplify=True, symbol_class=Symbol):
                 ast[0].append(ast[1](*ast[2:], simplify=simplify))
                 ast = ast[0]
 
-    if isinstance(expr, str):
+    if isinstance(expr, basestring):
         tokenized = tokenizer(expr, symbol_class=symbol_class)
     else:
         tokenized = iter(expr)
