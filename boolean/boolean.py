@@ -1100,10 +1100,10 @@ def tokenizer(expr, symbol_class=Symbol):
 
         std_token = TOKENS.get(tok.lower())
         if std_token is not None:
-            yield std_token, tok, row, col
+            yield std_token, tok, (row, col)
 
         elif toktype == tokenize.NAME:
-            yield symbol_class(tok), tok, row, col
+            yield symbol_class(tok), tok, (row, col)
 
         else:
             raise TypeError('Unknown token: %(tok)r at line: %(row)r, column: %(col)r' % locals())
@@ -1161,7 +1161,7 @@ def parse(expr, simplify=True, symbol_class=Symbol):
 
     ast = [None, None]
 
-    for token, tokstr, row, col in tokenized:
+    for token, tokstr, position in tokenized:
         if isinstance(token, Symbol) or token in (TRUE, FALSE,):
             ast.append(token)
         elif token == TOKEN_NOT:
@@ -1175,7 +1175,11 @@ def parse(expr, simplify=True, symbol_class=Symbol):
         elif token == TOKEN_RPAR:
             while True:
                 if ast[0] is None:
-                    raise TypeError('Bad closing parenthesis at line: %(row)d, column: %(col)d' % locals())
+                    if isinstance(position, tuple):
+                        row, col = position
+                        raise TypeError('Bad closing parenthesis at line: %(row)d, column: %(col)d' % locals())
+                    else:
+                        raise TypeError('Bad closing parenthesis at position: %(position)d' % locals())
                 if ast[1] is TOKEN_LPAR:
                     ast[0].append(ast[2])
                     ast = ast[0]
@@ -1183,7 +1187,11 @@ def parse(expr, simplify=True, symbol_class=Symbol):
                 ast[0].append(ast[1](*ast[2:], simplify=simplify))
                 ast = ast[0]
         else:
-            raise TypeError('Unknown token: %(token)r: %(tokstr)r at line: %(row)r, column: %(col)r' % locals())
+            if isinstance(position, tuple):
+                row, col = position
+                raise TypeError('Unknown token: %(token)r: %(tokstr)r at line: %(row)d, column: %(col)d' % locals())
+            else:
+                raise TypeError('Unknown token: %(token)r: %(tokstr)r at position: %(position)d' % locals())
 
     while True:
         if ast[0] is None:
