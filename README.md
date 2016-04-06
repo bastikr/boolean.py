@@ -5,8 +5,29 @@ boolean.py
 defines two base elements, TRUE and FALSE, and a class Symbol which can take
 on one of these two values. Calculations are done in terms of AND, OR and
 NOT - other compositions like XOR and NAND are not implemented.
+Expressions are constructed from parsed strings or in Python.
+
 It runs on Python 2.7 and Python 3.
 
+https://github.com/bastikr/boolean.py
+
+Example
+-------
+```
+    >>> import boolean
+    >>> expression1 = boolean.parse(u'apple and (oranges or banana) and not banana', simplify=False)
+    >>> expression1
+    AND(Symbol('apple'), OR(Symbol('oranges'), Symbol('banana')), NOT(Symbol('banana')))
+
+    >>> expression2 = boolean.parse(u'(oranges | banana) and not banana & apple', simplify=True)
+    >>> expression2
+    AND(Symbol('apple'), NOT(Symbol('banana')), Symbol('oranges'))
+
+    >>> expression1 == expression2
+    False
+    >>> expression1.simplify() == expression2
+    True    
+```
 
 Documentation
 -------------
@@ -16,16 +37,7 @@ http://readthedocs.org/docs/booleanpy/en/latest/
 
 Download and installation
 -------------------------
-
-boolean.py is not yet in Pypi.
-
-Locally from a checkout or download::
-    git clone git://github.com/bastikr/boolean.py.git
-    cd boolean.py
-    pip install .
-
-Remotely::
-    pip install https://github.com/bastikr/boolean.py/archive/master.zip
+    pip install boolean.py
 
 
 License

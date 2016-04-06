@@ -6,20 +6,27 @@ from setuptools import find_packages
 from setuptools import setup
 
 
-long_desc = ''' Boolean Algebra.
-This module defines a Boolean Algebra over the set {TRUE, FALSE} with boolean
-variables and the boolean functions AND, OR, NOT. For extensive documentation
-look either into the docs directory or view it online, at
+long_desc = '''
+This library helps you deal with boolean expressions and algebra with variables
+and the boolean functions AND, OR, NOT.
+
+You can parse expressions from strings and simplify and compare expressions.
+You can also easily create custom tokenizers to handle custom expressions.  
+
+For extensive documentation look either into the docs directory or view it online, at
 https://booleanpy.readthedocs.org/en/latest/
+
 https://github.com/bastikr/boolean.py
-Copyright (c) 2009-2010 Sebastian Kraemer, basti.kr@gmail.com
+
+Copyright (c) 2009-2016 Sebastian Kraemer, basti.kr@gmail.com and others
+
 Released under revised BSD license.
 '''
 
 
 setup(
     name='boolean.py',
-    version='1.1',
+    version='1.2',
     license='revised BSD license',
     description='Boolean Algreba',
     long_description=long_desc,
