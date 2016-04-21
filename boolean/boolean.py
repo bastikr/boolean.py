@@ -30,17 +30,16 @@ try:
 except NameError:
     basestring = str  # Python 3
 
+
 # A boolean algebra is defined by its base elements (=domain), its operations
 # (in this case only NOT, AND and OR) and an additional "symbol" type.
-Algebra = collections.namedtuple("Algebra",
-                                 ("domain", "operations", "symbol"))
+Algebra = collections.namedtuple('Algebra', ('domain', 'operations', 'symbol'))
 
 # Defines the two base elements TRUE and FALSE for the algebra.
-BooleanDomain = collections.namedtuple("BooleanDomain", ("TRUE", "FALSE"))
+BooleanDomain = collections.namedtuple('BooleanDomain', ('TRUE', 'FALSE'))
 
 # Defines the basic boolean operations NOT, AND and OR.
-BooleanOperations = collections.namedtuple("BooleanOperations",
-                                           ("NOT", "AND", "OR"))
+BooleanOperations = collections.namedtuple('BooleanOperations', ('NOT', 'AND', 'OR'))
 
 
 class Expression(object):
@@ -71,7 +70,7 @@ class Expression(object):
             return cls.algebra.domain.FALSE
         elif arg in (1, True):
             return cls.algebra.domain.TRUE
-        raise TypeError("Wrong argument for Expression.")
+        raise TypeError('Wrong argument for Expression.')
 
     @property
     def args(self):
@@ -274,7 +273,7 @@ class Expression(object):
     __add__ = __or__
 
     def __bool__(self):
-        raise TypeError("Cannot evaluate expression as boolean, please simplify using simplify() or subs()")
+        raise TypeError('Cannot evaluate expression as boolean, please simplify using simplify() or subs()')
 
     __nonzero__ = __bool__
 
@@ -300,7 +299,7 @@ class BaseElement(Expression):
             elif arg in (1, True):
                 return cls.algebra.domain.TRUE
             else:
-                raise TypeError("Bad argument: %s" % arg)
+                raise TypeError('Bad argument: %s' % arg)
         elif cls is BaseElement:
             raise TypeError("BaseElement can't be created without argument.")
         if cls.algebra is None:
@@ -310,8 +309,7 @@ class BaseElement(Expression):
         elif isinstance(cls.algebra.domain.FALSE, cls):
             return cls.algebra.domain.FALSE
         else:
-            raise TypeError("BaseElement can only create objects in the\
-                             current domain.")
+            raise TypeError('BaseElement can only create objects in the current domain.')
 
     @property
     def dual(self):
@@ -327,7 +325,7 @@ class BaseElement(Expression):
         elif self is domain.FALSE:
             return domain.TRUE
         else:
-            raise AttributeError("Class should be TRUE or FALSE but is %s." % self.cls.__name__)
+            raise AttributeError('Class should be TRUE or FALSE but is %s.' % self.cls.__name__)
 
     def __lt__(self, other):
         cmp = Expression.__lt__(self, other)
@@ -354,8 +352,8 @@ class _TRUE(BaseElement):
 
     This is one of the two elements of the boolean algebra.
     """
-    _str = "1"
-    _repr = "TRUE"
+    _str = '1'
+    _repr = 'TRUE'
 
     __nonzero__ = __bool__ = lambda s: True
 
@@ -366,8 +364,8 @@ class _FALSE(BaseElement):
 
     This is one of the two elements of the boolean algebra.
     """
-    _str = "0"
-    _repr = "FALSE"
+    _str = '0'
+    _repr = 'FALSE'
 
     __nonzero__ = __bool__ = lambda s: False
 
@@ -460,7 +458,7 @@ class Symbol(Expression):
 
     def __str__(self):
         if self.obj is None:
-            return "S<%s>" % hash(self)
+            return 'S<%s>' % hash(self)
         else:
             return str(self.obj)
 
@@ -469,7 +467,7 @@ class Symbol(Expression):
             obj = "'%s'" % self.obj if isinstance(self.obj, basestring) else repr(self.obj)
         else:
             obj = hash(self)
-        return "%s(%s)" % (self.__class__.__name__, obj)
+        return '%s(%s)' % (self.__class__.__name__, obj)
 
 
 class Function(Expression):
@@ -482,7 +480,7 @@ class Function(Expression):
     """
     # Specifies how many arguments a function takes. the first number gives a
     # lower limit, the second an upper limit.
-    order = (2, float("inf"))
+    order = (2, float('inf'))
 
     # Specifies an infix notation of an operator for printing.
     operator = None
@@ -490,25 +488,25 @@ class Function(Expression):
     def __new__(cls, *args, **kwargs):
         simplify = kwargs.pop('simplify', True)
         if kwargs:
-            raise TypeError("Got an unexpected keyword argument %r" % kwargs.keys()[0])
+            raise TypeError('Got an unexpected keyword argument %r' % kwargs.keys()[0])
         length = len(args)
         order = cls.order
         if simplify:
             return cls(*args, simplify=False).simplify()
         if order[0] > length:
-            raise TypeError("Too few arguments. Got %s, but need at least %s." % (length, order[0]))
+            raise TypeError('Too few arguments. Got %s, but need at least %s.' % (length, order[0]))
         if order[1] < length:
-            raise TypeError("Too many arguments. Got %s, but need at most %s." % (length, order[1]))
+            raise TypeError('Too many arguments. Got %s, but need at most %s.' % (length, order[1]))
         return object.__new__(cls)
 
     def __init__(self, *args, **kwargs):
         # If a function in the __new__ method is evaluated the __init__ method
         # will be called twice. First with the simplified then with original
-        # arguments. The following "if" prevents that the simplified ones are
+        # arguments. The following 'if' prevents that the simplified ones are
         # overwritten.
         kwargs.pop('simplify', True)
         if kwargs:
-            raise TypeError("Got an unexpected keyword argument %r" % kwargs.keys()[0])
+            raise TypeError('Got an unexpected keyword argument %r' % kwargs.keys()[0])
         if self._args:
             return
         _args = [None] * len(args)
@@ -523,26 +521,24 @@ class Function(Expression):
             elif arg in (1, True):
                 _args[i] = TRUE
             else:
-                raise TypeError("Bad argument: %s" % arg)
+                raise TypeError('Bad argument: %s' % arg)
         self._args = tuple(_args)
 
     def __str__(self):
         args = self.args
         if self.operator is None:
-            return "%s(%s)" % (self.__class__.__name__,
-                               ", ".join(str(arg) for arg in args))
+            return '%s(%s)' % (self.__class__.__name__, ', '.join(str(arg) for arg in args))
         elif len(args) == 1:
             if self.isliteral:
-                return "%s%s" % (self.operator, args[0])
+                return '%s%s' % (self.operator, args[0])
             else:
-                return "%s(%s)" % (self.operator, args[0])
+                return '%s(%s)' % (self.operator, args[0])
         else:
-            args = ("%s" % arg if arg.isliteral else "(%s)" % arg for arg in args)
+            args = ('%s' % arg if arg.isliteral else '(%s)' % arg for arg in args)
             return self.operator.join(args)
 
     def __repr__(self):
-        return "%s(%s)" % (self.__class__.__name__,
-                           ", ".join(repr(arg) for arg in self.args))
+        return '%s(%s)' % (self.__class__.__name__, ', '.join(repr(arg) for arg in self.args))
 
 
 class NOT(Function):
@@ -556,7 +552,7 @@ class NOT(Function):
     printing "~" is used for better readability.
     """
     order = (1, 1)
-    operator = "~"
+    operator = '~'
 
     @property
     def isliteral(self):
@@ -592,8 +588,7 @@ class NOT(Function):
         elif term.args[0] in self.algebra.domain:
             return term.args[0].dual
         else:
-            expr = self.__class__(term.args[0].simplify(),
-                                  simplify=False)
+            expr = self.__class__(term.args[0].simplify(), simplify=False)
             expr._iscanonical = True
             return expr
 
@@ -619,8 +614,7 @@ class NOT(Function):
         This is achieved by canceling double NOTs and using De Morgan laws.
         """
         term = self.cancel()
-        if term.isliteral or\
-                not isinstance(term.args[0], self.algebra.operations):
+        if term.isliteral or not isinstance(term.args[0], self.algebra.operations):
             return term
         op = term.args[0]
         return op.dual(*tuple(self.__class__(arg, simplify=False).cancel() for arg in op.args), simplify=False)
@@ -949,7 +943,7 @@ class AND(DualBase):
     """
     _cls_order = 10
     _identity = True
-    operator = "*"
+    operator = '*'
 
 
 class OR(DualBase):
@@ -961,7 +955,7 @@ class OR(DualBase):
     """
     _cls_order = 25
     _identity = False
-    operator = "+"
+    operator = '+'
 
 
 # Create a default algebra.
@@ -1089,7 +1083,7 @@ def tokenizer(expr, symbol_class=Symbol):
 
     """
     if not isinstance(expr, basestring):
-        raise TypeError("expr must be string but it is %s." % type(expr))
+        raise TypeError('expr must be string but it is %s.' % type(expr))
 
     ignored_token_types = (
         tokenize.NL, tokenize.NEWLINE, tokenize.COMMENT,
