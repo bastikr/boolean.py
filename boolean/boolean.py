@@ -15,7 +15,6 @@ from __future__ import unicode_literals
 
 import itertools
 import collections
-import tokenize
 
 try:
     from io import StringIO
@@ -23,7 +22,7 @@ except ImportError:
     try:
         from cStringIO import StringIO
     except ImportError:
-        from StringIO import StringIO
+        from StringIO import StringIO  # NOQA
 
 try:
     basestring  # Python 2
@@ -997,19 +996,21 @@ TOKENS = {
     '*': TOKEN_AND,
     '&': TOKEN_AND,
     'and': TOKEN_AND,
-    '+': TOKEN_OR,
     '|': TOKEN_OR,
+    '+': TOKEN_OR,
     'or': TOKEN_OR,
     '~': TOKEN_NOT,
     '!': TOKEN_NOT,
     'not': TOKEN_NOT,
     '(': TOKEN_LPAR,
+    '[': TOKEN_LPAR,
+    ']': TOKEN_RPAR,
     ')': TOKEN_RPAR,
     'true': TRUE,
     '1': TRUE,
     'false': FALSE,
     '0': FALSE,
-    'none': FALSE
+    'none': FALSE,
 }
 
 
@@ -1033,17 +1034,15 @@ def tokenizer(expr, symbol_class=Symbol):
     for your algebra, for example to return Symbols for dotted names or quoted
     strings.
 
-    In this tokenizer, the `expr` string can span multiple lines and contain
-    #comments using Python conventions. Whitespace is not-significant. The
-    position is a tuple of (start line, start column). It uses the Python
-    standard library `tokenize` module behind the scenes.
+    In this tokenizer, the `expr` string can span multiple lines. Whitespace is
+    not-significant. The position is a tuple of (start line, start column).
 
     A symbol instance is created for valid Python identifiers.
     These are not identifiers:
     - dotted names : foo.bar consist of three tokens, not one.
-    - names with colons: foo:bar consist of three tokens, not one
+    - names with colons: foo:bar consist of three tokens, not one.
     - quoted strings.
-    - any punctuation which is not an operation
+    - any punctuation which is not an operation.
 
     Recognized operator are (in any upper/lower case combinations):
     - for and:  '*', '&', 'and'
@@ -1058,28 +1057,32 @@ def tokenizer(expr, symbol_class=Symbol):
     if not isinstance(expr, basestring):
         raise TypeError('expr must be string but it is %s.' % type(expr))
 
-    ignored_token_types = (
-        tokenize.NL, tokenize.NEWLINE, tokenize.COMMENT,
-        tokenize.INDENT, tokenize.DEDENT,
-        tokenize.ENDMARKER
-    )
+    length = len(expr)
+    offset = 0
+    while offset < length:
+        tok = expr[offset]
 
-    # note: an unbalanced expression may raise a TokenError here.
-    tokens = tokenize.generate_tokens(StringIO(expr).readline)
+        sym = tok.isalpha() or tok == '_'
+        if sym:
+            offset += 1
+            while offset < length:
+                char = expr[offset]
+                if char.isalnum() or char in ('.', ':', '_'):
+                    offset += 1
+                    tok += char
+                else:
+                    break
+            offset -= 1
 
-    for toktype, tok, (row, col,), _, _ in tokens:
-        if toktype in ignored_token_types or not tok.strip():
-            continue
-        position = (row, col,)
-        std_token = TOKENS.get(tok.lower())
-        if std_token is not None:
-            yield std_token, tok, position
+        try:
+            yield TOKENS[tok.lower()], tok, offset
+        except KeyError:
+            if sym:
+                yield symbol_class(tok), tok, offset
+            elif tok not in (' ', '\t', '\r', '\n'):
+                raise TypeError('Unknown token: %(tok)r at position: %(position)r' % locals())
 
-        elif toktype == tokenize.NAME:
-            yield symbol_class(tok), tok, position
-
-        else:
-            raise TypeError('Unknown token: %(tok)r at position: %(position)r' % locals())
+        offset += 1
 
 
 PRECEDENCE = {
