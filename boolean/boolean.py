@@ -117,11 +117,11 @@ class Expression(object):
             return set((self,))
         if self.args is None:
             return set()
-        else:
-            s = set()
-            for arg in self.args:
-                s |= arg.literals
-            return s
+
+        s = set()
+        for arg in self.args:
+            s |= arg.literals
+        return s
 
     def literalize(self):
         """
@@ -132,8 +132,8 @@ class Expression(object):
         args = tuple(arg.literalize() for arg in self.args)
         if all(arg is self.args[i] for i, arg in enumerate(args)):
             return self
-        else:
-            return self.__class__(*args, simplify=False)
+
+        return self.__class__(*args, simplify=False)
 
     @property
     def symbols(self):
@@ -144,11 +144,11 @@ class Expression(object):
             return set((self,))
         if self.args is None:
             return set()
-        else:
-            s = set()
-            for arg in self.args:
-                s |= arg.symbols
-            return s
+
+        s = set()
+        for arg in self.args:
+            s |= arg.symbols
+        return s
 
     def subs(self, subs_dict, simplify=True):
         """
@@ -157,6 +157,7 @@ class Expression(object):
         for expr, substitution in subs_dict.items():
             if expr == self:
                 return substitution
+
         expr = self._subs(subs_dict, simplify=simplify)
         return self if expr is None else expr
 
@@ -180,8 +181,6 @@ class Expression(object):
 
         if changed_something:
             return self.__class__(*new_args, simplify=simplify)
-        else:
-            return None
 
     @property
     def iscanonical(self):
@@ -217,9 +216,7 @@ class Expression(object):
             else:
                 arghash = hash(frozenset(self.args))
             self._hash = hash(self.__class__.__name__) ^ arghash
-            return self._hash
-        else:
-            return self._hash
+        return self._hash
 
     def __eq__(self, other):
         """
@@ -237,9 +234,7 @@ class Expression(object):
             return NotImplemented
         if self.args is None or other.args is None:
             return False
-        if frozenset(self.args) == frozenset(other.args):
-            return True
-        return False
+        return frozenset(self.args) == frozenset(other.args)
 
     def __ne__(self, other):
         return not self == other
@@ -248,16 +243,14 @@ class Expression(object):
         if self._cls_order is not None and other._cls_order is not None:
             if self._cls_order == other._cls_order:
                 return NotImplemented
-            else:
-                return self._cls_order < other._cls_order
+            return self._cls_order < other._cls_order
         return NotImplemented
 
     def __gt__(self, other):
         lt = other.__lt__(self)
         if lt is NotImplemented:
             return not self.__lt__(other)
-        else:
-            return lt
+        return lt
 
     def __and__(self, other):
         return self.algebra.operations.AND(self, other)
@@ -294,22 +287,20 @@ class BaseElement(Expression):
         if arg is not None:
             if isinstance(arg, BaseElement):
                 return arg
-            elif arg in (0, False):
+            if arg in (0, False):
                 return cls.algebra.domain.FALSE
-            elif arg in (1, True):
+            if arg in (1, True):
                 return cls.algebra.domain.TRUE
-            else:
-                raise TypeError('Bad argument: %s' % arg)
-        elif cls is BaseElement:
+            raise TypeError('Bad argument: %s' % arg)
+        if cls is BaseElement:
             raise TypeError("BaseElement can't be created without argument.")
         if cls.algebra is None:
             return object.__new__(cls)
-        elif isinstance(cls.algebra.domain.TRUE, cls):
+        if isinstance(cls.algebra.domain.TRUE, cls):
             return cls.algebra.domain.TRUE
-        elif isinstance(cls.algebra.domain.FALSE, cls):
+        if isinstance(cls.algebra.domain.FALSE, cls):
             return cls.algebra.domain.FALSE
-        else:
-            raise TypeError('BaseElement can only create objects in the current domain.')
+        raise TypeError('BaseElement can only create objects in the current domain.')
 
     @property
     def dual(self):
@@ -322,28 +313,23 @@ class BaseElement(Expression):
         domain = self.algebra.domain
         if self is domain.TRUE:
             return domain.FALSE
-        elif self is domain.FALSE:
+        if self is domain.FALSE:
             return domain.TRUE
-        else:
-            raise AttributeError('Class should be TRUE or FALSE but is %s.' % self.cls.__name__)
+        raise AttributeError('Class should be TRUE or FALSE but is %s.' % self.cls.__name__)
 
     def __lt__(self, other):
         cmp = Expression.__lt__(self, other)
         if cmp is not NotImplemented:
             return cmp
         if isinstance(other, BaseElement):
-            if self is self.algebra.domain.FALSE:
-                return True
-            return False
+            return self is self.algebra.domain.FALSE
         return NotImplemented
 
     def __str__(self):
-        if self._str is not None:
-            return self._str
+        return self._str
 
     def __repr__(self):
-        if self._repr is not None:
-            return self._repr
+        return self._repr
 
 
 class _TRUE(BaseElement):
@@ -436,8 +422,7 @@ class Symbol(Expression):
             return NotImplemented
         if self.obj is None or other.obj is None:
             return False
-        else:
-            return self.obj == other.obj
+        return self.obj == other.obj
 
     def __lt__(self, other):
         cmp = Expression.__lt__(self, other)
@@ -447,20 +432,16 @@ class Symbol(Expression):
             if self.obj is None:
                 if other.obj is None:
                     return hash(self) < hash(other)  # 2 anonymous symbols.
-                else:
-                    return False  # Anonymous-Symbol < Named-Symbol.
-            else:
-                if other.obj is None:
-                    return True  # Named-Symbol < Anonymous-Symbol.
-                else:
-                    return self.obj < other.obj  # 2 named symbols.
+                return False  # Anonymous-Symbol < Named-Symbol.
+            if other.obj is None:
+                return True  # Named-Symbol < Anonymous-Symbol.
+            return self.obj < other.obj  # 2 named symbols.
         return NotImplemented
 
     def __str__(self):
         if self.obj is None:
             return 'S<%s>' % hash(self)
-        else:
-            return str(self.obj)
+        return str(self.obj)
 
     def __repr__(self):
         if self.obj is not None:
@@ -531,11 +512,10 @@ class Function(Expression):
         elif len(args) == 1:
             if self.isliteral:
                 return '%s%s' % (self.operator, args[0])
-            else:
-                return '%s(%s)' % (self.operator, args[0])
-        else:
-            args = ('%s' % arg if arg.isliteral else '(%s)' % arg for arg in args)
-            return self.operator.join(args)
+            return '%s(%s)' % (self.operator, args[0])
+
+        args = ('%s' % arg if arg.isliteral else '(%s)' % arg for arg in args)
+        return self.operator.join(args)
 
     def __repr__(self):
         return '%s(%s)' % (self.__class__.__name__, ', '.join(repr(arg) for arg in self.args))
@@ -559,10 +539,7 @@ class NOT(Function):
         """
         Return True if object is a literal otherwise False.
         """
-        if isinstance(self.args[0], Symbol):
-            return True
-        else:
-            return False
+        return isinstance(self.args[0], Symbol)
 
     def literalize(self):
         """
@@ -585,12 +562,12 @@ class NOT(Function):
         term = self.cancel()
         if not isinstance(term, self.__class__):
             return term.simplify()
-        elif term.args[0] in self.algebra.domain:
+        if term.args[0] in self.algebra.domain:
             return term.args[0].dual
-        else:
-            expr = self.__class__(term.args[0].simplify(), simplify=False)
-            expr._iscanonical = True
-            return expr
+
+        expr = self.__class__(term.args[0].simplify(), simplify=False)
+        expr._iscanonical = True
+        return expr
 
     def cancel(self):
         """
@@ -620,8 +597,6 @@ class NOT(Function):
         return op.dual(*tuple(self.__class__(arg, simplify=False).cancel() for arg in op.args), simplify=False)
 
     def __lt__(self, other):
-        if self.args[0] == other:
-            return False
         return self.args[0] < other
 
 
@@ -675,10 +650,9 @@ class DualBase(Function):
         ops = cls.algebra.operations
         if issubclass(cls, ops.OR):
             return ops.AND
-        elif issubclass(cls, ops.AND):
+        if issubclass(cls, ops.AND):
             return ops.OR
-        else:
-            raise AttributeError("Class must be in algebra.operations.")
+        raise AttributeError("Class must be in algebra.operations.")
 
     def __contains__(self, expr):
         """
@@ -689,7 +663,6 @@ class DualBase(Function):
         if isinstance(expr, self.__class__):
             if all(arg in self.args for arg in expr.args):
                 return True
-        return False
 
     def simplify(self):
         """
@@ -875,8 +848,7 @@ class DualBase(Function):
             return args
         if len(args) == 1:
             return args[0]
-        else:
-            return self.__class__(*args, simplify=False)
+        return self.__class__(*args, simplify=False)
 
     def remove(self, expr, simplify=True):
         args = self.args
@@ -965,6 +937,20 @@ ALGEBRA = Algebra(DOMAIN, OPERATIONS, Symbol)
 Expression.algebra = ALGEBRA
 
 
+def rdistributive(operation, expr):
+    "Totally flatten everything."
+    if expr.isliteral:
+        return expr
+    args = tuple(rdistributive(operation, arg).simplify() for arg in expr.args)
+    if len(args) == 1:
+        return args[0]
+    expr = expr.__class__(*args)
+    dualoperation = operation.getdual()
+    if isinstance(expr, dualoperation):
+        expr = expr.distributive()
+    return expr
+
+
 def normalize(operation, expr):
     """
     Transform a expression into its normal form in the given operation.
@@ -974,26 +960,13 @@ def normalize(operation, expr):
     the operation doesn't occur in any arg. Also NOT is only appearing
     in literals.
     """
-    dualoperation = operation.getdual()
+
     # Move NOT inwards.
     expr = expr.literalize()
     # Simplify as much as possible, otherwise rdistributive() may take
     # forever.
     expr = expr.simplify()
-
-    # Totally flatten everything.
-    def rdistributive(expr):
-        if expr.isliteral:
-            return expr
-        args = tuple(rdistributive(arg).simplify() for arg in expr.args)
-        if len(args) == 1:
-            return args[0]
-        expr = expr.__class__(*args)
-        if isinstance(expr, dualoperation):
-            expr = expr.distributive()
-        return expr
-
-    expr = rdistributive(expr)
+    expr = rdistributive(operation, expr)
     # Canonicalize
     expr = expr.simplify()
     if isinstance(expr, operation):
