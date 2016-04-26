@@ -13,7 +13,6 @@ Released under revised BSD license.
 from __future__ import absolute_import
 
 from boolean.boolean import Algebra  # NOQA
-from boolean.boolean import BooleanAlgebra  # NOQA
 from boolean.boolean import BooleanDomain  # NOQA
 from boolean.boolean import BooleanOperations  # NOQA
 from boolean.boolean import Expression  # NOQA

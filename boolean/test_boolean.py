@@ -776,37 +776,6 @@ class OtherTestCase(unittest.TestCase):
         self.assertTrue(result == sol)
 
 
-class BooleanAlgebraTestCase(unittest.TestCase):
-
-    def test_implementation(self):
-        class Filter(boolean.BooleanAlgebra):
-
-            def __init__(self, bool_expr=None):
-                boolean.BooleanAlgebra.__init__(self, bool_expr=bool_expr,
-                                                bool_base=Filter)
-
-            def simplify(self):
-                subs_dict = {}
-                for obj in self.bool_expr.objects:
-                    subs_dict[obj.bool_expr] = obj.simplify()
-                return self.bool_expr.subs(subs_dict)
-
-        class ConstFilter(Filter):
-
-            def __init__(self, value):
-                Filter.__init__(self)
-                self.value = boolean.BaseElement(value)
-
-            def simplify(self):
-                return self.value
-
-        a = ConstFilter(True)
-        b = ConstFilter(False)
-        self.assertTrue(isinstance(a + b, Filter))
-        self.assertEqual((a + b).simplify(), boolean.TRUE)
-        self.assertEqual((a * b).simplify(), boolean.FALSE)
-
-
 class BooleanBoolTestCase(unittest.TestCase):
 
     def test_bool(self):
