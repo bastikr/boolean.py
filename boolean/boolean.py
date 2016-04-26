@@ -17,14 +17,6 @@ import itertools
 import collections
 
 try:
-    from io import StringIO
-except ImportError:
-    try:
-        from cStringIO import StringIO
-    except ImportError:
-        from StringIO import StringIO  # NOQA
-
-try:
     basestring  # Python 2
 except NameError:
     basestring = str  # Python 3
@@ -1016,8 +1008,8 @@ TOKENS = {
 
 def tokenizer(expr, symbol_class=Symbol):
     """
-    A tokenizer is a callable that returns an iterable of 3-tuple describing
-    each token given an `expr` string.
+    A tokenizer is a callable accepting a unicode string and returning an
+    iterable of 3-tuple describing each token.
 
     This tuple must contain (token, token string, position):
     - token: either a Symbol or BaseElement instance or one of TOKENS values.
@@ -1025,22 +1017,18 @@ def tokenizer(expr, symbol_class=Symbol):
     - position: some simple object describing the starting position of the
       original token string in the `expr` string. It could be an int for a
       character offset, or a tuple of starting (row/line, column).
-    Note that token string and position are used only for error reporting
+    Note that the position is used only for error reporting
     and can be None or empty.
 
-    Raise TypeError or TokenError on errors.
-
-    You can use this tokenizer as a base to create specialized custom tokenizers
-    for your algebra, for example to return Symbols for dotted names or quoted
-    strings.
+    Raise TypeError on errors.
 
     In this tokenizer, the `expr` string can span multiple lines. Whitespace is
     not-significant. The position is a tuple of (start line, start column).
 
-    A symbol instance is created for valid Python identifiers.
+    A symbol instance is created for valid Python identifiers, dotted names and
+    names with colons.
+    
     These are not identifiers:
-    - dotted names : foo.bar consist of three tokens, not one.
-    - names with colons: foo:bar consist of three tokens, not one.
     - quoted strings.
     - any punctuation which is not an operation.
 
@@ -1053,6 +1041,8 @@ def tokenizer(expr, symbol_class=Symbol):
     - True symbols: 1 and True
     - False symbols: 0, False and None
 
+    You can use this tokenizer as a base to create specialized custom tokenizers
+    for your algebra. See also examples in tests.
     """
     if not isinstance(expr, basestring):
         raise TypeError('expr must be string but it is %s.' % type(expr))
