@@ -48,7 +48,7 @@ class ExpressionTestCase(unittest.TestCase):
         class MySymbol(boolean.Symbol):
             pass
 
-        expr_str = """(a or ~ b +_c  ) and #some comment
+        expr_str = """(a or ~ b +_c  ) and
                       d & ( ! e_
                       | (my * g OR 1 or 0) ) AND that """
 
