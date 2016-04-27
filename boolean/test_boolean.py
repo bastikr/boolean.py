@@ -54,8 +54,8 @@ class ExpressionTestCase(unittest.TestCase):
                         MySymbol('my'),
                         MySymbol('g'),
                     ),
-                    boolean.TRUE(),
-                    boolean.FALSE(),
+                    boolean.TRUE,
+                    boolean.FALSE,
                 ),
             ),
             MySymbol('that'),
@@ -68,14 +68,14 @@ class ExpressionTestCase(unittest.TestCase):
         E = boolean.Expression()
         expr = E.parse(expr_str, simplify=False)
         expected = boolean.OR(
-            boolean.TRUE(),
-            boolean.FALSE(),
-            boolean.FALSE(),
-            boolean.FALSE(),
-            boolean.TRUE(),
-            boolean.TRUE(),
-            boolean.FALSE(),
-            boolean.FALSE(),
+            boolean.TRUE,
+            boolean.FALSE,
+            boolean.FALSE,
+            boolean.FALSE,
+            boolean.TRUE,
+            boolean.TRUE,
+            boolean.FALSE,
+            boolean.FALSE,
         )
         self.assertEqual(expected, expr)
 
@@ -254,41 +254,48 @@ class BaseElementTestCase(unittest.TestCase):
 
     def test_creation(self):
         from boolean.boolean import BaseElement
-        self.assertEqual(boolean.TRUE(), boolean.TRUE())
+        self.assertEqual(boolean.TRUE, boolean.TRUE)
         BaseElement()
         self.assertRaises(TypeError, BaseElement, 2)
         self.assertRaises(TypeError, BaseElement, 'a')
+        self.assertTrue(boolean.TRUE is boolean.TRUE)
+        self.assertTrue(boolean.TRUE is not boolean.FALSE)
+        self.assertTrue(boolean.FALSE is boolean.FALSE)
+        self.assertTrue(bool(boolean.TRUE) is True)
+        self.assertTrue(bool(boolean.FALSE) is False)
+        self.assertEqual(boolean.TRUE, True)
+        self.assertEqual(boolean.FALSE, False)
 
     def test_literals(self):
-        self.assertEqual(boolean.TRUE().literals, set())
-        self.assertEqual(boolean.FALSE().literals, set())
+        self.assertEqual(boolean.TRUE.literals, set())
+        self.assertEqual(boolean.FALSE.literals, set())
 
     def test_literalize(self):
-        self.assertEqual(boolean.TRUE().literalize(), boolean.TRUE())
-        self.assertEqual(boolean.FALSE().literalize(), boolean.FALSE())
+        self.assertEqual(boolean.TRUE.literalize(), boolean.TRUE)
+        self.assertEqual(boolean.FALSE.literalize(), boolean.FALSE)
 
     def test_simplify(self):
-        self.assertEqual(boolean.TRUE().simplify(), boolean.TRUE())
-        self.assertEqual(boolean.FALSE().simplify(), boolean.FALSE())
+        self.assertEqual(boolean.TRUE.simplify(), boolean.TRUE)
+        self.assertEqual(boolean.FALSE.simplify(), boolean.FALSE)
 
     def test_dual(self):
-        self.assertEqual(boolean.TRUE().dual, boolean.FALSE())
-        self.assertEqual(boolean.FALSE().dual, boolean.TRUE())
+        self.assertEqual(boolean.TRUE.dual, boolean.FALSE)
+        self.assertEqual(boolean.FALSE.dual, boolean.TRUE)
 
     def test_equality(self):
-        self.assertEqual(boolean.TRUE(), boolean.TRUE())
-        self.assertEqual(boolean.FALSE(), boolean.FALSE())
-        self.assertNotEqual(boolean.TRUE(), boolean.FALSE())
+        self.assertEqual(boolean.TRUE, boolean.TRUE)
+        self.assertEqual(boolean.FALSE, boolean.FALSE)
+        self.assertNotEqual(boolean.TRUE, boolean.FALSE)
 
     def test_order(self):
-        self.assertTrue(boolean.FALSE() < boolean.TRUE())
-        self.assertTrue(boolean.TRUE() > boolean.FALSE())
+        self.assertTrue(boolean.FALSE < boolean.TRUE)
+        self.assertTrue(boolean.TRUE > boolean.FALSE)
 
     def test_printing(self):
-        self.assertEqual(str(boolean.TRUE()), '1')
-        self.assertEqual(str(boolean.FALSE()), '0')
-        self.assertEqual(repr(boolean.TRUE()), 'TRUE()')
-        self.assertEqual(repr(boolean.FALSE()), 'FALSE()')
+        self.assertEqual(str(boolean.TRUE), '1')
+        self.assertEqual(str(boolean.FALSE), '0')
+        self.assertEqual(repr(boolean.TRUE), 'TRUE')
+        self.assertEqual(repr(boolean.FALSE), 'FALSE')
 
 
 class SymbolTestCase(unittest.TestCase):
@@ -362,8 +369,8 @@ class NOTTestCase(unittest.TestCase):
         self.assertRaises(TypeError, NOT)
         self.assertRaises(TypeError, NOT, 'a', 'b')
         NOT(boolean.Symbol('a'))
-        self.assertEqual(boolean.FALSE(), (NOT(boolean.TRUE())).simplify())
-        self.assertEqual(boolean.TRUE(), (NOT(boolean.FALSE())).simplify())
+        self.assertEqual(boolean.FALSE, (NOT(boolean.TRUE)).simplify())
+        self.assertEqual(boolean.TRUE, (NOT(boolean.FALSE)).simplify())
 
     def test_isliteral(self):
         s = boolean.Symbol(1)
@@ -473,13 +480,13 @@ class DualBaseTestCase(unittest.TestCase):
 
     def test_annihilator(self):
         parse = boolean.Expression().parse
-        self.assertEqual(parse('a*a', simplify=False).annihilator, boolean.FALSE())
-        self.assertEqual(parse('a+a', simplify=False).annihilator, boolean.TRUE())
+        self.assertEqual(parse('a*a', simplify=False).annihilator, boolean.FALSE)
+        self.assertEqual(parse('a+a', simplify=False).annihilator, boolean.TRUE)
 
     def test_identity(self):
         parse = boolean.Expression().parse
-        self.assertEqual(parse('a+b').identity, boolean.FALSE())
-        self.assertEqual(parse('a*b').identity, boolean.TRUE())
+        self.assertEqual(parse('a+b').identity, boolean.FALSE)
+        self.assertEqual(parse('a*b').identity, boolean.TRUE)
 
     def test_dual(self):
         self.assertEqual(boolean.AND(boolean.Symbol('a'), boolean.Symbol('b')).dual, boolean.OR)
@@ -493,8 +500,8 @@ class DualBaseTestCase(unittest.TestCase):
         a = self.a
         b = self.b
         c = self.c
-        _0 = boolean.FALSE()
-        _1 = boolean.TRUE()
+        _0 = boolean.FALSE
+        _1 = boolean.TRUE
         # Idempotence
         self.assertEqual(a, (a * a).simplify())
         # Idempotence + Associativity
@@ -772,7 +779,7 @@ class OtherTestCase(unittest.TestCase):
         # FIXME: this test is cryptic: what does it do?
         parse = boolean.Expression().parse
         order = (
-            (boolean.TRUE(), boolean.FALSE()),
+            (boolean.TRUE, boolean.FALSE),
             (boolean.Symbol('y'), boolean.Symbol('x')),
             (parse('x*y'),),
             (parse('x+y'),),
@@ -788,10 +795,10 @@ class OtherTestCase(unittest.TestCase):
     def test_parse(self):
         a, b, c = boolean.Symbol('a'), boolean.Symbol('b'), boolean.Symbol('c')
         parse = boolean.Expression().parse
-        self.assertEqual(parse('0'), boolean.FALSE())
-        self.assertEqual(parse('(0)'), boolean.FALSE())
-        self.assertEqual(parse('1') , boolean.TRUE())
-        self.assertEqual(parse('(1)'), boolean.TRUE())
+        self.assertEqual(parse('0'), boolean.FALSE)
+        self.assertEqual(parse('(0)'), boolean.FALSE)
+        self.assertEqual(parse('1') , boolean.TRUE)
+        self.assertEqual(parse('(1)'), boolean.TRUE)
         self.assertEqual(parse('a'), a)
         self.assertEqual(parse('(a)'), a)
         self.assertEqual(parse('(a)'), a)
@@ -826,7 +833,7 @@ class OtherTestCase(unittest.TestCase):
         self.assertEqual(expr.subs({a: a}).simplify(), expr)
         self.assertEqual(expr.subs({a: b + c}).simplify(), boolean.Expression().parse('(b+c)*b+c').simplify())
         self.assertEqual(expr.subs({a * b: a}).simplify(), a + c)
-        self.assertEqual(expr.subs({c: boolean.TRUE()}).simplify(), boolean.TRUE())
+        self.assertEqual(expr.subs({c: boolean.TRUE}).simplify(), boolean.TRUE)
 
     def test_normalize(self):
         base = boolean.Expression()
@@ -841,15 +848,15 @@ class BooleanBoolTestCase(unittest.TestCase):
     def test_bool(self):
         a, b, c = boolean.Symbol('a'), boolean.Symbol('b'), boolean.Symbol('c')
         expr = a * b + c
-        self.assertRaises(TypeError, bool, expr.subs({a: boolean.TRUE()}, simplify=False))
-        self.assertRaises(TypeError, bool, expr.subs({b: boolean.TRUE()}, simplify=False))
-        self.assertRaises(TypeError, bool, expr.subs({c: boolean.TRUE()}, simplify=False))
-        self.assertRaises(TypeError, bool, expr.subs({a: boolean.TRUE(), b: boolean.TRUE()}, simplify=False))
-        result = expr.subs({c:boolean.TRUE()}, simplify=True)
+        self.assertRaises(TypeError, bool, expr.subs({a: boolean.TRUE}, simplify=False))
+        self.assertRaises(TypeError, bool, expr.subs({b: boolean.TRUE}, simplify=False))
+        self.assertRaises(TypeError, bool, expr.subs({c: boolean.TRUE}, simplify=False))
+        self.assertRaises(TypeError, bool, expr.subs({a: boolean.TRUE, b: boolean.TRUE}, simplify=False))
+        result = expr.subs({c:boolean.TRUE}, simplify=True)
         result = result.simplify()
         self.assertTrue(result)
 
-        result = expr.subs({a:boolean.TRUE(), b:boolean.TRUE()}, simplify=True)
+        result = expr.subs({a:boolean.TRUE, b:boolean.TRUE}, simplify=True)
         result = result.simplify()
         self.assertTrue(result)
 

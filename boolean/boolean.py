@@ -23,6 +23,7 @@ Released under revised BSD license.
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
+from functools import total_ordering
 import itertools
 
 try:
@@ -40,8 +41,7 @@ class Expression(object):
     # Defines sort and comparison order relation between different classes.
     sort_order = None
 
-    def __init__(self, TRUE_class=None, FALSE_class=None,
-                 NOT_class=None, AND_class=None, OR_class=None,
+    def __init__(self, NOT_class=None, AND_class=None, OR_class=None,
                  symbol_class=None, tokenizer_fun=None):
         """
         Initialize an expression from another expression or create an empty
@@ -55,11 +55,16 @@ class Expression(object):
         You can pass subclasses and an alternative tokenizer to customize the
         behavior of your expressions.
         """
-        if not getattr(self, 'configured', False):
-            self._configure(TRUE_class, FALSE_class,
-                            NOT_class, AND_class, OR_class,
-                            symbol_class, tokenizer_fun)
-            self.configured = True
+        # default boolean operations
+        self.NOT = NOT_class or NOT
+        self.AND = AND_class or AND
+        self.OR = OR_class or OR
+
+        # default class for Symbols
+        self.symbol = symbol_class or Symbol
+
+        # default tokenizer callable returning tokens
+        self.tokenizer = tokenizer_fun or tokenizer
 
         # Store arguments aka. subterms of this expressions.
         # subterms are either literals or expressions.
@@ -73,33 +78,11 @@ class Expression(object):
 
         # Store an associated object: only used in Symbols
         self.obj = None
-
-    def _configure(self, TRUE_class=None, FALSE_class=None,
-                   NOT_class=None, AND_class=None, OR_class=None,
-                   symbol_class=None, tokenizer_fun=None):
-            """
-            Add provided algebra definitions as attributes to self or use a
-            default configuration.
-            """
-            # default boolean domain
-            self.TRUE = TRUE_class or TRUE
-            self.FALSE = FALSE_class or FALSE
-    
-            # default boolean operations
-            self.NOT = NOT_class or NOT
-            self.AND = AND_class or AND
-            self.OR = OR_class or OR
-    
-            # default class for Symbols
-            self.symbol = symbol_class or Symbol
-    
-            # default tokenizer callable returning tokens
-            self.tokenizer = tokenizer_fun or tokenizer
     
     @property
     def objects(self):
         """
-        Return a set off all associated objects with this expression symbols.
+        Return a set of all associated objects with this expression symbols.
         Include recursively subexpressions objects.
         """
         return set(s.obj for s in self.symbols)
@@ -342,9 +325,9 @@ class Expression(object):
                 ast.append(token)
 
             elif token == TOKEN_TRUE:
-                ast.append(self.TRUE())
+                ast.append(TRUE)
             elif token == TOKEN_FALSE:
-                ast.append(self.FALSE())
+                ast.append(FALSE)
 
             elif token == TOKEN_NOT:
                 ast = [ast, self.NOT]
@@ -426,7 +409,7 @@ class Expression(object):
         expr = self.literalize()
         # Simplify first, otherwise _rdistributive() may take forever.
         expr = expr.simplify()
-        operation_template = operation(self.TRUE(), self.FALSE())
+        operation_template = operation(TRUE, FALSE)
         expr = self._rdistributive(operation_template)
         # Canonicalize
         expr = expr.simplify()
@@ -441,48 +424,42 @@ class Expression(object):
         return tuple(map(self.symbol, args))
 
 
-# FIXME: BaseElements should also be literals??
-class BaseElement(Expression):
+@total_ordering
+class BaseElement(object):
     """
-    Base class for the base elements TRUE and FALSE of the boolean algebra.
+    Abstract base class for the base elements TRUE and FALSE of the boolean algebra.
     """
-
     sort_order = 0
 
     def __init__(self):
         super(BaseElement, self).__init__()
         self.iscanonical = True
-        # the dual Base Element class for this element.
-        # This is shielded with a property to avoid infinite recursion
-        self._dual_cls = None
 
-    @property
-    def dual(self):
-        """
-        Return the dual Base Element for this element.
-        
-        This means TRUE.dual returns FALSE() and FALSE.dual return TRUE().
-        """
-        return self._dual_cls()
+        # The dual Base Element class for this element: TRUE.dual returns
+        # _FALSE() and FALSE.dual returns _TRUE(). This is a cyclic reference
+        # and therefore only assigned after creation of the singletons,
+        self.dual = None
+
+        # base elemenst have no args, objs, symbols of course, but we want them to behave as if they 
+        # were an Expression.
+        self.isliteral = True
+        self.args = tuple()
+        self.objects = set()
+        self.literals = set()
+        self.symbols = set()
 
     def __lt__(self, other):
-        comparator = Expression.__lt__(self, other)
-        if comparator is not NotImplemented:
-            return comparator
         if isinstance(other, BaseElement):
-            return self == self.FALSE()
+            return self == FALSE
         return NotImplemented
 
-    def __hash__(self):
-        return hash(bool(self))
-
-    def __eq__(self, other):
-        if self is other or isinstance(other, self.__class__):
-            return True
-
-        return super(BaseElement, self).__eq__(other)
-
     __nonzero__ = __bool__ = lambda s: None
+
+    def simplify(self):
+        return self
+
+    def literalize(self):
+        return self
 
     def pretty(self, indent=0, debug=False):
         """
@@ -491,44 +468,68 @@ class BaseElement(Expression):
         return (' ' * indent) + repr(self)
 
 
-class TRUE(BaseElement):
+class _TRUE(BaseElement):
     """
     Boolean base element TRUE.
-
-    You can subclass to define alternative string representation.
+    Not meant to be subclassed nor instantiated directly.
     """
 
-    def __init__(self, *args, **kwargs):
-        super(TRUE, self).__init__()
-        self._dual_cls = self.FALSE
+    def __init__(self):
+        super(_TRUE, self).__init__()
+        # assigned at singleton creation: self.dual = FALSE
+
+    def __hash__(self):
+        return hash(True)
+
+    def __eq__(self, other):
+        return self is other or other is True
 
     def __str__(self):
         return '1'
 
     def __repr__(self):
-        return 'TRUE()'
+        return 'TRUE'
 
     __nonzero__ = __bool__ = lambda s: True
 
 
-class FALSE(BaseElement):
+class _FALSE(BaseElement):
     """
     Boolean base element FALSE.
-
-    You can subclass to define alternative string representation.
+    Not meant to be subclassed nor instantiated directly.
     """
 
-    def __init__(self, *args, **kwargs):
-        super(FALSE, self).__init__()
-        self._dual_cls = self.TRUE
+    def __init__(self):
+        super(_FALSE, self).__init__()
+        # assigned at singleton creation: self.dual = TRUE
+
+    def __hash__(self):
+        return hash(False)
+
+    def __eq__(self, other):
+        return self is other or other is False
 
     def __str__(self):
         return '0'
 
     def __repr__(self):
-        return 'FALSE()'
+        return 'FALSE'
 
     __nonzero__ = __bool__ = lambda s: False
+
+
+# TRUE and FALSE are global self- and cross-referencing singletons.
+# They are created once here and they cannot be sub-classed nor re-instantiated.
+TRUE = _TRUE()
+FALSE = _FALSE()
+TRUE.TRUE = TRUE
+TRUE.FALSE = FALSE
+TRUE.dual = FALSE
+FALSE.dual = TRUE
+FALSE.TRUE = TRUE
+FALSE.FALSE = FALSE
+del _TRUE
+del _FALSE
 
 
 class Symbol(Expression):
@@ -537,7 +538,7 @@ class Symbol(Expression):
     
     A symbol can hold an object used to determine equality.
     """
-    # FIXME: this statement is weird: Symbols do nor have a value assigned??
+    # FIXME: this statement is weird: Symbols do not have a value assigned??
     """
     Symbols (also called boolean variables) can only take on the values TRUE
     or FALSE. 
@@ -625,7 +626,7 @@ class Function(Expression):
         self.operator = None
 
         # Make sure all arguments are boolean expressions.
-        assert all(isinstance(arg, Expression) for arg in args), 'Bad arguments: all arguments must be an Expression: %r' % (args,)
+        assert all(isinstance(arg, (Expression, BaseElement)) for arg in args), 'Bad arguments: all arguments must be an Expression, TRUE or FALSE: %r' % (args,)
         self.args = tuple(args)
 
     def __str__(self):
@@ -745,7 +746,7 @@ class NOT(Function):
         if not isinstance(expr, self.__class__):
             return expr.simplify()
 
-        if expr.args[0] in (self.TRUE(), self.FALSE()):
+        if expr.args[0] in (TRUE, FALSE,):
             return expr.args[0].dual
 
         expr = self.__class__(expr.args[0].simplify())
@@ -1130,8 +1131,8 @@ class AND(DualBase):
 
     def __init__(self, *args):
         super(AND, self).__init__(*args)
-        self.identity = self.TRUE()
-        self.annihilator = self.FALSE()
+        self.identity = TRUE
+        self.annihilator = FALSE
         self.dual = self.OR
         self.operator = '*'
 
@@ -1154,8 +1155,8 @@ class OR(DualBase):
 
     def __init__(self, *args):
         super(OR, self).__init__(*args)
-        self.identity = self.FALSE()
-        self.annihilator = self.TRUE()
+        self.identity = FALSE
+        self.annihilator = TRUE
         self.dual = self.AND
         self.operator = '+'
 
@@ -1197,9 +1198,11 @@ def tokenizer(expr):
     - Whitespace is not significant. 
     - The returned position is the starting character offset of a token.
 
-    - A TOKEN_SYMBOL is returned for valid identifiers.
-        These are identifiers:
+    - A TOKEN_SYMBOL is returned for valid identifiers which is a string without
+    spaces. These are valid identifiers:
         - Python identifiers.
+        - a string even if starting with digits
+        - digits (except for 0 and 1).
         - dotted names : foo.bar consist of one token.
         - names with colons: foo:bar consist of one token.
         These are not identifiers:
@@ -1218,9 +1221,9 @@ def tokenizer(expr):
     if not isinstance(expr, basestring):
         raise TypeError('expr must be string but it is %s.' % type(expr))
 
-    # mapping of lowercase token strings to a token ids for the standard operators,
-    # parens and common true or false symbols, as used in the default tokenizer
-    # implementation.
+    # mapping of lowercase token strings to a token type id for the standard
+    # operators, parens and common true or false symbols, as used in the default
+    # tokenizer implementation.
     _TOKENS = {
         '*': TOKEN_AND, '&': TOKEN_AND, 'and': TOKEN_AND,
         '+': TOKEN_OR, '|': TOKEN_OR, 'or': TOKEN_OR,
