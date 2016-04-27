@@ -32,53 +32,336 @@ except NameError:
     basestring = str  # Python 3
 
 
+# Token types for standard operators and parens
+TOKEN_AND = 1
+TOKEN_OR = 2
+TOKEN_NOT = 3
+TOKEN_LPAR = 4
+TOKEN_RPAR = 5
+TOKEN_TRUE = 6
+TOKEN_FALSE = 7
+TOKEN_SYMBOL = 8
 
-class Expression(object):
+
+class BooleanAlgebra(object):
     """
-    Base class for all boolean expressions, including functions and variable
-    symbols.
+    An algebra is defined by:
+    - the types of its operations and symbol.
+    - the tokenizer used when parsing expressions from strings. 
+    
+    This class also serves as a base class for all boolean expressions,
+    including base elements, functions and variable symbols.
     """
     # Defines sort and comparison order relation between different classes.
     sort_order = None
 
-    def __init__(self, NOT_class=None, AND_class=None, OR_class=None,
-                 symbol_class=None, tokenizer_fun=None):
+    def __init__(self, NOT_class=None, AND_class=None, OR_class=None, symbol_class=None):
         """
-        Initialize an expression from another expression or create an empty
-        expression.
-        
-        TRUE_class, FALSE_class, NOT_class, AND_class, OR_class, symbol_class and
-        tokenizer_fun define the boolean algebra domain, operations and symbol and
-        tokenizer callable. They default to the standard corresponding classes and
-        function if not provided.
+        The types for NOT, AND, OR, and symbol define the boolean algebra
+        operations and symbol variable. They default to the standard classes if
+        not provided.
+        """
 
-        You can pass subclasses and an alternative tokenizer to customize the
-        behavior of your expressions.
-        """
-        # default boolean operations
+        # class used for Symbols
+        self.symbol = symbol_class or Symbol
+
+        # boolean operation types, defaulting to the standard types
         self.NOT = NOT_class or NOT
         self.AND = AND_class or AND
         self.OR = OR_class or OR
 
-        # default class for Symbols
-        self.symbol = symbol_class or Symbol
+        self.NOT.NOT = self.NOT
+        self.NOT.AND = self.AND
+        self.NOT.OR = self.OR
 
-        # default tokenizer callable returning tokens
-        self.tokenizer = tokenizer_fun or tokenizer
+        self.AND.NOT = self.NOT
+        self.AND.AND = self.AND
+        self.AND.OR = self.OR
 
-        # Store arguments aka. subterms of this expressions.
-        # subterms are either literals or expressions.
-        self.args = tuple()
+        self.OR.NOT = self.NOT
+        self.OR.AND = self.AND
+        self.OR.OR = self.OR
 
-        # True is this is a literal expression such as a Symbol, TRUE or FALSE
-        self.isliteral = False
+        self.symbol.NOT = self.NOT
+        self.symbol.AND = self.AND
+        self.symbol.OR = self.OR
 
-        # True if this expression has been simplified to in canonical form.
-        self.iscanonical = False
+        ###### FIXME: these are not available for TRUE AND FALSE?
 
-        # Store an associated object: only used in Symbols
-        self.obj = None
+    def symbols(self, *args):
+        """
+        Return a tuple of symbols building a new symbol from each argument.
+        """
+        return tuple(map(self.symbol, args))
+
+    def parse(self, expr, simplify=True):
+        """
+        Return a boolean expression parsed from `expr` either a unicode string
+        or tokens iterable.
     
+        Optionally simplify the expression if `simplify` is True.
+
+        If `expr` is a string, the standard `tokenizer` is used for tokenization and
+        the algebra Symbol class or subclass is used to create symbol
+        instances from symbol tokens.
+    
+        If `expr` is an iterable, it should contain 3-tuples of: 
+        (token, token_string, position). 
+        A token can be a pre-created Symbol instance or one of the TOKEN_* types.
+        See the boolean.tokenizer function and tests for details and examples.
+        """
+
+        precedence = {self.NOT: 5, self.AND: 10, self.OR: 15, TOKEN_LPAR: 20}
+
+        if isinstance(expr, basestring):
+            tokenized = self.tokenize(expr)
+        else:
+            tokenized = iter(expr)
+
+        ast = [None, None]
+
+        for token, tokstr, position in tokenized:
+            if token == TOKEN_SYMBOL:
+                ast.append(self.symbol(tokstr))
+            elif isinstance(token, Symbol):
+                ast.append(token)
+
+            elif token == TOKEN_TRUE:
+                ast.append(TRUE)
+            elif token == TOKEN_FALSE:
+                ast.append(FALSE)
+
+            elif token == TOKEN_NOT:
+                ast = [ast, self.NOT]
+            elif token == TOKEN_AND:
+                ast = self._start_operation(ast, self.AND, precedence)
+            elif token == TOKEN_OR:
+                ast = self._start_operation(ast, self.OR, precedence)
+
+            elif token == TOKEN_LPAR:
+                ast = [ast, TOKEN_LPAR]
+            elif token == TOKEN_RPAR:
+                while True:
+                    if ast[0] is None:
+                        raise TypeError('Bad closing parenthesis at position: %(position)r.' % locals())
+                    if ast[1] is TOKEN_LPAR:
+                        ast[0].append(ast[2])
+                        ast = ast[0]
+                        break
+                    subex = ast[1](*ast[2:])
+                    ast[0].append(subex)
+                    ast = ast[0]
+            else:
+                raise TypeError('Unknown token: %(token)r: %(tokstr)r at position: %(position)r.' % locals())
+
+        while True:
+            if ast[0] is None:
+                if ast[1] is None:
+                    assert len(ast) == 3, 'Invalid boolean expression'
+                    parsed = ast[2]
+                else:
+                    parsed = ast[1](*ast[2:])
+                break
+            else:
+                subex = ast[1](*ast[2:])
+                ast[0].append(subex)
+                ast = ast[0]
+
+        if simplify:
+            return parsed.simplify()
+        return parsed
+
+    def _start_operation(self, ast, operation, precedence):
+        """
+        Returns an AST where all operations of lower precedence are finalized.
+        """
+        op_prec = precedence[operation]
+        while True:
+            if ast[1] is None:  # [None, None, x]
+                ast[1] = operation
+                return ast
+
+            prec = precedence[ast[1]]
+            if prec > op_prec:  # op=*, [ast, +, x, y] -> [[ast, +, x], *, y]
+                ast = [ast, operation, ast.pop(-1)]
+                return ast
+
+            if prec == op_prec:  # op=*, [ast, *, x] -> [ast, *, x]
+                return ast
+
+            if ast[0] is None:  # op=+, [None, *, x, y] -> [None, +, x*y]
+                subexp = ast[1](*ast[2:])
+                return [ast[0], operation, subexp]
+
+            else:  # op=+, [[ast, *, x], ~, y] -> [ast, *, x, ~y]
+                ast[0].append(ast[1](*ast[2:]))
+                ast = ast[0]
+
+    def tokenize(self, expr):
+        """
+        Return an iterable of 3-tuple describing each token given an expression
+        unicode string.
+    
+        This 3-tuple contains (token, token string, position):
+        - token: either a Symbol instance or one of TOKEN_* token types..
+        - token string: the original token unicode string.
+        - position: some simple object describing the starting position of the
+          original token string in the `expr` string. It can be an int for a
+          character offset, or a tuple of starting (row/line, column).
+    
+        The token position is used only for error reporting and can be None or
+        empty.
+    
+        Raise TypeError on errors.
+    
+        You can use this tokenizer as a base to create specialized tokenizers
+        for your custom algebra by subclassing BooleanAlgebra. See also the
+        tests for other examples of alternative tokenizers.
+    
+        This tokenizer has these characteristics:
+        - The `expr` string can span multiple lines,
+        - Whitespace is not significant. 
+        - The returned position is the starting character offset of a token.
+    
+        - A TOKEN_SYMBOL is returned for valid identifiers which is a string without
+        spaces. These are valid identifiers:
+            - Python identifiers.
+            - a string even if starting with digits
+            - digits (except for 0 and 1).
+            - dotted names : foo.bar consist of one token.
+            - names with colons: foo:bar consist of one token.
+            These are not identifiers:
+            - quoted strings.
+            - any punctuation which is not an operation
+    
+        - Recognized operators are (in any upper/lower case combinations):
+            - for and:  '*', '&', 'and'
+            - for or: '+', '|', 'or'
+            - for not: '~', '!', 'not'
+    
+        - Recognized special symbols are (in any upper/lower case combinations):
+            - True symbols: 1 and True
+            - False symbols: 0, False and None
+        """
+        if not isinstance(expr, basestring):
+            raise TypeError('expr must be string but it is %s.' % type(expr))
+
+        # mapping of lowercase token strings to a token type id for the standard
+        # operators, parens and common true or false symbols, as used in the default
+        # tokenizer implementation.
+        _TOKENS = {
+            '*': TOKEN_AND, '&': TOKEN_AND, 'and': TOKEN_AND,
+            '+': TOKEN_OR, '|': TOKEN_OR, 'or': TOKEN_OR,
+            '~': TOKEN_NOT, '!': TOKEN_NOT, 'not': TOKEN_NOT,
+            '(': TOKEN_LPAR, ')': TOKEN_RPAR,
+            '[': TOKEN_LPAR, ']': TOKEN_RPAR,
+            'true': TOKEN_TRUE, '1': TOKEN_TRUE,
+            'false': TOKEN_FALSE, '0': TOKEN_FALSE, 'none': TOKEN_FALSE
+        }
+
+        length = len(expr)
+        position = 0
+        while position < length:
+            tok = expr[position]
+
+            sym = tok.isalpha() or tok == '_'
+            if sym:
+                position += 1
+                while position < length:
+                    char = expr[position]
+                    if char.isalnum() or char in ('.', ':', '_'):
+                        position += 1
+                        tok += char
+                    else:
+                        break
+                position -= 1
+
+            try:
+                yield _TOKENS[tok.lower()], tok, position
+            except KeyError:
+                if sym:
+                    yield TOKEN_SYMBOL, tok, position
+                elif tok not in (' ', '\t', '\r', '\n'):
+                    raise TypeError('Unknown token: %(tok)r at position: %(position)r' % locals())
+
+            position += 1
+
+    # TODO: explain what this means exactly
+    def _rdistributive(self, expr, operation_template):
+        """
+        Recursively flatten the `expr` expression for the `operation_template` AND or
+        OR operation instance.
+        """
+        if expr.isliteral:
+            return expr
+
+        expr_class = expr.__class__
+
+        args = (self._rdistributive(arg, operation_template) for arg in expr.args)
+        args = tuple(arg.simplify() for arg in args)
+        if len(args) == 1:
+            return args[0]
+
+        expr = expr_class(*args)
+
+        dualoperation = operation_template.dual
+        if isinstance(expr, dualoperation):
+            expr = expr.distributive()
+        return expr
+
+    def normalize(self, expr, operation):
+        """
+        Return a normalized expression transformed to its normal form in the
+        given AND or OR operation.
+    
+        The new expression arguments will satisfy these conditions:
+        - operation(*args) == expr (here mathematical equality is meant)
+        - the operation does not occur in any of its arg. 
+        - NOT is only appearing in literals.
+        
+        The operation must be an AND or OR operation or a subclass.
+        """
+        # ensure that the operation is not NOT and one of the configured operations
+        assert operation in (self.AND, self.OR,)
+        # Move NOT inwards.
+        expr = expr.literalize()
+        # Simplify first, otherwise _rdistributive() may take forever.
+        expr = expr.simplify()
+        operation_template = operation(TRUE, FALSE)
+        expr = self._rdistributive(expr, operation_template)
+        # Canonicalize
+        expr = expr.simplify()
+        if isinstance(expr, operation):
+            return expr
+        return operation(*expr.args)
+
+
+class Expression(object):
+    """
+    Abstract base class for all boolean expressions, including functions and
+    variable symbols.
+    """
+    # Defines sort and comparison order relation between different classes.
+    sort_order = None
+
+    # Store arguments aka. subterms of this expressions.
+    # subterms are either literals or expressions.
+    args = tuple()
+
+    # True is this is a literal expression such as a Symbol, TRUE or FALSE
+    isliteral = False
+
+    # True if this expression has been simplified to in canonical form.
+    iscanonical = False
+
+    # Store an associated object: only used in Symbols
+    obj = None
+
+    # these class attributes are configured when a new BooleanAlgebra is created
+    NOT = None
+    AND = None
+    OR = None
+
     @property
     def objects(self):
         """
@@ -266,168 +549,13 @@ class Expression(object):
 
     __nonzero__ = __bool__
 
-    def _start_operation(self, ast, operation, precedence):
-        """
-        Returns an AST where all operations of lower precedence are finalized.
-        """
-        op_prec = precedence[operation]
-        while True:
-            if ast[1] is None:  # [None, None, x]
-                ast[1] = operation
-                return ast
-
-            prec = precedence[ast[1]]
-            if prec > op_prec:  # op=*, [ast, +, x, y] -> [[ast, +, x], *, y]
-                ast = [ast, operation, ast.pop(-1)]
-                return ast
-
-            if prec == op_prec:  # op=*, [ast, *, x] -> [ast, *, x]
-                return ast
-
-            if ast[0] is None:  # op=+, [None, *, x, y] -> [None, +, x*y]
-                subexp = ast[1](*ast[2:])
-                return [ast[0], operation, subexp]
-
-            else:  # op=+, [[ast, *, x], ~, y] -> [ast, *, x, ~y]
-                ast[0].append(ast[1](*ast[2:]))
-                ast = ast[0]
-
-    def parse(self, expr, simplify=True):
-        """
-        Return a boolean expression parsed from `expr` either a unicode string
-        or tokens iterable.
-    
-        Optionally simplify the expression if `simplify` is True.
-
-        If `expr` is a string, the standard `tokenizer` is used for tokenization and
-        the `self.symbol` Symbol class or subclass is used to create symbol
-        instances from symbol tokens.
-    
-        If `expr` is an iterable, it should contain 3-tuples of: 
-        (token, token_string, position). 
-        token can be a pre-created Symbol instance or a TOKEN id.
-        See the boolean.tokenizer function for details and example.
-        """
-
-        precedence = {self.NOT: 5, self.AND: 10, self.OR: 15, TOKEN_LPAR: 20}
-
-        if isinstance(expr, basestring):
-            tokenized = self.tokenizer(expr)
-        else:
-            tokenized = iter(expr)
-
-        ast = [None, None]
-
-        for token, tokstr, position in tokenized:
-            if token == TOKEN_SYMBOL:
-                ast.append(self.symbol(tokstr))
-            elif isinstance(token, Symbol):
-                ast.append(token)
-
-            elif token == TOKEN_TRUE:
-                ast.append(TRUE)
-            elif token == TOKEN_FALSE:
-                ast.append(FALSE)
-
-            elif token == TOKEN_NOT:
-                ast = [ast, self.NOT]
-            elif token == TOKEN_AND:
-                ast = self._start_operation(ast, self.AND, precedence)
-            elif token == TOKEN_OR:
-                ast = self._start_operation(ast, self.OR, precedence)
-
-            elif token == TOKEN_LPAR:
-                ast = [ast, TOKEN_LPAR]
-            elif token == TOKEN_RPAR:
-                while True:
-                    if ast[0] is None:
-                        raise TypeError('Bad closing parenthesis at position: %(position)r.' % locals())
-                    if ast[1] is TOKEN_LPAR:
-                        ast[0].append(ast[2])
-                        ast = ast[0]
-                        break
-                    subex = ast[1](*ast[2:])
-                    ast[0].append(subex)
-                    ast = ast[0]
-            else:
-                raise TypeError('Unknown token: %(token)r: %(tokstr)r at position: %(position)r.' % locals())
-
-        while True:
-            if ast[0] is None:
-                if ast[1] is None:
-                    assert len(ast) == 3, 'Invalid boolean expression'
-                    parsed = ast[2]
-                else:
-                    parsed = ast[1](*ast[2:])
-                break
-            else:
-                subex = ast[1](*ast[2:])
-                ast[0].append(subex)
-                ast = ast[0]
-
-        if simplify:
-            return parsed.simplify()
-        return parsed
-
-    # TODO: explain what this means exactly
-    def _rdistributive(self, operation_template):
-        """
-        Recursively flatten this expression for the `operation_template` AND or
-        OR operation instance.
-        """
-        if self.isliteral:
-            return self
-
-        args = (arg._rdistributive(operation_template) for arg in self.args)
-        args = tuple(arg.simplify() for arg in args)
-        if len(args) == 1:
-            return args[0]
-
-        expr = self.__class__(*args)
-
-        dualoperation = operation_template.dual
-        if isinstance(expr, dualoperation):
-            expr = expr.distributive()
-        return expr
-
-    def normalize(self, operation):
-        """
-        Transform an expression into its normal form in the given AND or OR
-        operation.
-    
-        The expression arguments will satisfy these conditions:
-        - operation(*args) == expr (here mathematical equality is meant)
-        - the operation does not occur in any of its arg. 
-        - NOT is only appearing in literals.
-        
-        The operation must be one of the expression configured AND or OR
-        operations or a subclass of it.
-        """
-        # ensure that the operation is not NOT and one of the configured operations
-        assert operation in (self.AND, self.OR,)
-        # Move NOT inwards.
-        expr = self.literalize()
-        # Simplify first, otherwise _rdistributive() may take forever.
-        expr = expr.simplify()
-        operation_template = operation(TRUE, FALSE)
-        expr = self._rdistributive(operation_template)
-        # Canonicalize
-        expr = expr.simplify()
-        if isinstance(expr, operation):
-            return expr
-        return operation(*expr.args)
-
-    def build_symbols(self, *args):
-        """
-        Return a tuple of symbols building a new symbol from each argument.
-        """
-        return tuple(map(self.symbol, args))
 
 
 @total_ordering
 class BaseElement(object):
     """
-    Abstract base class for the base elements TRUE and FALSE of the boolean algebra.
+    Abstract base class for the base elements TRUE and FALSE of the boolean
+    algebra.
     """
     sort_order = 0
 
@@ -440,7 +568,7 @@ class BaseElement(object):
         # and therefore only assigned after creation of the singletons,
         self.dual = None
 
-        # base elemenst have no args, objs, symbols of course, but we want them to behave as if they 
+        # base elements have no args, objs, symbols of course, but we want them to behave as if they
         # were an Expression.
         self.isliteral = True
         self.args = tuple()
@@ -626,7 +754,8 @@ class Function(Expression):
         self.operator = None
 
         # Make sure all arguments are boolean expressions.
-        assert all(isinstance(arg, (Expression, BaseElement)) for arg in args), 'Bad arguments: all arguments must be an Expression, TRUE or FALSE: %r' % (args,)
+        assert (all(isinstance(arg, (Expression, BaseElement)) for arg in args),
+                'Bad arguments: all arguments must be an Expression, TRUE or FALSE: %r' % (args,))
         self.args = tuple(args)
 
     def __str__(self):
@@ -655,7 +784,7 @@ class Function(Expression):
         """
         Return a pretty formatted representation of self as an indented tree.
 
-        If debug is True, also prints debug information for each expression term.
+        If debug is True, also prints debug information for each expression arg.
 
         For example:
         >>> print Expression().parse(u'not a and not b and not (a and ba and c) and c or c', simplify=False).pretty()
@@ -705,9 +834,9 @@ class NOT(Function):
     The NOT operation takes exactly one argument. If this argument is a Symbol
     the resulting expression is also called a literal.
 
-    The operator "~" can be used as abbreviation for NOT, e.g. instead of
-    NOT(x) one can write ~x (where x is some boolean expression). Also for
-    printing "~" is used for better readability.
+    The operator "~" can be used as abbreviation for NOT, e.g. instead of NOT(x)
+    one can write ~x (where x is some boolean expression). Also for printing "~"
+    is used for better readability.
     
     You can subclass to define alternative string representation.
     For example::
@@ -756,7 +885,6 @@ class NOT(Function):
     def cancel(self):
         """
         Cancel itself and following NOTs as far as possible.
-
         Returns the simplified expression.
         """
         expr = self
@@ -771,7 +899,6 @@ class NOT(Function):
     def demorgan(self):
         """
         Return a expr where the NOT function is moved inward.
-
         This is achieved by canceling double NOTs and using De Morgan laws.
         """
         expr = self.cancel()
@@ -1159,104 +1286,3 @@ class OR(DualBase):
         self.annihilator = TRUE
         self.dual = self.AND
         self.operator = '+'
-
-
-# Token types for standard operators and parens
-TOKEN_AND = 1
-TOKEN_OR = 2
-TOKEN_NOT = 3
-TOKEN_LPAR = 4
-TOKEN_RPAR = 5
-TOKEN_TRUE = 6
-TOKEN_FALSE = 7
-TOKEN_SYMBOL = 8
-
-
-def tokenizer(expr):
-    """
-    A tokenizer is a callable accepting a single unicode string as an argument
-    and returning an iterable of 3-tuple describing each token.
-
-    This tuple must contain (token, token string, position):
-    - token: either a Symbol instance or one of TOKEN_* token types..
-    - token string: the original token unicode string.
-    - position: some simple object describing the starting position of the
-      original token string in the `expr` string. It can be an int for a
-      character offset, or a tuple of starting (row/line, column).
-
-    The token position is used only for error reporting and can be None or
-    empty.
-
-    Raise TypeError on errors.
-
-    You can use this tokenizer as a base to create specialized custom tokenizers
-    for your algebra. See also the tests for other examples of alternative
-    tokenizers.
-
-    This tokenizer has these characteristics:
-    - The `expr` string can span multiple lines,
-    - Whitespace is not significant. 
-    - The returned position is the starting character offset of a token.
-
-    - A TOKEN_SYMBOL is returned for valid identifiers which is a string without
-    spaces. These are valid identifiers:
-        - Python identifiers.
-        - a string even if starting with digits
-        - digits (except for 0 and 1).
-        - dotted names : foo.bar consist of one token.
-        - names with colons: foo:bar consist of one token.
-        These are not identifiers:
-        - quoted strings.
-        - any punctuation which is not an operation
-
-    - Recognized operators are (in any upper/lower case combinations):
-        - for and:  '*', '&', 'and'
-        - for or: '+', '|', 'or'
-        - for not: '~', '!', 'not'
-
-    - Recognized special symbols are (in any upper/lower case combinations):
-        - True symbols: 1 and True
-        - False symbols: 0, False and None
-    """
-    if not isinstance(expr, basestring):
-        raise TypeError('expr must be string but it is %s.' % type(expr))
-
-    # mapping of lowercase token strings to a token type id for the standard
-    # operators, parens and common true or false symbols, as used in the default
-    # tokenizer implementation.
-    _TOKENS = {
-        '*': TOKEN_AND, '&': TOKEN_AND, 'and': TOKEN_AND,
-        '+': TOKEN_OR, '|': TOKEN_OR, 'or': TOKEN_OR,
-        '~': TOKEN_NOT, '!': TOKEN_NOT, 'not': TOKEN_NOT,
-        '(': TOKEN_LPAR, ')': TOKEN_RPAR,
-        '[': TOKEN_LPAR, ']': TOKEN_RPAR,
-        'true': TOKEN_TRUE, '1': TOKEN_TRUE,
-        'false': TOKEN_FALSE, '0': TOKEN_FALSE, 'none': TOKEN_FALSE
-    }
-
-    length = len(expr)
-    position = 0
-    while position < length:
-        tok = expr[position]
-
-        sym = tok.isalpha() or tok == '_'
-        if sym:
-            position += 1
-            while position < length:
-                char = expr[position]
-                if char.isalnum() or char in ('.', ':', '_'):
-                    position += 1
-                    tok += char
-                else:
-                    break
-            position -= 1
-
-        try:
-            yield _TOKENS[tok.lower()], tok, position
-        except KeyError:
-            if sym:
-                yield TOKEN_SYMBOL, tok, position
-            elif tok not in (' ', '\t', '\r', '\n'):
-                raise TypeError('Unknown token: %(tok)r at position: %(position)r' % locals())
-
-        position += 1

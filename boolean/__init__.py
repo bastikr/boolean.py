@@ -12,7 +12,7 @@ Released under revised BSD license.
 
 from __future__ import absolute_import
 
-from boolean.boolean import Expression
+from boolean.boolean import BooleanAlgebra
 from boolean.boolean import Symbol
 
 from boolean.boolean import AND

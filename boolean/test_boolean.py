@@ -20,12 +20,12 @@ except NameError:
 import boolean
 
 
-class ExpressionTestCase(unittest.TestCase):
+class BooleanAlgebraTestCase(unittest.TestCase):
 
     def test_creation(self):
-        E = boolean.Expression()
+        algebra = boolean.BooleanAlgebra()
         expr_str = '(a+b+c)*d*(~e+(f*g))'
-        expr = E.parse(expr_str, simplify=False)
+        expr = algebra.parse(expr_str, simplify=False)
         self.assertEqual(expr_str, str(expr))
 
     def test_parse_with_mixed_operators_multilines_and_custom_symbol(self):
@@ -37,8 +37,8 @@ class ExpressionTestCase(unittest.TestCase):
                       d & ( ! e_
                       | (my * g OR 1 or 0) ) AND that '''
 
-        E = boolean.Expression(symbol_class=MySymbol)
-        expr = E.parse(expr_str, simplify=False)
+        algebra = boolean.BooleanAlgebra(symbol_class=MySymbol)
+        expr = algebra.parse(expr_str, simplify=False)
 
         expected = boolean.AND(
             boolean.OR(
@@ -65,8 +65,8 @@ class ExpressionTestCase(unittest.TestCase):
 
     def test_parse_recognizes_trueish_and_falsish_symbol_tokens(self):
         expr_str = 'True or False or None or 0 or 1 or TRue or FalSE or NONe'
-        E = boolean.Expression()
-        expr = E.parse(expr_str, simplify=False)
+        algebra = boolean.BooleanAlgebra()
+        expr = algebra.parse(expr_str, simplify=False)
         expected = boolean.OR(
             boolean.TRUE,
             boolean.FALSE,
@@ -84,31 +84,32 @@ class ExpressionTestCase(unittest.TestCase):
         class CustomSymbol(boolean.Symbol):
             pass
 
-        def tokenizer(s):
-            "Sample tokenizer using custom operators and symbols"
-            ops = {
-                'WHY_NOT': boolean.TOKEN_OR,
-                'ALSO': boolean.TOKEN_AND,
-                'NEITHER': boolean.TOKEN_NOT,
-                '(': boolean.TOKEN_LPAR,
-                ')': boolean.TOKEN_RPAR,
-            }
+        class CustomAlgebra(boolean.BooleanAlgebra):
+            def tokenize(self, s):
+                "Sample tokenizer using custom operators and symbols"
+                ops = {
+                    'WHY_NOT': boolean.TOKEN_OR,
+                    'ALSO': boolean.TOKEN_AND,
+                    'NEITHER': boolean.TOKEN_NOT,
+                    '(': boolean.TOKEN_LPAR,
+                    ')': boolean.TOKEN_RPAR,
+                }
 
-            for row, line in enumerate(s.splitlines(False)):
-                for col, tok in enumerate(line.split()):
-                    if tok in ops:
-                        yield ops[tok], tok, (row, col)
-                    elif tok == 'Custom':
-                        yield CustomSymbol(tok), tok, (row, col)
-                    else:
-                        yield boolean.TOKEN_SYMBOL, tok, (row, col)
+                for row, line in enumerate(s.splitlines(False)):
+                    for col, tok in enumerate(line.split()):
+                        if tok in ops:
+                            yield ops[tok], tok, (row, col)
+                        elif tok == 'Custom':
+                            yield CustomSymbol(tok), tok, (row, col)
+                        else:
+                            yield boolean.TOKEN_SYMBOL, tok, (row, col)
 
         expr_str = '''( Custom WHY_NOT regular ) ALSO NEITHER  (
                       not_custom ALSO standard )
                    '''
 
-        E = boolean.Expression(tokenizer_fun=tokenizer)
-        expr = E.parse(expr_str, simplify=False)
+        algebra = CustomAlgebra()
+        expr = algebra.parse(expr_str, simplify=False)
         expected = boolean.AND(
             boolean.OR(
                 CustomSymbol('Custom'),
@@ -141,93 +142,94 @@ class ExpressionTestCase(unittest.TestCase):
         class ColonDotVar(boolean.Symbol):
             "Colon and dot-separated string boolean variable"
 
-        def advanced_tokenizer_example(expr):
-            """
-            Example custom tokenizer derived from the standard Python tokenizer
-            with a few extra features: #-style comments are supported and a
-            colon- and dot-separated string is recognized and stored in custom
-            symbols. In contrast with the standard tokenizer, only these
-            boolean operators are recognized : & | ! and or not.
+        class AdvancedAlgebra(boolean.BooleanAlgebra):
+            def tokenize(self, expr):
+                """
+                Example custom tokenizer derived from the standard Python tokenizer
+                with a few extra features: #-style comments are supported and a
+                colon- and dot-separated string is recognized and stored in custom
+                symbols. In contrast with the standard tokenizer, only these
+                boolean operators are recognized : & | ! and or not.
+    
+                For more advanced tokenization you could also consider forking the
+                `tokenize` standard library module.
+                """
 
-            For more advanced tokenization you could also consider forking the
-            `tokenize` standard library module.
-            """
+                if not isinstance(expr, basestring):
+                    raise TypeError('expr must be string but it is %s.' % type(expr))
 
-            if not isinstance(expr, basestring):
-                raise TypeError('expr must be string but it is %s.' % type(expr))
+                # mapping of lowercase token strings to a token object instance for
+                # standard operators, parens and common true or false symbols
+                TOKENS = {
+                    '&': boolean.TOKEN_AND,
+                    'and': boolean.TOKEN_AND,
+                    '|': boolean.TOKEN_OR,
+                    'or': boolean.TOKEN_OR,
+                    '!': boolean.TOKEN_NOT,
+                    'not': boolean.TOKEN_NOT,
+                    '(': boolean.TOKEN_LPAR,
+                    ')': boolean.TOKEN_RPAR,
+                    'true': boolean.TOKEN_TRUE,
+                    '1': boolean.TOKEN_TRUE,
+                    'false': boolean.TOKEN_FALSE,
+                    '0': boolean.TOKEN_FALSE,
+                    'none': boolean.TOKEN_FALSE,
+                }
 
-            # mapping of lowercase token strings to a token object instance for
-            # standard operators, parens and common true or false symbols
-            TOKENS = {
-                '&': boolean.TOKEN_AND,
-                'and': boolean.TOKEN_AND,
-                '|': boolean.TOKEN_OR,
-                'or': boolean.TOKEN_OR,
-                '!': boolean.TOKEN_NOT,
-                'not': boolean.TOKEN_NOT,
-                '(': boolean.TOKEN_LPAR,
-                ')': boolean.TOKEN_RPAR,
-                'true': boolean.TOKEN_TRUE,
-                '1': boolean.TOKEN_TRUE,
-                'false': boolean.TOKEN_FALSE,
-                '0': boolean.TOKEN_FALSE,
-                'none': boolean.TOKEN_FALSE,
-            }
+                ignored_token_types = (
+                    tokenize.NL, tokenize.NEWLINE, tokenize.COMMENT,
+                    tokenize.INDENT, tokenize.DEDENT,
+                    tokenize.ENDMARKER
+                )
 
-            ignored_token_types = (
-                tokenize.NL, tokenize.NEWLINE, tokenize.COMMENT,
-                tokenize.INDENT, tokenize.DEDENT,
-                tokenize.ENDMARKER
-            )
+                # note: an unbalanced expression may raise a TokenError here.
+                tokens = ((toktype, tok, row, col,) for toktype, tok, (row, col,), _, _
+                          in tokenize.generate_tokens(StringIO(expr).readline)
+                          if tok and tok.strip())
 
-            # note: an unbalanced expression may raise a TokenError here.
-            tokens = ((toktype, tok, row, col,) for toktype, tok, (row, col,), _, _
-                      in tokenize.generate_tokens(StringIO(expr).readline)
-                      if tok and tok.strip())
+                COLON_DOT = (':', '.',)
 
-            COLON_DOT = (':', '.',)
+                def build_symbol(current_dotted):
+                    if current_dotted:
+                        if any(s in current_dotted for s in COLON_DOT):
+                            sym = ColonDotVar(current_dotted)
+                        else:
+                            sym = PlainVar(current_dotted)
+                        return sym
 
-            def build_symbol(current_dotted):
-                if current_dotted:
-                    if any(s in current_dotted for s in COLON_DOT):
-                        sym = ColonDotVar(current_dotted)
+                # accumulator for dotted symbols that span several `tokenize` tokens
+                dotted, srow, scol = '', None, None
+
+                for toktype, tok, row, col in tokens:
+                    if toktype in ignored_token_types:
+                        # we reached a break point and should yield the current dotted
+                        symbol = build_symbol(dotted)
+                        if symbol is not None:
+                            yield symbol, dotted, (srow, scol)
+                            dotted, srow, scol = '', None, None
+
+                        continue
+
+                    std_token = TOKENS.get(tok.lower())
+                    if std_token is not None:
+                        # we reached a break point and should yield the current dotted
+                        symbol = build_symbol(dotted)
+                        if symbol is not None:
+                            yield symbol, dotted, (srow, scol)
+                            dotted, srow, scol = '', 0, 0
+
+                        yield std_token, tok, (row, col)
+
+                        continue
+
+                    if toktype == tokenize.NAME or (toktype == tokenize.OP and tok in COLON_DOT):
+                        if not dotted:
+                            srow = row
+                            scol = col
+                        dotted += tok
+
                     else:
-                        sym = PlainVar(current_dotted)
-                    return sym
-
-            # accumulator for dotted symbols that span several `tokenize` tokens
-            dotted, srow, scol = '', None, None
-
-            for toktype, tok, row, col in tokens:
-                if toktype in ignored_token_types:
-                    # we reached a break point and should yield the current dotted
-                    symbol = build_symbol(dotted)
-                    if symbol is not None:
-                        yield symbol, dotted, (srow, scol)
-                        dotted, srow, scol = '', None, None
-
-                    continue
-
-                std_token = TOKENS.get(tok.lower())
-                if std_token is not None:
-                    # we reached a break point and should yield the current dotted
-                    symbol = build_symbol(dotted)
-                    if symbol is not None:
-                        yield symbol, dotted, (srow, scol)
-                        dotted, srow, scol = '', 0, 0
-
-                    yield std_token, tok, (row, col)
-
-                    continue
-
-                if toktype == tokenize.NAME or (toktype == tokenize.OP and tok in COLON_DOT):
-                    if not dotted:
-                        srow = row
-                        scol = col
-                    dotted += tok
-
-                else:
-                    raise TypeError('Unknown token: %(tok)r at line: %(row)r, column: %(col)r' % locals())
+                        raise TypeError('Unknown token: %(tok)r at line: %(row)r, column: %(col)r' % locals())
 
         test_expr = '''
             (colon1:dot1.dot2 or colon2_name:col_on3:do_t1.do_t2.do_t3 )
@@ -235,8 +237,8 @@ class ExpressionTestCase(unittest.TestCase):
             ( plain_symbol & !Custom )
         '''
 
-        E = boolean.Expression(tokenizer_fun=advanced_tokenizer_example)
-        expr = E.parse(test_expr, simplify=False)
+        algebra = AdvancedAlgebra()
+        expr = algebra.parse(test_expr, simplify=False)
         expected = boolean.AND(
             boolean.OR(
                 ColonDotVar('colon1:dot1.dot2'),
@@ -375,7 +377,7 @@ class NOTTestCase(unittest.TestCase):
     def test_isliteral(self):
         s = boolean.Symbol(1)
         self.assertTrue(boolean.NOT(s).isliteral)
-        self.assertFalse(boolean.Expression().parse('~(a+b)').isliteral)
+        self.assertFalse(boolean.BooleanAlgebra().parse('~(a+b)').isliteral)
 
     def test_literals(self):
         a = boolean.Symbol('a')
@@ -384,7 +386,7 @@ class NOTTestCase(unittest.TestCase):
         self.assertTrue(l in l.literals)
         self.assertEqual(len(l.literals), 1)
 
-        parse = boolean.Expression().parse
+        parse = boolean.BooleanAlgebra().parse
         l = parse('~(a*a)', simplify=False)
         self.assertFalse(l.isliteral)
         self.assertTrue(a in l.literals)
@@ -394,14 +396,14 @@ class NOTTestCase(unittest.TestCase):
         self.assertTrue(l.isliteral)
 
     def test_literalize(self):
-        parse = boolean.Expression().parse
+        parse = boolean.BooleanAlgebra().parse
         self.assertEqual(parse('~a').literalize(), parse('~a'))
         self.assertEqual(parse('~(a*b)').literalize(), parse('~a+~b'))
         self.assertEqual(parse('~(a+b)').literalize(), parse('~a*~b'))
 
     def test_simplify(self):
         a = boolean.Symbol('a')
-        parse = boolean.Expression().parse
+        parse = boolean.BooleanAlgebra().parse
         self.assertEqual(~a, ~a)
         assert boolean.Symbol('a') == boolean.Symbol('a')
         self.assertNotEqual(a, parse('~~a', simplify=False))
@@ -413,7 +415,7 @@ class NOTTestCase(unittest.TestCase):
 
     def test_cancel(self):
         a = boolean.Symbol('a')
-        parse = boolean.Expression().parse
+        parse = boolean.BooleanAlgebra().parse
         self.assertEqual(~a, (~a).cancel())
         self.assertEqual(a, parse('~~a', simplify=False).cancel())
         self.assertEqual(~a, parse('~~~a', simplify=False).cancel())
@@ -421,7 +423,7 @@ class NOTTestCase(unittest.TestCase):
 
     def test_demorgan(self):
         a, b = boolean.Symbol('a'), boolean.Symbol('b')
-        parse = boolean.Expression().parse
+        parse = boolean.BooleanAlgebra().parse
         self.assertEqual(parse('~(a*b)', simplify=False).demorgan(), ~a + ~b)
         self.assertEqual(parse('~(a+b+c)', simplify=False).demorgan(), parse('~a*~b*~c'))
         self.assertEqual(parse('~(~a*b)', simplify=False).demorgan(), a + ~b)
@@ -438,7 +440,7 @@ class NOTTestCase(unittest.TestCase):
         a = boolean.Symbol('a')
         self.assertEqual(str(~a), '~a')
         self.assertEqual(repr(~a), "NOT(Symbol('a'))")
-        expr = boolean.Expression().parse('~(a*a)', simplify=False)
+        expr = boolean.BooleanAlgebra().parse('~(a*a)', simplify=False)
         self.assertEqual(str(expr), '~(a*a)')
         self.assertEqual(repr(expr), "NOT(AND(Symbol('a'), Symbol('a')))")
 
@@ -475,16 +477,16 @@ class DualBaseTestCase(unittest.TestCase):
             self.assertTrue(self.c in term.literals)
 
     def test_literalize(self):
-        parse = boolean.Expression().parse
+        parse = boolean.BooleanAlgebra().parse
         self.assertEqual(parse('a+~(b+c)', simplify=False).literalize(), parse('a+(~b*~c)', simplify=False))
 
     def test_annihilator(self):
-        parse = boolean.Expression().parse
+        parse = boolean.BooleanAlgebra().parse
         self.assertEqual(parse('a*a', simplify=False).annihilator, boolean.FALSE)
         self.assertEqual(parse('a+a', simplify=False).annihilator, boolean.TRUE)
 
     def test_identity(self):
-        parse = boolean.Expression().parse
+        parse = boolean.BooleanAlgebra().parse
         self.assertEqual(parse('a+b').identity, boolean.FALSE)
         self.assertEqual(parse('a*b').identity, boolean.TRUE)
 
@@ -492,7 +494,7 @@ class DualBaseTestCase(unittest.TestCase):
         self.assertEqual(boolean.AND(boolean.Symbol('a'), boolean.Symbol('b')).dual, boolean.OR)
         self.assertEqual(boolean.OR(boolean.Symbol('a'), boolean.Symbol('b')).dual, boolean.AND)
 
-        parse = boolean.Expression().parse
+        parse = boolean.BooleanAlgebra().parse
         self.assertEqual(parse('a+b').dual, boolean.AND)
         self.assertEqual(parse('a*b').dual, boolean.OR)
 
@@ -523,7 +525,7 @@ class DualBaseTestCase(unittest.TestCase):
         # Elimination
         self.assertEqual(a, ((a * ~b) + (a * b)).simplify())
 
-        parse = boolean.Expression().parse
+        parse = boolean.BooleanAlgebra().parse
         expected = parse('(a*b)+(b*c)+(a*c)', simplify=False)
         result = parse('(~a*b*c) + (a*~b*c) + (a*b*~c) + (a*b*c)', simplify=True)
         self.assertEqual(expected, result)
@@ -551,7 +553,7 @@ class DualBaseTestCase(unittest.TestCase):
             (a*~b*~c*d) + (~a*b*c*d) + (a*~b*c*d) + (a*b*c*d)
             '''
 
-        parsed = boolean.Expression().parse(test_expression_str, simplify=True)
+        parsed = boolean.BooleanAlgebra().parse(test_expression_str, simplify=True)
 
         test_expression = (
             (~a * ~b * ~c * ~d) + (~a * ~b * ~c * d) + (~a * b * ~c * ~d) +
@@ -577,7 +579,7 @@ class DualBaseTestCase(unittest.TestCase):
             a*~b*~c*d + ~a*b*c*d + a*~b*c*d + a*b*c*d
             '''
 
-        parsed = boolean.Expression().parse(test_expression_str, simplify=False)
+        parsed = boolean.BooleanAlgebra().parse(test_expression_str, simplify=False)
 
         test_expression = (
             ~a * ~b * ~c * ~d + ~a * ~b * ~c * d + ~a * b * ~c * ~d +
@@ -596,7 +598,7 @@ class DualBaseTestCase(unittest.TestCase):
         c = boolean.Symbol('c')
         d = boolean.Symbol('d')
 
-        parse = boolean.Expression().parse
+        parse = boolean.BooleanAlgebra().parse
 
         test_expression_str = ''.join('''
             (~a*~b*~c*~d) + (~a*~b*~c*d) + (~a*b*~c*~d) +
@@ -693,12 +695,12 @@ class DualBaseTestCase(unittest.TestCase):
             )
         )
 
-        result = boolean.Expression().parse(test_expression_str)
+        result = boolean.BooleanAlgebra().parse(test_expression_str)
         result = result.simplify()
         self.assertEqual(expected, result)
 
     def test_subtract(self):
-        parse = boolean.Expression().parse
+        parse = boolean.BooleanAlgebra().parse
         expr = parse('a*b*c')
         p1 = parse('b*d')
         p2 = parse('a*c')
@@ -707,7 +709,7 @@ class DualBaseTestCase(unittest.TestCase):
         self.assertEqual(expr.subtract(p2, simplify=True), result)
 
     def test_flatten(self):
-        parse = boolean.Expression().parse
+        parse = boolean.BooleanAlgebra().parse
 
         t1 = parse('a * (b*c)', simplify=False)
         t2 = parse('a*b*c', simplify=False)
@@ -764,7 +766,7 @@ class DualBaseTestCase(unittest.TestCase):
         self.assertTrue(not boolean.AND(x, y) > boolean.AND(x, y))
 
     def test_printing(self):
-        parse = boolean.Expression().parse
+        parse = boolean.BooleanAlgebra().parse
         self.assertEqual(str(parse('a*a', simplify=False)), 'a*a')
         self.assertEqual(repr(parse('a*a', simplify=False)), "AND(Symbol('a'), Symbol('a'))")
         self.assertEqual(str(parse('a+a', simplify=False)), 'a+a')
@@ -777,7 +779,7 @@ class OtherTestCase(unittest.TestCase):
 
     def test_class_order(self):
         # FIXME: this test is cryptic: what does it do?
-        parse = boolean.Expression().parse
+        parse = boolean.BooleanAlgebra().parse
         order = (
             (boolean.TRUE, boolean.FALSE),
             (boolean.Symbol('y'), boolean.Symbol('x')),
@@ -794,7 +796,7 @@ class OtherTestCase(unittest.TestCase):
 
     def test_parse(self):
         a, b, c = boolean.Symbol('a'), boolean.Symbol('b'), boolean.Symbol('c')
-        parse = boolean.Expression().parse
+        parse = boolean.BooleanAlgebra().parse
         self.assertEqual(parse('0'), boolean.FALSE)
         self.assertEqual(parse('(0)'), boolean.FALSE)
         self.assertEqual(parse('1') , boolean.TRUE)
@@ -831,15 +833,15 @@ class OtherTestCase(unittest.TestCase):
         expr = a * b + c
         self.assertEqual(expr.subs({a: b}).simplify(), b + c)
         self.assertEqual(expr.subs({a: a}).simplify(), expr)
-        self.assertEqual(expr.subs({a: b + c}).simplify(), boolean.Expression().parse('(b+c)*b+c').simplify())
+        self.assertEqual(expr.subs({a: b + c}).simplify(), boolean.BooleanAlgebra().parse('(b+c)*b+c').simplify())
         self.assertEqual(expr.subs({a * b: a}).simplify(), a + c)
         self.assertEqual(expr.subs({c: boolean.TRUE}).simplify(), boolean.TRUE)
 
     def test_normalize(self):
-        base = boolean.Expression()
-        expr = base.parse('((s+a)*(s+b)*(s+c)*(s+d)*(e+c+d))+(a*e*d)')
-        result = expr.normalize(expr.AND)
-        expected = base.parse('(a+s)*(b+e+s)*(c+d+e)*(c+e+s)*(d+s)')
+        algebra = boolean.BooleanAlgebra()
+        expr = algebra.parse('((s+a)*(s+b)*(s+c)*(s+d)*(e+c+d))+(a*e*d)')
+        result = algebra.normalize(expr, expr.AND)
+        expected = algebra.parse('(a+s)*(b+e+s)*(c+d+e)*(c+e+s)*(d+s)')
         self.assertEqual(result, expected)
 
 
