@@ -26,7 +26,7 @@ Released under revised BSD license.
 
 setup(
     name='boolean.py',
-    version='1.2',
+    version='2.0.dev1',
     license='revised BSD license',
     description='Boolean Algreba',
     long_description=long_desc,
