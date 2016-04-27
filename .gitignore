@@ -1,5 +1,4 @@
 *.pyc
-.*
 /boolean.py.egg-info/
 /build/
 /dist/

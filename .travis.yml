@@ -1,0 +1,18 @@
+sudo: false
+
+language: python
+
+python:
+  - "2.7"
+  - "3.4"
+  - "3.5"
+
+install:
+    - pip install --upgrade pip
+    - pip install -e .
+
+script:
+    - python setup.py test
+
+notifications:
+      email: false
