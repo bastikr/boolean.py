@@ -55,15 +55,26 @@ class BooleanAlgebra(object):
     # Defines sort and comparison order relation between different classes.
     sort_order = None
 
-    def __init__(self, NOT_class=None, AND_class=None, OR_class=None, symbol_class=None):
+    def __init__(self, TRUE_class=None, FALSE_class=None, symbol_class=None,
+                 NOT_class=None, AND_class=None, OR_class=None):
         """
-        The types for NOT, AND, OR, and symbol define the boolean algebra
-        operations and symbol variable. They default to the standard classes if
-        not provided.
+        The types for TRUE, FALSE, NOT, AND, OR and symbol define the boolean
+        algebra elements, operations and symbol variable. They default to the
+        standard classes if not provided.
         """
+        # base elements
 
-        # class used for Symbols
-        self.symbol = symbol_class or Symbol
+        # TRUE and FALSE are algebra-wise self- and cross-referencing singletons.
+        self.TRUE = TRUE_class or _TRUE
+        self.TRUE = self.TRUE()
+        self.FALSE = TRUE_class or _FALSE
+        self.FALSE = self.FALSE()
+        self.TRUE.TRUE = self.TRUE
+        self.TRUE.FALSE = self.FALSE
+        self.TRUE.dual = self.FALSE
+        self.FALSE.dual = self.TRUE
+        self.FALSE.TRUE = self.TRUE
+        self.FALSE.FALSE = self.FALSE
 
         # boolean operation types, defaulting to the standard types
         self.NOT = NOT_class or NOT
@@ -73,20 +84,35 @@ class BooleanAlgebra(object):
         self.NOT.NOT = self.NOT
         self.NOT.AND = self.AND
         self.NOT.OR = self.OR
+        self.NOT.TRUE = self.TRUE
+        self.NOT.FALSE = self.FALSE
 
         self.AND.NOT = self.NOT
         self.AND.AND = self.AND
         self.AND.OR = self.OR
+        self.AND.TRUE = self.TRUE
+        self.AND.FALSE = self.FALSE
 
         self.OR.NOT = self.NOT
         self.OR.AND = self.AND
         self.OR.OR = self.OR
+        self.OR.TRUE = self.TRUE
+        self.OR.FALSE = self.FALSE
+
+        # class used for Symbols
+        self.symbol = symbol_class or Symbol
 
         self.symbol.NOT = self.NOT
         self.symbol.AND = self.AND
         self.symbol.OR = self.OR
+        self.symbol.TRUE = self.TRUE
+        self.symbol.FALSE = self.FALSE
 
-        ###### FIXME: these are not available for TRUE AND FALSE?
+    def definition(self):
+        """
+        Return a tuple for this algebra elements and types  (TRUE, FALSE, NOT, AND, OR, symbol)
+        """
+        return self.TRUE, self.FALSE, self.NOT, self.AND, self.OR, self.symbol
 
     def symbols(self, *args):
         """
@@ -127,9 +153,9 @@ class BooleanAlgebra(object):
                 ast.append(token)
 
             elif token == TOKEN_TRUE:
-                ast.append(TRUE)
+                ast.append(self.TRUE)
             elif token == TOKEN_FALSE:
-                ast.append(FALSE)
+                ast.append(self.FALSE)
 
             elif token == TOKEN_NOT:
                 ast = [ast, self.NOT]
@@ -327,7 +353,7 @@ class BooleanAlgebra(object):
         expr = expr.literalize()
         # Simplify first, otherwise _rdistributive() may take forever.
         expr = expr.simplify()
-        operation_template = operation(TRUE, FALSE)
+        operation_template = operation(self.TRUE, self.FALSE)
         expr = self._rdistributive(expr, operation_template)
         # Canonicalize
         expr = expr.simplify()
@@ -358,6 +384,8 @@ class Expression(object):
     obj = None
 
     # these class attributes are configured when a new BooleanAlgebra is created
+    TRUE = None
+    FALSE = None
     NOT = None
     AND = None
     OR = None
@@ -551,8 +579,7 @@ class Expression(object):
 
 
 
-@total_ordering
-class BaseElement(object):
+class BaseElement(Expression):
     """
     Abstract base class for the base elements TRUE and FALSE of the boolean
     algebra.
@@ -568,26 +595,12 @@ class BaseElement(object):
         # and therefore only assigned after creation of the singletons,
         self.dual = None
 
-        # base elements have no args, objs, symbols of course, but we want them to behave as if they
-        # were an Expression.
-        self.isliteral = True
-        self.args = tuple()
-        self.objects = set()
-        self.literals = set()
-        self.symbols = set()
-
     def __lt__(self, other):
         if isinstance(other, BaseElement):
-            return self == FALSE
+            return self == self.FALSE
         return NotImplemented
 
     __nonzero__ = __bool__ = lambda s: None
-
-    def simplify(self):
-        return self
-
-    def literalize(self):
-        return self
 
     def pretty(self, indent=0, debug=False):
         """
@@ -610,7 +623,7 @@ class _TRUE(BaseElement):
         return hash(True)
 
     def __eq__(self, other):
-        return self is other or other is True
+        return self is other or other is True or isinstance(other, _TRUE)
 
     def __str__(self):
         return '1'
@@ -635,7 +648,7 @@ class _FALSE(BaseElement):
         return hash(False)
 
     def __eq__(self, other):
-        return self is other or other is False
+        return self is other or other is False or isinstance(other, _FALSE)
 
     def __str__(self):
         return '0'
@@ -646,27 +659,15 @@ class _FALSE(BaseElement):
     __nonzero__ = __bool__ = lambda s: False
 
 
-# TRUE and FALSE are global self- and cross-referencing singletons.
-# They are created once here and they cannot be sub-classed nor re-instantiated.
-TRUE = _TRUE()
-FALSE = _FALSE()
-TRUE.TRUE = TRUE
-TRUE.FALSE = FALSE
-TRUE.dual = FALSE
-FALSE.dual = TRUE
-FALSE.TRUE = TRUE
-FALSE.FALSE = FALSE
-del _TRUE
-del _FALSE
-
-
 class Symbol(Expression):
     """
     Boolean variable.
     
     A symbol can hold an object used to determine equality.
     """
-    # FIXME: this statement is weird: Symbols do not have a value assigned??
+
+    # FIXME: the statement below in the original docstring is weird: Symbols do
+    # not have a value assigned, so how could they ever be FALSE
     """
     Symbols (also called boolean variables) can only take on the values TRUE
     or FALSE. 
@@ -875,7 +876,7 @@ class NOT(Function):
         if not isinstance(expr, self.__class__):
             return expr.simplify()
 
-        if expr.args[0] in (TRUE, FALSE,):
+        if expr.args[0] in (self.TRUE, self.FALSE,):
             return expr.args[0].dual
 
         expr = self.__class__(expr.args[0].simplify())
@@ -1258,8 +1259,8 @@ class AND(DualBase):
 
     def __init__(self, *args):
         super(AND, self).__init__(*args)
-        self.identity = TRUE
-        self.annihilator = FALSE
+        self.identity = self.TRUE
+        self.annihilator = self.FALSE
         self.dual = self.OR
         self.operator = '*'
 
@@ -1282,7 +1283,7 @@ class OR(DualBase):
 
     def __init__(self, *args):
         super(OR, self).__init__(*args)
-        self.identity = FALSE
-        self.annihilator = TRUE
+        self.identity = self.FALSE
+        self.annihilator = self.TRUE
         self.dual = self.AND
         self.operator = '+'

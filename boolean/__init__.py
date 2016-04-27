@@ -19,9 +19,6 @@ from boolean.boolean import AND
 from boolean.boolean import NOT
 from boolean.boolean import OR
 
-from boolean.boolean import TRUE
-from boolean.boolean import FALSE
-
 from boolean.boolean import TOKEN_TRUE
 from boolean.boolean import TOKEN_FALSE
 from boolean.boolean import TOKEN_SYMBOL
