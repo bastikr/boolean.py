@@ -23,8 +23,8 @@ Released under revised BSD license.
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-from functools import total_ordering
 import itertools
+import sys
 
 try:
     basestring  # Python 2
@@ -42,6 +42,61 @@ TOKEN_TRUE = 6
 TOKEN_FALSE = 7
 TOKEN_SYMBOL = 8
 
+TOKEN_TYPES = {
+    TOKEN_AND: 'AND',
+    TOKEN_OR: 'OR',
+    TOKEN_NOT: 'NOT',
+    TOKEN_LPAR: '(',
+    TOKEN_RPAR: ')',
+    TOKEN_TRUE: 'TRUE',
+    TOKEN_FALSE: 'FALSE',
+    TOKEN_SYMBOL: 'SYMBOL',
+}
+
+
+# parsing errors code and messages
+PARSE_UNKNOWN_TOKEN = 1
+PARSE_UNBALANCED_CLOSING_PARENS = 2
+PARSE_INVALID_EXPRESSION = 3
+
+PARSE_ERRORS = {
+    PARSE_UNKNOWN_TOKEN: 'Unknown token',
+    PARSE_UNBALANCED_CLOSING_PARENS: 'Bad closing parenthesis',
+    PARSE_INVALID_EXPRESSION: 'Invalid expression',
+}
+
+
+class ParseError(Exception):
+    """
+    Raised when the parser or tokemizer encounters a syntax error. Instances of
+    this class have attributes token_type, token_string, position, error_code to
+    access the details of the error. str() of the exception instance returns a
+    formatted message.
+    
+    """
+    def __init__(self, token_type=None, token_string='', position=-1, error_code=0):
+        self.token_type = token_type
+        self.token_string = token_string
+        self.position = position
+        self.error_code = error_code
+
+    def __str__(self, *args, **kwargs):
+        ttype = ''
+        if self.token_type:
+            ttype = TOKEN_TYPES.get(self.token_type) or repr(self.token_type)
+            ttype = ' for token type: %r' % (ttype)
+
+        tstr = ''
+        if self.token_string:
+            tstr = ' with value: %r' % (self.token_string)
+
+        pos = ''
+        if self.position > 0:
+            pos = ' at position: %d' % (self.position)
+        emsg = PARSE_ERRORS.get(self.error_code, 'Unknown parsing error')
+
+        return '{emsg){ttype}{tstr}(pos}.'.format(ttype=ttype, tstr=tstr, pos=pos, emsg=emsg)
+
 
 class BooleanAlgebra(object):
     """
@@ -52,8 +107,6 @@ class BooleanAlgebra(object):
     This class also serves as a base class for all boolean expressions,
     including base elements, functions and variable symbols.
     """
-    # Defines sort and comparison order relation between different classes.
-    sort_order = None
 
     def __init__(self, TRUE_class=None, FALSE_class=None, symbol_class=None,
                  NOT_class=None, AND_class=None, OR_class=None):
@@ -61,56 +114,58 @@ class BooleanAlgebra(object):
         The types for TRUE, FALSE, NOT, AND, OR and symbol define the boolean
         algebra elements, operations and symbol variable. They default to the
         standard classes if not provided.
-        """
-        # base elements
 
-        # TRUE and FALSE are algebra-wise self- and cross-referencing singletons.
-        self.TRUE = TRUE_class or _TRUE
+        You can customize an algebra by providing alternative subclasses of the
+        standard types.
+        """
+        # TRUE and FALSE base elements are algebra-level "singleton" instances
+        self.TRUE = self._wrap_type(TRUE_class or _TRUE)
         self.TRUE = self.TRUE()
-        self.FALSE = TRUE_class or _FALSE
+
+        self.FALSE = self._wrap_type(TRUE_class or _FALSE)
         self.FALSE = self.FALSE()
-        self.TRUE.TRUE = self.TRUE
-        self.TRUE.FALSE = self.FALSE
+
+        # they cross-reference each other
         self.TRUE.dual = self.FALSE
         self.FALSE.dual = self.TRUE
-        self.FALSE.TRUE = self.TRUE
-        self.FALSE.FALSE = self.FALSE
 
         # boolean operation types, defaulting to the standard types
-        self.NOT = NOT_class or NOT
-        self.AND = AND_class or AND
-        self.OR = OR_class or OR
-
-        self.NOT.NOT = self.NOT
-        self.NOT.AND = self.AND
-        self.NOT.OR = self.OR
-        self.NOT.TRUE = self.TRUE
-        self.NOT.FALSE = self.FALSE
-
-        self.AND.NOT = self.NOT
-        self.AND.AND = self.AND
-        self.AND.OR = self.OR
-        self.AND.TRUE = self.TRUE
-        self.AND.FALSE = self.FALSE
-
-        self.OR.NOT = self.NOT
-        self.OR.AND = self.AND
-        self.OR.OR = self.OR
-        self.OR.TRUE = self.TRUE
-        self.OR.FALSE = self.FALSE
+        self.NOT = self._wrap_type(NOT_class or NOT)
+        self.AND = self._wrap_type(AND_class or AND)
+        self.OR = self._wrap_type(OR_class or OR)
 
         # class used for Symbols
-        self.symbol = symbol_class or Symbol
+        self.symbol = self._wrap_type(symbol_class or Symbol)
 
-        self.symbol.NOT = self.NOT
-        self.symbol.AND = self.AND
-        self.symbol.OR = self.OR
-        self.symbol.TRUE = self.TRUE
-        self.symbol.FALSE = self.FALSE
+        tf_nao = {'TRUE': self.TRUE, 'FALSE': self.FALSE,
+                  'NOT': self.NOT, 'AND': self.AND, 'OR': self.OR,
+                  'symbol': self.symbol}
+
+        # setup cross references such that all algebra types and objects hold an
+        # attribute for every other types and objects, including themselves.
+        self._cross_refs(tf_nao)
+
+    def _wrap_type(self, base_class):
+        """
+        Return a new type wrapping the base class using the base class name as
+        wrapped type name. .
+        """
+        wrapped_type = type(base_class.__name__, (base_class,), {})
+        return wrapped_type
+
+    def _cross_refs(self, objects):
+        """
+        Set every object as attributes of every object in an `objects` mapping
+        of (attribute name -> object)
+        """
+        for obj in objects.values():
+            for name, value in objects.items():
+                setattr(obj, name, value)
 
     def definition(self):
         """
-        Return a tuple for this algebra elements and types  (TRUE, FALSE, NOT, AND, OR, symbol)
+        Return a tuple of this algebra defined elements and types as:
+        (TRUE, FALSE, NOT, AND, OR, symbol)
         """
         return self.TRUE, self.FALSE, self.NOT, self.AND, self.OR, self.symbol
 
@@ -124,17 +179,19 @@ class BooleanAlgebra(object):
         """
         Return a boolean expression parsed from `expr` either a unicode string
         or tokens iterable.
-    
+
         Optionally simplify the expression if `simplify` is True.
 
-        If `expr` is a string, the standard `tokenizer` is used for tokenization and
-        the algebra Symbol class or subclass is used to create symbol
+        Raise ParseError on errors.
+        
+        If `expr` is a string, the standard `tokenizer` is used for tokenization
+        and the algebra configured symbol type is used to create symbol
         instances from symbol tokens.
     
-        If `expr` is an iterable, it should contain 3-tuples of: 
-        (token, token_string, position). 
-        A token can be a pre-created Symbol instance or one of the TOKEN_* types.
-        See the boolean.tokenizer function and tests for details and examples.
+        If `expr` is an iterable, it should contain 3-tuples of: (token,
+        token_string, position). In this case, the `token` can be a Symbol
+        instance or one of the TOKEN_* types.
+        See the `tokenize()` method for detailed specification.
         """
 
         precedence = {self.NOT: 5, self.AND: 10, self.OR: 15, TOKEN_LPAR: 20}
@@ -169,7 +226,8 @@ class BooleanAlgebra(object):
             elif token == TOKEN_RPAR:
                 while True:
                     if ast[0] is None:
-                        raise TypeError('Bad closing parenthesis at position: %(position)r.' % locals())
+                        raise ParseError(token, tokstr, position,
+                                         PARSE_UNBALANCED_CLOSING_PARENS)
                     if ast[1] is TOKEN_LPAR:
                         ast[0].append(ast[2])
                         ast = ast[0]
@@ -178,12 +236,14 @@ class BooleanAlgebra(object):
                     ast[0].append(subex)
                     ast = ast[0]
             else:
-                raise TypeError('Unknown token: %(token)r: %(tokstr)r at position: %(position)r.' % locals())
+                raise ParseError(token, tokstr, position, PARSE_UNKNOWN_TOKEN)
 
         while True:
             if ast[0] is None:
                 if ast[1] is None:
-                    assert len(ast) == 3, 'Invalid boolean expression'
+
+                    if len(ast) != 3:
+                        raise ParseError(error_code=PARSE_INVALID_EXPRESSION)
                     parsed = ast[2]
                 else:
                     parsed = ast[1](*ast[2:])
@@ -238,7 +298,8 @@ class BooleanAlgebra(object):
         The token position is used only for error reporting and can be None or
         empty.
     
-        Raise TypeError on errors.
+        Raise ParseError on errors. The ParseError.args is a tuple of:
+        (token_string, position, error message)
     
         You can use this tokenizer as a base to create specialized tokenizers
         for your custom algebra by subclassing BooleanAlgebra. See also the
@@ -249,8 +310,8 @@ class BooleanAlgebra(object):
         - Whitespace is not significant. 
         - The returned position is the starting character offset of a token.
     
-        - A TOKEN_SYMBOL is returned for valid identifiers which is a string without
-        spaces. These are valid identifiers:
+        - A TOKEN_SYMBOL is returned for valid identifiers which is a string
+        without spaces. These are valid identifiers:
             - Python identifiers.
             - a string even if starting with digits
             - digits (except for 0 and 1).
@@ -273,9 +334,9 @@ class BooleanAlgebra(object):
             raise TypeError('expr must be string but it is %s.' % type(expr))
 
         # mapping of lowercase token strings to a token type id for the standard
-        # operators, parens and common true or false symbols, as used in the default
-        # tokenizer implementation.
-        _TOKENS = {
+        # operators, parens and common true or false symbols, as used in the
+        # default tokenizer implementation.
+        TOKENS = {
             '*': TOKEN_AND, '&': TOKEN_AND, 'and': TOKEN_AND,
             '+': TOKEN_OR, '|': TOKEN_OR, 'or': TOKEN_OR,
             '~': TOKEN_NOT, '!': TOKEN_NOT, 'not': TOKEN_NOT,
@@ -303,34 +364,35 @@ class BooleanAlgebra(object):
                 position -= 1
 
             try:
-                yield _TOKENS[tok.lower()], tok, position
+                yield TOKENS[tok.lower()], tok, position
             except KeyError:
                 if sym:
                     yield TOKEN_SYMBOL, tok, position
                 elif tok not in (' ', '\t', '\r', '\n'):
-                    raise TypeError('Unknown token: %(tok)r at position: %(position)r' % locals())
+                    raise ParseError(token_string=tok, position=position,
+                                     error_code=PARSE_UNKNOWN_TOKEN)
 
             position += 1
 
     # TODO: explain what this means exactly
-    def _rdistributive(self, expr, operation_template):
+    def _rdistributive(self, expr, op_example):
         """
-        Recursively flatten the `expr` expression for the `operation_template` AND or
-        OR operation instance.
+        Recursively flatten the `expr` expression for the `op_example`
+        AND or OR operation instance exmaple.
         """
         if expr.isliteral:
             return expr
 
         expr_class = expr.__class__
 
-        args = (self._rdistributive(arg, operation_template) for arg in expr.args)
+        args = (self._rdistributive(arg, op_example) for arg in expr.args)
         args = tuple(arg.simplify() for arg in args)
         if len(args) == 1:
             return args[0]
 
         expr = expr_class(*args)
 
-        dualoperation = operation_template.dual
+        dualoperation = op_example.dual
         if isinstance(expr, dualoperation):
             expr = expr.distributive()
         return expr
@@ -343,23 +405,35 @@ class BooleanAlgebra(object):
         The new expression arguments will satisfy these conditions:
         - operation(*args) == expr (here mathematical equality is meant)
         - the operation does not occur in any of its arg. 
-        - NOT is only appearing in literals.
+        - NOT is only appearing in literals (aka. Negation normal form).
         
         The operation must be an AND or OR operation or a subclass.
         """
-        # ensure that the operation is not NOT and one of the configured operations
+        # ensure that the operation is not NOT
         assert operation in (self.AND, self.OR,)
         # Move NOT inwards.
         expr = expr.literalize()
-        # Simplify first, otherwise _rdistributive() may take forever.
+        # Simplify first otherwise _rdistributive() may take forever.
         expr = expr.simplify()
-        operation_template = operation(self.TRUE, self.FALSE)
-        expr = self._rdistributive(expr, operation_template)
+        operation_example = operation(self.TRUE, self.FALSE)
+        expr = self._rdistributive(expr, operation_example)
         # Canonicalize
         expr = expr.simplify()
         if isinstance(expr, operation):
             return expr
         return operation(*expr.args)
+
+    def cnf(self, expr):
+        """
+        Return a conjunctive normal form of the `expr` expression.
+        """
+        return self.normalize(expr, self.AND)
+
+    def dnf(self, expr):
+        """
+        Return a disjunctive normal form of the `expr` expression.
+        """
+        return self.normalize(expr, self.OR)
 
 
 class Expression(object):
@@ -367,7 +441,7 @@ class Expression(object):
     Abstract base class for all boolean expressions, including functions and
     variable symbols.
     """
-    # Defines sort and comparison order relation between different classes.
+    # Defines sort and comparison order between expressions arguments
     sort_order = None
 
     # Store arguments aka. subterms of this expressions.
@@ -380,15 +454,13 @@ class Expression(object):
     # True if this expression has been simplified to in canonical form.
     iscanonical = False
 
-    # Store an associated object: only used in Symbols
-    obj = None
-
     # these class attributes are configured when a new BooleanAlgebra is created
     TRUE = None
     FALSE = None
     NOT = None
     AND = None
     OR = None
+    symbol = None
 
     @property
     def objects(self):
@@ -419,7 +491,7 @@ class Expression(object):
         Return an expression where NOTs are only occurring as literals.
         Applied recursively to subexpressions.
         """
-        if self.isliteral or not self.args:
+        if self.isliteral:
             return self
         args = tuple(arg.literalize() for arg in self.args)
         if all(arg is self.args[i] for i, arg in enumerate(args)):
@@ -503,17 +575,11 @@ class Expression(object):
 
     def __hash__(self):
         """
-        Expressions are immutable and hashable. The hash is computed by
-        respecting the structure of the whole expression by mixing the class
-        name hash and the recursive hash of a frozenset of arguments.
-
-        Note: using a set is OK because expressions with multiple args (AND or
-        OR) behave the same when there are duplicated argument: is there any
-        side effect to use a set of args rather than the original tuple?
-        It uses the facts that:
-        - all operations are commutative and considers different ordering as equal. 
-        - some operation are idempotent, so args can appear more often in one term than in the other.
-
+        Expressions are immutable and hashable. The hash of Functions is
+        computed by respecting the structure of the whole expression by mixing
+        the class name hash and the recursive hash of a frozenset of arguments.
+        Hash of elements is based on their boolean equivalent. Hash of symbols
+        is based on their object.
         """
         if not self.args:
             arghash = id(self)
@@ -525,23 +591,22 @@ class Expression(object):
         """
         Test if other element is structurally the same as itself.
 
-        This method does not make any simplification or transformation, so it will return
-        False although the expression terms may be mathematically equal. 
+        This method does not make any simplification or transformation, so it
+        will return False although the expression terms may be mathematically
+        equal. Use simplify() before testing equality.
         
-        It uses the facts that:
-        - all operations are commutative and considers different ordering as equal. 
-        - some operation are idempotent, so args can appear more often in one term than in the other.
+        For literals, plain equality is used. 
+        For functions, it uses the facts that operations are:
+        - commutative and considers different ordering as equal.
+        - idempotent, so args can appear more often in one term than in the other.
         """
         if self is other:
             return True
 
-        if not isinstance(other, self.__class__):
-            return NotImplemented
+        if isinstance(other, self.__class__):
+            return frozenset(self.args) == frozenset(other.args)
 
-#        if (not self.args) or (not other.args):
-#            return False
-
-        return frozenset(self.args) == frozenset(other.args)
+        return NotImplemented
 
     def __ne__(self, other):
         return not self == other
@@ -576,7 +641,6 @@ class Expression(object):
         raise TypeError('Cannot evaluate expression as a Python Boolean.')
 
     __nonzero__ = __bool__
-
 
 
 class BaseElement(Expression):
@@ -663,43 +727,36 @@ class Symbol(Expression):
     """
     Boolean variable.
     
-    A symbol can hold an object used to determine equality.
+    A symbol can hold an object used to determine equality between symbols.
     """
 
     # FIXME: the statement below in the original docstring is weird: Symbols do
     # not have a value assigned, so how could they ever be FALSE
     """
-    Symbols (also called boolean variables) can only take on the values TRUE
-    or FALSE. 
+    Symbols (also called boolean variables) can only take on the values TRUE or
+    FALSE. 
     """
 
     sort_order = 5
 
     def __init__(self, obj):
         super(Symbol, self).__init__()
+        # Store an associated object. This object determines equality
         self.obj = obj
         self.iscanonical = True
         self.isliteral = True
 
     def __hash__(self):
-        """
-        Calculate a hash considering eventually associated objects.
-        """
         if self.obj is None:  # Anonymous symbol.
-            myhash = id(self)
-        else:  # Hash of associated object.
-            myhash = hash(self.obj)
-        return myhash
+            return id(self)
+        return hash(self.obj)
 
     def __eq__(self, other):
-        """
-        Test if other element equals to this symbol.
-        """
         if self is other:
             return True
-        if not isinstance(other, self.__class__):
-            return NotImplemented
-        return self.obj == other.obj
+        if isinstance(other, self.__class__):
+            return self.obj == other.obj
+        return NotImplemented
 
     def __lt__(self, other):
         comparator = Expression.__lt__(self, other)
@@ -736,9 +793,10 @@ class Function(Expression):
     where n is called the order of the function and maps them to one of the base
     elements TRUE or FALSE. Implemented functions are AND, OR and NOT.
     """
+
     # Specifies how many arguments a function takes. the first number gives a
     # lower limit/minimum, the second an upper limit/maximum number of args.
-    order = (2, float('inf'))
+    order = 2, sys.maxint
 
     def __init__(self, *args):
         super(Function, self).__init__()
@@ -755,15 +813,11 @@ class Function(Expression):
         self.operator = None
 
         # Make sure all arguments are boolean expressions.
-        assert (all(isinstance(arg, (Expression, BaseElement)) for arg in args),
-                'Bad arguments: all arguments must be an Expression, TRUE or FALSE: %r' % (args,))
+        assert all(isinstance(arg, Expression) for arg in args), 'Bad arguments: all arguments must be an Expression, TRUE or FALSE: %r' % (args,)
         self.args = tuple(args)
 
     def __str__(self):
         args = self.args
-        if self.operator is None:
-            raise TypeError('self.operator cannot be None')
-
         if len(args) == 1:
             if self.isliteral:
                 return '%s%s' % (self.operator, args[0])
@@ -958,8 +1012,7 @@ class DualBase(Function):
             return True
 
         if isinstance(expr, self.__class__):
-            if all(arg in self.args for arg in expr.args):
-                return True
+            return all(arg in self.args for arg in expr.args)
 
     def simplify(self):
         """
