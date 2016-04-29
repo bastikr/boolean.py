@@ -28,7 +28,7 @@ setup(
     name='boolean.py',
     version='2.0.dev2',
     license='revised BSD license',
-    description='Boolean Algreba',
+    description='Define boolean algebras, create or parse boolean expressions and create custom boolean DSL.',
     long_description=long_desc,
     author='Sebastian Kraemer',
     author_email='basti.kr@gmail.com',
