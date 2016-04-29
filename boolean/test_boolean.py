@@ -361,17 +361,17 @@ class SymbolTestCase(unittest.TestCase):
         d = algebra.symbol('d')
         e = algebra.symbol('e')
 
-#         # Test __eq__.
-#         self.assertTrue(a == a)
-#         self.assertTrue(a == a2)
-#         self.assertFalse(a == c)
-#         self.assertFalse(a2 == c)
-#         self.assertTrue(d == d)
-#         self.assertFalse(d == e)
-#         self.assertFalse(a == d)
-#         # Test __ne__.
-#         self.assertFalse(a != a)
-#         self.assertFalse(a != a2)
+        # Test __eq__.
+        self.assertTrue(a == a)
+        self.assertTrue(a == a2)
+        self.assertFalse(a == c)
+        self.assertFalse(a2 == c)
+        self.assertTrue(d == d)
+        self.assertFalse(d == e)
+        self.assertFalse(a == d)
+        # Test __ne__.
+        self.assertFalse(a != a)
+        self.assertFalse(a != a2)
         self.assertTrue(a != c)
         self.assertTrue(a2 != c)
 
