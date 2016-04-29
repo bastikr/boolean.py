@@ -470,21 +470,25 @@ class Expression(object):
         """
         return set(s.obj for s in self.symbols)
 
+    def get_literals(self):
+        """
+        Return a list of all the literals contained in this expression.
+        Include recursively subexpressions symbols.
+        This includes duplicates.
+        """
+        if self.isliteral:
+            return [self]
+        if not self.args:
+            return []
+        return list(itertools.chain.from_iterable(arg.literals for arg in self.args))
+
     @property
     def literals(self):
         """
         Return a set of all literals contained in this expression.
         Include recursively subexpressions literals.
         """
-        if self.isliteral:
-            return set((self,))
-        if not self.args:
-            return set()
-
-        s = set()
-        for arg in self.args:
-            s |= arg.literals
-        return s
+        return set(self.get_literals())
 
     def literalize(self):
         """
@@ -499,21 +503,22 @@ class Expression(object):
 
         return self.__class__(*args)
 
-    @property
-    def symbols(self):
+    def get_symbols(self):
         """
-        Return a set of all symbols contained in this expression.
+        Return a list of all the symbols contained in this expression.
         Include recursively subexpressions symbols.
+        This includes duplicates.
         """
-        if isinstance(self, Symbol):
-            return set([self])
-        if not self.args:
-            return set()
+        return [s for s in self.literals if isinstance(s, Symbol)]
 
-        s = set()
-        for arg in self.args:
-            s |= arg.symbols
-        return s
+    @property
+    def symbols(self, ):
+        """
+        Return a list of all the symbols contained in this expression.
+        Include recursively subexpressions symbols.
+        This includes duplicates.
+        """
+        return set(self.get_symbols())
 
     def subs(self, substitutions, simplify=True):
         """
