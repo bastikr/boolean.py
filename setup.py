@@ -26,7 +26,7 @@ Released under revised BSD license.
 
 setup(
     name='boolean.py',
-    version='2.0.dev2',
+    version='2.0.dev3',
     license='revised BSD license',
     description='Define boolean algebras, create or parse boolean expressions and create custom boolean DSL.',
     long_description=long_desc,
