@@ -579,6 +579,24 @@ class DualBaseTestCase(unittest.TestCase):
         self.assertEqual(expected.pretty(), result.pretty())
 
     @expectedFailure
+    def test_parse_complex_expression_should_create_same_expression_as_python(self):
+        algebra = BooleanAlgebra()
+        a, b, c = algebra.symbols(*'abc')
+
+        test_expression_str = '''(~a | ~b | ~c)'''
+        parsed = algebra.parse(test_expression_str, simplify=False)
+        test_expression =  (~a | ~b | ~c )  #* ~d
+        # print()
+        # print('parsed')
+        # print(parsed.pretty())
+        # print('python')
+        # print(test_expression.pretty())
+        # we have a different behavior for expressions built from python expressions
+        # vs. expression built from an object tree vs. expression built from a parse
+        self.assertEqual(parsed.pretty(), test_expression.pretty())
+        self.assertEqual(parsed, test_expression)
+
+    @expectedFailure
     def test_simplify_complex_expression_parsed_with_simplify(self):
         # FIXME: THIS SHOULD NOT FAIL
         algebra = BooleanAlgebra()
