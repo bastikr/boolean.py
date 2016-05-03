@@ -24,7 +24,6 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import itertools
-import sys
 
 try:
     basestring  # Python 2
@@ -799,26 +798,14 @@ class Function(Expression):
     elements TRUE or FALSE. Implemented functions are AND, OR and NOT.
     """
 
-    # Specifies how many arguments a function takes. the first number gives a
-    # lower limit/minimum, the second an upper limit/maximum number of args.
-    order = 2, sys.maxint
-
     def __init__(self, *args):
         super(Function, self).__init__()
-
-        minimum, maximum = self.order
-        args_length = len(args)
-
-        if minimum > args_length:
-            raise TypeError('Too few arguments. Got %(args_length)r, but need at least %(minimum)r.' % locals())
-        if maximum < args_length:
-            raise TypeError('Too many arguments. Got %(args_length)r, but need at most %(maximum)r.' % locals())
 
         # Specifies an infix notation of an operator for printing such as | or &.
         self.operator = None
 
-        # Make sure all arguments are boolean expressions.
-        assert all(isinstance(arg, Expression) for arg in args), 'Bad arguments: all arguments must be an Expression, TRUE or FALSE: %r' % (args,)
+        assert (all(isinstance(arg, Expression) for arg in args), 
+                'Bad arguments: all arguments must be an Expression: %r' % (args,))
         self.args = tuple(args)
 
     def __str__(self):
@@ -905,10 +892,9 @@ class NOT(Function):
             super(NOT2, self).__init__(*args)
             self.operator = '!'
     """
-    order = (1, 1)
 
-    def __init__(self, *args):
-        super(NOT, self).__init__(*args)
+    def __init__(self, arg1):
+        super(NOT, self).__init__(arg1)
         self.isliteral = self.args[0].isliteral
         self.operator = '~'
 
@@ -994,8 +980,8 @@ class DualBase(Function):
     "+" for OR and "*" for AND.
     """
 
-    def __init__(self, *args):
-        super(DualBase, self).__init__(*args)
+    def __init__(self, arg1, arg2, *args):
+        super(DualBase, self).__init__(arg1, arg2, *args)
 
         # identity element for the specific operation.
         # This will be TRUE for the AND operation and FALSE for the OR operation.
@@ -1315,8 +1301,8 @@ class AND(DualBase):
 
     sort_order = 10
 
-    def __init__(self, *args):
-        super(AND, self).__init__(*args)
+    def __init__(self, arg1, arg2, *args):
+        super(AND, self).__init__(arg1, arg2, *args)
         self.identity = self.TRUE
         self.annihilator = self.FALSE
         self.dual = self.OR
@@ -1339,8 +1325,8 @@ class OR(DualBase):
 
     sort_order = 25
 
-    def __init__(self, *args):
-        super(OR, self).__init__(*args)
+    def __init__(self, arg1, arg2, *args):
+        super(OR, self).__init__(arg1, arg2, *args)
         self.identity = self.FALSE
         self.annihilator = self.TRUE
         self.dual = self.AND
