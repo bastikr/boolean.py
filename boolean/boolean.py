@@ -101,18 +101,18 @@ class ParseError(Exception):
 class BooleanAlgebra(object):
     """
     An algebra is defined by:
-    - the types of its operations and symbol.
+    - the types of its operations and Symbol.
     - the tokenizer used when parsing expressions from strings. 
     
     This class also serves as a base class for all boolean expressions,
     including base elements, functions and variable symbols.
     """
 
-    def __init__(self, TRUE_class=None, FALSE_class=None, symbol_class=None,
+    def __init__(self, TRUE_class=None, FALSE_class=None, Symbol_class=None,
                  NOT_class=None, AND_class=None, OR_class=None):
         """
-        The types for TRUE, FALSE, NOT, AND, OR and symbol define the boolean
-        algebra elements, operations and symbol variable. They default to the
+        The types for TRUE, FALSE, NOT, AND, OR and Symbol define the boolean
+        algebra elements, operations and Symbol variable. They default to the
         standard classes if not provided.
 
         You can customize an algebra by providing alternative subclasses of the
@@ -135,11 +135,11 @@ class BooleanAlgebra(object):
         self.OR = self._wrap_type(OR_class or OR)
 
         # class used for Symbols
-        self.symbol = self._wrap_type(symbol_class or Symbol)
+        self.Symbol = self._wrap_type(Symbol_class or Symbol)
 
         tf_nao = {'TRUE': self.TRUE, 'FALSE': self.FALSE,
                   'NOT': self.NOT, 'AND': self.AND, 'OR': self.OR,
-                  'symbol': self.symbol}
+                  'Symbol': self.Symbol}
 
         # setup cross references such that all algebra types and objects hold an
         # attribute for every other types and objects, including themselves.
@@ -165,15 +165,15 @@ class BooleanAlgebra(object):
     def definition(self):
         """
         Return a tuple of this algebra defined elements and types as:
-        (TRUE, FALSE, NOT, AND, OR, symbol)
+        (TRUE, FALSE, NOT, AND, OR, Symbol)
         """
-        return self.TRUE, self.FALSE, self.NOT, self.AND, self.OR, self.symbol
+        return self.TRUE, self.FALSE, self.NOT, self.AND, self.OR, self.Symbol
 
     def symbols(self, *args):
         """
-        Return a tuple of symbols building a new symbol from each argument.
+        Return a tuple of symbols building a new Symbol from each argument.
         """
-        return tuple(map(self.symbol, args))
+        return tuple(map(self.Symbol, args))
 
     def parse(self, expr, simplify=True):
         """
@@ -185,8 +185,8 @@ class BooleanAlgebra(object):
         Raise ParseError on errors.
         
         If `expr` is a string, the standard `tokenizer` is used for tokenization
-        and the algebra configured symbol type is used to create symbol
-        instances from symbol tokens.
+        and the algebra configured Symbol type is used to create Symbol
+        instances from Symbol tokens.
     
         If `expr` is an iterable, it should contain 3-tuples of: (token,
         token_string, position). In this case, the `token` can be a Symbol
@@ -205,7 +205,7 @@ class BooleanAlgebra(object):
 
         for token, tokstr, position in tokenized:
             if token == TOKEN_SYMBOL:
-                ast.append(self.symbol(tokstr))
+                ast.append(self.Symbol(tokstr))
             elif isinstance(token, Symbol):
                 ast.append(token)
 
@@ -460,7 +460,7 @@ class Expression(object):
     NOT = None
     AND = None
     OR = None
-    symbol = None
+    Symbol = None
 
     @property
     def objects(self):
@@ -512,7 +512,7 @@ class Expression(object):
         return [s for s in self.literals if isinstance(s, Symbol)]
 
     @property
-    def symbols(self, ):
+    def symbols(self,):
         """
         Return a list of all the symbols contained in this expression.
         Include recursively subexpressions symbols.
@@ -732,7 +732,7 @@ class Symbol(Expression):
     """
     Boolean variable.
     
-    A symbol can hold an object used to determine equality between symbols.
+    A Symbol can hold an object used to determine equality between symbols.
     """
 
     # FIXME: the statement below in the original docstring is weird: Symbols do
@@ -752,7 +752,7 @@ class Symbol(Expression):
         self.isliteral = True
 
     def __hash__(self):
-        if self.obj is None:  # Anonymous symbol.
+        if self.obj is None:  # Anonymous Symbol.
             return id(self)
         return hash(self.obj)
 

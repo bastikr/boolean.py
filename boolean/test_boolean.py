@@ -47,28 +47,28 @@ class BooleanAlgebraTestCase(unittest.TestCase):
                       d & ( ! e_
                       | (my * g OR 1 or 0) ) AND that '''
 
-        algebra = BooleanAlgebra(symbol_class=MySymbol)
+        algebra = BooleanAlgebra(Symbol_class=MySymbol)
         expr = algebra.parse(expr_str, simplify=False)
 
         expected = algebra.AND(
             algebra.OR(
-                algebra.symbol('a'),
-                algebra.NOT(algebra.symbol('b')),
-                algebra.symbol('_c'),
+                algebra.Symbol('a'),
+                algebra.NOT(algebra.Symbol('b')),
+                algebra.Symbol('_c'),
             ),
-            algebra.symbol('d'),
+            algebra.Symbol('d'),
             algebra.OR(
-                algebra.NOT(algebra.symbol('e_')),
+                algebra.NOT(algebra.Symbol('e_')),
                 algebra.OR(
                     algebra.AND(
-                        algebra.symbol('my'),
-                        algebra.symbol('g'),
+                        algebra.Symbol('my'),
+                        algebra.Symbol('g'),
                     ),
                     algebra.TRUE,
                     algebra.FALSE,
                 ),
             ),
-            algebra.symbol('that'),
+            algebra.Symbol('that'),
         )
 
         self.assertEqual(expected.pretty(), expr.pretty())
@@ -96,8 +96,8 @@ class BooleanAlgebraTestCase(unittest.TestCase):
             pass
 
         class CustomAlgebra(BooleanAlgebra):
-            def __init__(self, symbol_class=CustomSymbol):
-                super(CustomAlgebra, self).__init__(symbol_class=CustomSymbol)
+            def __init__(self, Symbol_class=CustomSymbol):
+                super(CustomAlgebra, self).__init__(Symbol_class=CustomSymbol)
 
             def tokenize(self, s):
                 "Sample tokenizer using custom operators and symbols"
@@ -114,7 +114,7 @@ class BooleanAlgebraTestCase(unittest.TestCase):
                         if tok in ops:
                             yield ops[tok], tok, (row, col)
                         elif tok == 'Custom':
-                            yield self.symbol(tok), tok, (row, col)
+                            yield self.Symbol(tok), tok, (row, col)
                         else:
                             yield TOKEN_SYMBOL, tok, (row, col)
 
@@ -126,13 +126,13 @@ class BooleanAlgebraTestCase(unittest.TestCase):
         expr = algebra.parse(expr_str, simplify=False)
         expected = algebra.AND(
             algebra.OR(
-                algebra.symbol('Custom'),
-                algebra.symbol('regular'),
+                algebra.Symbol('Custom'),
+                algebra.Symbol('regular'),
             ),
             algebra.NOT(
                 algebra.AND(
-                    algebra.symbol('not_custom'),
-                    algebra.symbol('standard'),
+                    algebra.Symbol('not_custom'),
+                    algebra.Symbol('standard'),
                 ),
             ),
         )
@@ -354,12 +354,12 @@ class SymbolTestCase(unittest.TestCase):
 
     def test_equal_symbols(self):
         algebra = BooleanAlgebra()
-        a = algebra.symbol('a')
-        a2 = algebra.symbol('a')
+        a = algebra.Symbol('a')
+        a2 = algebra.Symbol('a')
 
-        c = algebra.symbol('b')
-        d = algebra.symbol('d')
-        e = algebra.symbol('e')
+        c = algebra.Symbol('b')
+        d = algebra.Symbol('d')
+        e = algebra.Symbol('e')
 
         # Test __eq__.
         self.assertTrue(a == a)
@@ -395,19 +395,19 @@ class NOTTestCase(unittest.TestCase):
         algebra = BooleanAlgebra()
         self.assertRaises(TypeError, algebra.NOT)
         self.assertRaises(TypeError, algebra.NOT, 'a', 'b')
-        algebra.NOT(algebra.symbol('a'))
+        algebra.NOT(algebra.Symbol('a'))
         self.assertEqual(algebra.FALSE, (algebra.NOT(algebra.TRUE)).simplify())
         self.assertEqual(algebra.TRUE, (algebra.NOT(algebra.FALSE)).simplify())
 
     def test_isliteral(self):
         algebra = BooleanAlgebra()
-        s = algebra.symbol(1)
+        s = algebra.Symbol(1)
         self.assertTrue(algebra.NOT(s).isliteral)
         self.assertFalse(algebra.parse('~(a+b)').isliteral)
 
     def test_literals(self):
         algebra = BooleanAlgebra()
-        a = algebra.symbol('a')
+        a = algebra.Symbol('a')
         l = ~a
         self.assertTrue(l.isliteral)
         self.assertTrue(l in l.literals)
@@ -429,9 +429,9 @@ class NOTTestCase(unittest.TestCase):
 
     def test_simplify(self):
         algebra = BooleanAlgebra()
-        a = algebra.symbol('a')
+        a = algebra.Symbol('a')
         self.assertEqual(~a, ~a)
-        assert algebra.symbol('a') == algebra.symbol('a')
+        assert algebra.Symbol('a') == algebra.Symbol('a')
         self.assertNotEqual(a, algebra.parse('~~a', simplify=False))
         self.assertEqual(a, (~~a).simplify())
         self.assertEqual(~a, (~~ ~a).simplify())
@@ -441,7 +441,7 @@ class NOTTestCase(unittest.TestCase):
 
     def test_cancel(self):
         algebra = BooleanAlgebra()
-        a = algebra.symbol('a')
+        a = algebra.Symbol('a')
         self.assertEqual(~a, (~a).cancel())
         self.assertEqual(a, algebra.parse('~~a', simplify=False).cancel())
         self.assertEqual(~a, algebra.parse('~~~a', simplify=False).cancel())
@@ -449,16 +449,16 @@ class NOTTestCase(unittest.TestCase):
 
     def test_demorgan(self):
         algebra = BooleanAlgebra()
-        a = algebra.symbol('a')
-        b = algebra.symbol('b')
+        a = algebra.Symbol('a')
+        b = algebra.Symbol('b')
         self.assertEqual(algebra.parse('~(a*b)', simplify=False).demorgan(), ~a + ~b)
         self.assertEqual(algebra.parse('~(a+b+c)', simplify=False).demorgan(), algebra.parse('~a*~b*~c'))
         self.assertEqual(algebra.parse('~(~a*b)', simplify=False).demorgan(), a + ~b)
 
     def test_order(self):
         algebra = BooleanAlgebra()
-        x = algebra.symbol(1)
-        y = algebra.symbol(2)
+        x = algebra.Symbol(1)
+        y = algebra.Symbol(2)
         self.assertTrue(x < ~x)
         self.assertTrue(~x > x)
         self.assertTrue(~x < y)
@@ -466,7 +466,7 @@ class NOTTestCase(unittest.TestCase):
 
     def test_printing(self):
         algebra = BooleanAlgebra()
-        a = algebra.symbol('a')
+        a = algebra.Symbol('a')
         self.assertEqual(str(~a), '~a')
         self.assertEqual(repr(~a), "NOT(Symbol('a'))")
         expr = algebra.parse('~(a*a)', simplify=False)
@@ -530,17 +530,17 @@ class DualBaseTestCase(unittest.TestCase):
 
     def test_dual(self):
         algebra = BooleanAlgebra()
-        self.assertEqual(algebra.AND(algebra.symbol('a'), algebra.symbol('b')).dual, algebra.OR)
-        self.assertEqual(algebra.OR(algebra.symbol('a'), algebra.symbol('b')).dual, algebra.AND)
+        self.assertEqual(algebra.AND(algebra.Symbol('a'), algebra.Symbol('b')).dual, algebra.OR)
+        self.assertEqual(algebra.OR(algebra.Symbol('a'), algebra.Symbol('b')).dual, algebra.AND)
 
         self.assertEqual(algebra.parse('a+b').dual, algebra.AND)
         self.assertEqual(algebra.parse('a*b').dual, algebra.OR)
 
     def test_simplify(self):
         algebra = BooleanAlgebra()
-        a = algebra.symbol('a')
-        b = algebra.symbol('b')
-        c = algebra.symbol('c')
+        a = algebra.Symbol('a')
+        b = algebra.Symbol('b')
+        c = algebra.Symbol('c')
 
         _0 = algebra.FALSE
         _1 = algebra.TRUE
@@ -585,7 +585,7 @@ class DualBaseTestCase(unittest.TestCase):
 
         test_expression_str = '''(~a | ~b | ~c)'''
         parsed = algebra.parse(test_expression_str, simplify=False)
-        test_expression =  (~a | ~b | ~c )  #* ~d
+        test_expression = (~a | ~b | ~c)  # * ~d
         # print()
         # print('parsed')
         # print(parsed.pretty())
@@ -600,10 +600,10 @@ class DualBaseTestCase(unittest.TestCase):
     def test_simplify_complex_expression_parsed_with_simplify(self):
         # FIXME: THIS SHOULD NOT FAIL
         algebra = BooleanAlgebra()
-        a = algebra.symbol('a')
-        b = algebra.symbol('b')
-        c = algebra.symbol('c')
-        d = algebra.symbol('d')
+        a = algebra.Symbol('a')
+        b = algebra.Symbol('b')
+        c = algebra.Symbol('c')
+        d = algebra.Symbol('d')
 
         test_expression_str = '''
             (~a*~b*~c*~d) + (~a*~b*~c*d) + (~a*b*~c*~d) +
@@ -627,10 +627,10 @@ class DualBaseTestCase(unittest.TestCase):
     def test_complex_expression_without_parens_parsed_or_built_in_python_should_be_identical(self):
         # FIXME: THIS SHOULD NOT FAIL
         algebra = BooleanAlgebra()
-        a = algebra.symbol('a')
-        b = algebra.symbol('b')
-        c = algebra.symbol('c')
-        d = algebra.symbol('d')
+        a = algebra.Symbol('a')
+        b = algebra.Symbol('b')
+        c = algebra.Symbol('c')
+        d = algebra.Symbol('d')
 
         test_expression_str = '''
             ~a*~b*~c*~d + ~a*~b*~c*d + ~a*b*~c*~d +
@@ -653,10 +653,10 @@ class DualBaseTestCase(unittest.TestCase):
         # FIXME: THIS SHOULD NOT FAIL
 
         algebra = BooleanAlgebra()
-        a = algebra.symbol('a')
-        b = algebra.symbol('b')
-        c = algebra.symbol('c')
-        d = algebra.symbol('d')
+        a = algebra.Symbol('a')
+        b = algebra.Symbol('b')
+        c = algebra.Symbol('c')
+        d = algebra.Symbol('d')
         parse = algebra.parse
 
         test_expression_str = ''.join('''
@@ -694,63 +694,63 @@ class DualBaseTestCase(unittest.TestCase):
 
         expected = algebra.OR(
             algebra.AND(
-                algebra.NOT(algebra.symbol('a')),
-                algebra.NOT(algebra.symbol('b')),
-                algebra.NOT(algebra.symbol('c')),
-                algebra.NOT(algebra.symbol('d'))
+                algebra.NOT(algebra.Symbol('a')),
+                algebra.NOT(algebra.Symbol('b')),
+                algebra.NOT(algebra.Symbol('c')),
+                algebra.NOT(algebra.Symbol('d'))
             ),
             algebra.AND(
-                algebra.NOT(algebra.symbol('a')),
-                algebra.NOT(algebra.symbol('b')),
-                algebra.NOT(algebra.symbol('c')),
-                algebra.symbol('d')
+                algebra.NOT(algebra.Symbol('a')),
+                algebra.NOT(algebra.Symbol('b')),
+                algebra.NOT(algebra.Symbol('c')),
+                algebra.Symbol('d')
             ),
             algebra.AND(
-                algebra.NOT(algebra.symbol('a')),
-                algebra.symbol('b'),
-                algebra.NOT(algebra.symbol('c')),
-                algebra.NOT(algebra.symbol('d'))
+                algebra.NOT(algebra.Symbol('a')),
+                algebra.Symbol('b'),
+                algebra.NOT(algebra.Symbol('c')),
+                algebra.NOT(algebra.Symbol('d'))
             ),
             algebra.AND(
-                algebra.NOT(algebra.symbol('a')),
-                algebra.symbol('b'),
-                algebra.symbol('c'),
-                algebra.symbol('d')),
+                algebra.NOT(algebra.Symbol('a')),
+                algebra.Symbol('b'),
+                algebra.Symbol('c'),
+                algebra.Symbol('d')),
             algebra.AND(
-                algebra.NOT(algebra.symbol('a')),
-                algebra.symbol('b'),
-                algebra.NOT(algebra.symbol('c')),
-                algebra.symbol('d')
+                algebra.NOT(algebra.Symbol('a')),
+                algebra.Symbol('b'),
+                algebra.NOT(algebra.Symbol('c')),
+                algebra.Symbol('d')
             ),
             algebra.AND(
-                algebra.NOT(algebra.symbol('a')),
-                algebra.symbol('b'),
-                algebra.symbol('c'),
-                algebra.NOT(algebra.symbol('d'))
+                algebra.NOT(algebra.Symbol('a')),
+                algebra.Symbol('b'),
+                algebra.Symbol('c'),
+                algebra.NOT(algebra.Symbol('d'))
             ),
             algebra.AND(
-                algebra.symbol('a'),
-                algebra.NOT(algebra.symbol('b')),
-                algebra.NOT(algebra.symbol('c')),
-                algebra.symbol('d')
+                algebra.Symbol('a'),
+                algebra.NOT(algebra.Symbol('b')),
+                algebra.NOT(algebra.Symbol('c')),
+                algebra.Symbol('d')
             ),
             algebra.AND(
-                algebra.NOT(algebra.symbol('a')),
-                algebra.symbol('b'),
-                algebra.symbol('c'),
-                algebra.symbol('d')
+                algebra.NOT(algebra.Symbol('a')),
+                algebra.Symbol('b'),
+                algebra.Symbol('c'),
+                algebra.Symbol('d')
             ),
             algebra.AND(
-                algebra.symbol('a'),
-                algebra.NOT(algebra.symbol('b')),
-                algebra.symbol('c'),
-                algebra.symbol('d')
+                algebra.Symbol('a'),
+                algebra.NOT(algebra.Symbol('b')),
+                algebra.Symbol('c'),
+                algebra.Symbol('d')
             ),
             algebra.AND(
-                algebra.symbol('a'),
-                algebra.symbol('b'),
-                algebra.symbol('c'),
-                algebra.symbol('d')
+                algebra.Symbol('a'),
+                algebra.Symbol('b'),
+                algebra.Symbol('c'),
+                algebra.Symbol('d')
             )
         )
 
@@ -782,11 +782,11 @@ class DualBaseTestCase(unittest.TestCase):
 
     def test_distributive(self):
         algebra = BooleanAlgebra()
-        a = algebra.symbol('a')
-        b = algebra.symbol('b')
-        c = algebra.symbol('c')
-        d = algebra.symbol('d')
-        e = algebra.symbol('e')
+        a = algebra.Symbol('a')
+        b = algebra.Symbol('b')
+        c = algebra.Symbol('c')
+        d = algebra.Symbol('d')
+        e = algebra.Symbol('e')
         self.assertEqual((a * (b + c)).distributive(), (a * b) + (a * c))
         t1 = algebra.AND(a, (b + c), (d + e))
         t2 = algebra.OR(algebra.AND(a, b, d), algebra.AND(a, b, e), algebra.AND(a, c, d), algebra.AND(a, c, e))
@@ -821,7 +821,7 @@ class DualBaseTestCase(unittest.TestCase):
 
     def test_order(self):
         algebra = BooleanAlgebra()
-        x, y, z = algebra.symbol(1), algebra.symbol(2), algebra.symbol(3)
+        x, y, z = algebra.Symbol(1), algebra.Symbol(2), algebra.Symbol(3)
         self.assertTrue(algebra.AND(x, y) < algebra.AND(x, y, z))
         self.assertTrue(not algebra.AND(x, y) > algebra.AND(x, y, z))
         self.assertTrue(algebra.AND(x, y) < algebra.AND(x, z))
@@ -848,7 +848,7 @@ class OtherTestCase(unittest.TestCase):
         algebra = BooleanAlgebra()
         order = (
             (algebra.TRUE, algebra.FALSE),
-            (algebra.symbol('y'), algebra.symbol('x')),
+            (algebra.Symbol('y'), algebra.Symbol('x')),
             (algebra.parse('x*y'),),
             (algebra.parse('x+y'),),
         )
@@ -862,7 +862,7 @@ class OtherTestCase(unittest.TestCase):
 
     def test_parse(self):
         algebra = BooleanAlgebra()
-        a, b, c = algebra.symbol('a'), algebra.symbol('b'), algebra.symbol('c')
+        a, b, c = algebra.Symbol('a'), algebra.Symbol('b'), algebra.Symbol('c')
         self.assertEqual(algebra.parse('0'), algebra.FALSE)
         self.assertEqual(algebra.parse('(0)'), algebra.FALSE)
         self.assertEqual(algebra.parse('1') , algebra.TRUE)
@@ -896,7 +896,7 @@ class OtherTestCase(unittest.TestCase):
 
     def test_subs(self):
         algebra = BooleanAlgebra()
-        a, b, c = algebra.symbol('a'), algebra.symbol('b'), algebra.symbol('c')
+        a, b, c = algebra.Symbol('a'), algebra.Symbol('b'), algebra.Symbol('c')
         expr = a * b + c
         self.assertEqual(expr.subs({a: b}).simplify(), b + c)
         self.assertEqual(expr.subs({a: a}).simplify(), expr)
@@ -916,7 +916,7 @@ class BooleanBoolTestCase(unittest.TestCase):
 
     def test_bool(self):
         algebra = BooleanAlgebra()
-        a, b, c = algebra.symbol('a'), algebra.symbol('b'), algebra.symbol('c')
+        a, b, c = algebra.Symbol('a'), algebra.Symbol('b'), algebra.Symbol('c')
         expr = a * b + c
         self.assertRaises(TypeError, bool, expr.subs({a: algebra.TRUE}, simplify=False))
         self.assertRaises(TypeError, bool, expr.subs({b: algebra.TRUE}, simplify=False))
