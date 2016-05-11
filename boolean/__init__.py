@@ -12,28 +12,20 @@ Released under revised BSD license.
 
 from __future__ import absolute_import
 
-from boolean.boolean import Algebra  # NOQA
-from boolean.boolean import BooleanDomain  # NOQA
-from boolean.boolean import BooleanOperations  # NOQA
-from boolean.boolean import Expression  # NOQA
-from boolean.boolean import BaseElement  # NOQA
-from boolean.boolean import Symbol  # NOQA
-from boolean.boolean import Function  # NOQA
-from boolean.boolean import DualBase  # NOQA
+from boolean.boolean import BooleanAlgebra
+from boolean.boolean import Symbol
 
-from boolean.boolean import FALSE  # NOQA
-from boolean.boolean import TRUE  # NOQA
-from boolean.boolean import AND  # NOQA
-from boolean.boolean import NOT  # NOQA
-from boolean.boolean import OR  # NOQA
+from boolean.boolean import AND
+from boolean.boolean import NOT
+from boolean.boolean import OR
 
-from boolean.boolean import TOKENS  # NOQA
-from boolean.boolean import TOKEN_AND  # NOQA
-from boolean.boolean import TOKEN_OR  # NOQA
-from boolean.boolean import TOKEN_NOT  # NOQA
-from boolean.boolean import TOKEN_LPAR  # NOQA
-from boolean.boolean import TOKEN_RPAR  # NOQA
+from boolean.boolean import TOKEN_TRUE
+from boolean.boolean import TOKEN_FALSE
+from boolean.boolean import TOKEN_SYMBOL
 
-from boolean.boolean import normalize  # NOQA
-from boolean.boolean import symbols  # NOQA
-from boolean.boolean import parse  # NOQA
+from boolean.boolean import TOKEN_AND
+from boolean.boolean import TOKEN_OR
+from boolean.boolean import TOKEN_NOT
+
+from boolean.boolean import TOKEN_LPAR
+from boolean.boolean import TOKEN_RPAR

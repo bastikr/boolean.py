@@ -12,22 +12,28 @@ are stated.
 Basic Definitions
 -----------------
 
+Boolean Algebra
+^^^^^^^^^^^^^^^
+
+This is the main entry point. An algebra is define by the actual classes used
+for its domain, functions and variables.
+
 
 Boolean Domain
 ^^^^^^^^^^^^^^
 
 S := {1, 0}
 
-*These base elements are own classes with only one instance each,
+*These base elements are algebra-level singletons classes (only one instance of each per algebra instance),
 called* :class:`TRUE` *and* :class:`FALSE`.
 
 
 Boolean Variable
 ^^^^^^^^^^^^^^^^
 
-A variable that takes on only values in S.
+A variable holds an object and its implicit value is TRUE.
 
-*Implemented as class* :class:`Symbol`.
+*Implemented as class or subclasses of class* :class:`Symbol`.
 
 
 Boolean Function
@@ -83,9 +89,9 @@ elements
 +---+---+----------+
 
 and the property :math:`AND(x, y, z) = AND(x, AND(y, z))` where
-:math:`x, y, z` are boolean expressions.
+:math:`x, y, z` are boolean variables.
 
-Instead of :math:`AND(x, y, z)` one can write :math:`x*y*z`.
+Instead of :math:`AND(x, y, z)` one can write :math:`x & y & z`.
 
 *Implemented as class* :class:`AND`.
 
@@ -119,7 +125,7 @@ Instead of :math:`OR(x, y, z)` one can write :math:`x+y+z`.
 Literal
 ^^^^^^^
 
-A boolean variable or it's negation.
+A boolean variable, base element or its negation with NOT.
 
 *Implemented indirectly as* :attr:`Expression.isliteral`,
 :attr:`Expression.literals` *and* :meth:`Expression.literalize`.
@@ -130,6 +136,8 @@ Disjunctive normal form (DNF)
 A disjunction of conjunctions of literals where the conjunctions don't
 contain a boolean variable *and* it's negation. An example would be
 :math:`x*y + x*z`.
+
+*Implemented as* :attr:`BooleanAlgebra.dnf`.
 
 
 Full disjunctive normal form (FDNF)
@@ -146,6 +154,8 @@ Conjunctive normal form (CNF)
 A conjunction of disjunctions of literals where the disjunctions don't
 contain a boolean variable *and* it's negation. An example would be
 :math:`(x+y) * (x+z)`.
+
+*Implemented as* :attr:`BooleanAlgebra.cnf`.
 
 
 Full conjunctive normal form (FCNF)
