@@ -11,7 +11,8 @@ This library helps you deal with boolean expressions and algebra with variables
 and the boolean functions AND, OR, NOT.
 
 You can parse expressions from strings and simplify and compare expressions.
-You can also easily create custom tokenizers to handle custom expressions.  
+You can also easily create your custom algreba and mini DSL and create custom
+tokenizers to handle custom expressions.  
 
 For extensive documentation look either into the docs directory or view it online, at
 https://booleanpy.readthedocs.org/en/latest/
@@ -26,9 +27,9 @@ Released under revised BSD license.
 
 setup(
     name='boolean.py',
-    version='2.0.dev3',
+    version='2.0.0',
     license='revised BSD license',
-    description='Define boolean algebras, create or parse boolean expressions and create custom boolean DSL.',
+    description='Define boolean algebras, create and parse boolean expressions and create custom boolean DSL.',
     long_description=long_desc,
     author='Sebastian Kraemer',
     author_email='basti.kr@gmail.com',
