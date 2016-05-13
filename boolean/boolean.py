@@ -5,7 +5,7 @@ This module defines a Boolean algebra over the set {TRUE, FALSE} with boolean
 variables called Symbols and the boolean functions AND, OR, NOT. 
 
 Some basic logic comparison are supported: Two expressions can be compared for
-equivalence or containment. Furthermore you can simplify an expressions and
+equivalence or containment. Furthermore you can simplify an expression and
 obtain its normal form.
 
 You can create expressions in Python using familiar boolean operators or parse
