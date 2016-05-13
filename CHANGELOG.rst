@@ -9,7 +9,8 @@ next
 * API changes
 
  * #45 simplify=False is now the default for parse and related functions or methods.
-    
+ * #40 Use "&" and "|" as default operators
+
 
 2.0.0 (2016-05-11)
 ------------------

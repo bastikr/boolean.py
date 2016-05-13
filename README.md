@@ -34,9 +34,6 @@ Example
 Documentation
 -------------
 
-Note: this version 2.x is a pre-release and the documentation is not yet up to
-date.
-
 http://readthedocs.org/docs/booleanpy/en/latest/
 
 
