@@ -87,17 +87,17 @@ simplification to evaluate an expression:
     >>> import boolean
     >>> algebra = boolean.BooleanAlgebra()
     >>> x, y = algebra.symbols('x', 'y')
-    >>> print(x*~x)
+    >>> print(x&~x)
     0
-    >>> print(x+~x)
+    >>> print(x|~x)
     1
-    >>> print(x+x)
+    >>> print(x|x)
     x
-    >>> print(x*x)
+    >>> print(x&x)
     x
-    >>> print(x*(x+y))
+    >>> print(x&(x|y))
     x
-    >>> print((x*y) + (x*~y))
+    >>> print((x&y) | (x&~y))
     x
 
 When simplify() is called, the following boolean logic laws are used recursively on every sub-term of the expression:
@@ -121,8 +121,8 @@ A simplified expression is return and many not be fully evaluated nor minimal:
     >>> import boolean
     >>> algebra = boolean.BooleanAlgebra()
     >>> x, y, z = algebra.symbols('x', 'y', 'z')
-    >>> print((((x+y)*z)+x*y).simplify())
-    (x*y)+(z*(x+y))
+    >>> print((((x|y)&z)|x&y).simplify())
+    (x&y)|(z&(x|y))
 
 
 Equality of expressions
@@ -162,15 +162,15 @@ Here some examples of equal and unequal structures:
 
     >>> import boolean
     >>> algebra = boolean.BooleanAlgebra()
-    >>> expr1 = algebra.parse("x+y")
-    >>> expr2 = algebra.parse("y+x")
+    >>> expr1 = algebra.parse("x|y")
+    >>> expr2 = algebra.parse("y|x")
     >>> expr1 == expr2
     True
-    >>> expr = algebra.parse("x+~x")
+    >>> expr = algebra.parse("x|~x")
     >>> expr == TRUE
     False
-    >>> expr1 = algebra.parse("x*(~x+y)")
-    >>> expr2 = algebra.parse("x*y")
+    >>> expr1 = algebra.parse("x&(~x|y)")
+    >>> expr2 = algebra.parse("x&y")
     >>> expr1 == expr2
     False
 
@@ -188,7 +188,7 @@ contains one or more symbols, elements or sub-expressions.
 
     >>> import boolean
     >>> algebra = boolean.BooleanAlgebra()
-    >>> algebra.parse("x+y+z").args
+    >>> algebra.parse("x|y|z").args
     (Symbol('x'), Symbol('y'), Symbol('z'))
 
 Getting all symbols
@@ -198,14 +198,14 @@ To get a set() of all unique symbols in an expression, use its :attr:`symbols` a
 
     >>> import boolean
     >>> algebra = boolean.BooleanAlgebra()
-    >>> algebra.parse("x+y*(x+z)").symbols
+    >>> algebra.parse("x|y&(x|z)").symbols
     {Symbol('y'), Symbol('x'), Symbol('z')}
 
 To get a list of all symbols in an expression, use its :attr:`get_symbols` method ::
 
     >>> import boolean
     >>> algebra = boolean.BooleanAlgebra()
-    >>> algebra.parse("x+y*(x+z)").get_symbols()
+    >>> algebra.parse("x|y&(x|z)").get_symbols()
     [Symbol('x'), Symbol('y'), Symbol('x'), Symbol('z')]
 
 
@@ -221,7 +221,7 @@ Symbols and negations of symbols are called literals. You can test if an express
     True
     >>> (~x).isliteral
     True
-    >>> (x+y).isliteral
+    >>> (x|y).isliteral
     False
 
 Or get a set() or list of all literals contained in an expression::
@@ -231,13 +231,13 @@ Or get a set() or list of all literals contained in an expression::
     >>> x, y, z = algebra.symbols('x', 'y', 'z')
     >>> x.literals
     {Symbol('x')}
-    >>> (~(x+~y)).get_literals()
+    >>> (~(x|~y)).get_literals()
     [Symbol('x'), NOT(Symbol('y'))]
 
 To remove negations except in literals use the :meth:`literalize`::
 
-    >>> (~(x+~y)).literalize()
-    ~x*y
+    >>> (~(x|~y)).literalize()
+    ~x&y
 
 
 Substitutions
@@ -245,9 +245,9 @@ Substitutions
 
 To substitute parts of an expression, use the :meth:`subs` method::
 
-    >>> e = x+y*z
-    >>> e.subs({y*z:y})
-    x+y
+    >>> e = x|y&z
+    >>> e.subs({y&z:y})
+    x|y
 
 
 Using boolean.py to define your own boolean algebra

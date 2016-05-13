@@ -267,18 +267,18 @@ class BooleanAlgebra(object):
                 return ast
 
             prec = precedence[ast[1]]
-            if prec > op_prec:  # op=*, [ast, +, x, y] -> [[ast, +, x], *, y]
+            if prec > op_prec:  # op=&, [ast, |, x, y] -> [[ast, |, x], &, y]
                 ast = [ast, operation, ast.pop(-1)]
                 return ast
 
-            if prec == op_prec:  # op=*, [ast, *, x] -> [ast, *, x]
+            if prec == op_prec:  # op=&, [ast, &, x] -> [ast, &, x]
                 return ast
 
-            if ast[0] is None:  # op=+, [None, *, x, y] -> [None, +, x*y]
+            if ast[0] is None:  # op=|, [None, &, x, y] -> [None, |, x&y]
                 subexp = ast[1](*ast[2:])
                 return [ast[0], operation, subexp]
 
-            else:  # op=+, [[ast, *, x], ~, y] -> [ast, *, x, ~y]
+            else:  # op=|, [[ast, &, x], ~, y] -> [ast, &, x, ~y]
                 ast[0].append(ast[1](*ast[2:]))
                 ast = ast[0]
 
@@ -977,7 +977,7 @@ class DualBase(Function):
 
     This class uses the duality principle to combine similar methods of AND
     and OR. Both operations take 2 or more arguments and can be created using
-    "+" for OR and "*" for AND.
+    "|" for OR and "&" for AND.
     """
 
     def __init__(self, arg1, arg2, *args):
@@ -1040,15 +1040,15 @@ class DualBase(Function):
         expr = expr.literalize()
 
         # Associativity:
-        #     (A * B) * C = A * (B * C) = A * B * C
-        #     (A + B) + C = A + (B + C) = A + B + C
+        #     (A & B) & C = A & (B & C) = A & B & C
+        #     (A | B) | C = A | (B | C) = A | B | C
         expr = expr.flatten()
 
-        # Annihilation: A * 0 = 0, A + 1 = 1
+        # Annihilation: A & 0 = 0, A | 1 = 1
         if self.annihilator in expr.args:
             return self.annihilator
 
-        # Idempotence: A * A = A, A + A = A
+        # Idempotence: A & A = A, A | A = A
         # this boils down to removing duplicates
         args = []
         for arg in expr.args:
@@ -1057,18 +1057,18 @@ class DualBase(Function):
         if len(args) == 1:
             return args[0]
 
-        # Identity: A * 1 = A, A + 0 = A
+        # Identity: A & 1 = A, A | 0 = A
         if self.identity in args:
             args.remove(self.identity)
             if len(args) == 1:
                 return args[0]
 
-        # Complementation: A * ~A = 0, A + ~A = 1
+        # Complementation: A & ~A = 0, A | ~A = 1
         for arg in args:
             if self.NOT(arg) in args:
                 return self.annihilator
 
-        # Elimination: (A * B) + (A * ~B) = A, (A + B) * (A + ~B) = A
+        # Elimination: (A & B) | (A & ~B) = A, (A | B) & (A | ~B) = A
         i = 0
         while i < len(args) - 1:
             j = i + 1
@@ -1117,13 +1117,13 @@ class DualBase(Function):
                 j += 1
             i += 1
 
-        # Absorption: A * (A + B) = A, A + (A * B) = A
-        # Negative absorption: A * (~A + B) = A * B, A + (~A * B) = A + B
+        # Absorption: A & (A | B) = A, A | (A & B) = A
+        # Negative absorption: A & (~A | B) = A & B, A | (~A & B) = A | B
         args = self.absorb(args)
         if len(args) == 1:
             return args[0]
 
-        # Commutativity: A * B = B * A, A + B = B + A
+        # Commutativity: A & B = B & A, A | B = B | A
         args.sort()
 
         # Create new (now canonical) expression.
@@ -1136,7 +1136,7 @@ class DualBase(Function):
         Return a new expression where nested terms of this expression are
         flattened as far as possible.
 
-        E.g. A * (B * C) becomes A * B * C.
+        E.g. A & (B & C) becomes A & B & C.
         """
         args = list(self.args)
         i = 0
@@ -1156,8 +1156,8 @@ class DualBase(Function):
         
         See https://en.wikipedia.org/wiki/Absorption_law
 
-        Absorption: A * (A + B) = A, A + (A * B) = A
-        Negative absorption: A * (~A + B) = A * B, A + (~A * B) = A + B
+        Absorption: A & (A | B) = A, A | (A & B) = A
+        Negative absorption: A & (~A | B) = A & B, A | (~A & B) = A | B
         """
         args = list(args)
         if not args:
@@ -1245,8 +1245,8 @@ class DualBase(Function):
         Return a term where the leading AND or OR terms are switched.
 
         This is done by applying the distributive laws:
-            A * (B+C) = (A*B) + (A*C)
-            A + (B*C) = (A+B) * (A+C)
+            A & (B|C) = (A&B) | (A&C)
+            A | (B&C) = (A|B) & (A|C)
         """
         dual = self.dual
         args = list(self.args)
@@ -1289,7 +1289,7 @@ class AND(DualBase):
     """
     Boolean AND operation, taking 2 or more arguments. 
     
-    It can also be created by using "*" between two boolean expressions.
+    It can also be created by using "&" between two boolean expressions.
 
     You can subclass to define alternative string representation.
     For example::
@@ -1306,14 +1306,14 @@ class AND(DualBase):
         self.identity = self.TRUE
         self.annihilator = self.FALSE
         self.dual = self.OR
-        self.operator = '*'
+        self.operator = '&'
 
 
 class OR(DualBase):
     """
     Boolean OR operation, taking 2 or more arguments
     
-    It can also be created by using "+" between two boolean expressions.
+    It can also be created by using "|" between two boolean expressions.
 
     You can subclass to define alternative string representation.
     For example::
@@ -1330,4 +1330,4 @@ class OR(DualBase):
         self.identity = self.FALSE
         self.annihilator = self.TRUE
         self.dual = self.AND
-        self.operator = '+'
+        self.operator = '|'

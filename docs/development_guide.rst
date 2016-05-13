@@ -2,7 +2,7 @@
 Development Guide
 =================
 
-This document gives an overview of the code in **boolean.py**, explaining the
+This document gives an overview of the code in &&boolean.py&&, explaining the
 layout and design decisions and some difficult algorithms. All used definitions
 and laws are stated in :doc:`concepts`.
 
@@ -80,7 +80,7 @@ and how these arguments are processed before they are used.
 Symbol
 ^^^^^^
 
-* :obj:`obj` (Named Symbol)
+& :obj:`obj` (Named Symbol)
 
 
 Ordering
