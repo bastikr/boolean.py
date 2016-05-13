@@ -174,7 +174,7 @@ class BooleanAlgebra(object):
         """
         return tuple(map(self.Symbol, args))
 
-    def parse(self, expr, simplify=True):
+    def parse(self, expr, simplify=False):
         """
         Return a boolean expression parsed from `expr` either a unicode string
         or tokens iterable.
@@ -519,7 +519,7 @@ class Expression(object):
         """
         return set(self.get_symbols())
 
-    def subs(self, substitutions, simplify=True):
+    def subs(self, substitutions, simplify=False):
         """
         Return an expression where the expression or all subterms equal to a key
         expression are substituted with the corresponding value expression using
@@ -536,7 +536,7 @@ class Expression(object):
         expr = self._subs(substitutions, simplify=simplify)
         return self if expr is None else expr
 
-    def _subs(self, substitutions, simplify=True):
+    def _subs(self, substitutions, simplify=False):
         """
         Return an expression where all subterms equal to a key expression are
         substituted by the corresponding value expression using a mapping of:
@@ -834,7 +834,7 @@ class Function(Expression):
         If debug is True, also prints debug information for each expression arg.
 
         For example:
-        >>> print Expression().parse(u'not a and not b and not (a and ba and c) and c or c', simplify=False).pretty()
+        >>> print Expression().parse(u'not a and not b and not (a and ba and c) and c or c').pretty()
         OR(
           AND(
             NOT(Symbol('a')),

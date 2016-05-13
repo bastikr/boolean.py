@@ -162,15 +162,15 @@ Here some examples of equal and unequal structures:
 
     >>> import boolean
     >>> algebra = boolean.BooleanAlgebra()
-    >>> expr1 = algebra.parse("x+y", simplify=False)
-    >>> expr2 = algebra.parse("y+x", simplify=False)
+    >>> expr1 = algebra.parse("x+y")
+    >>> expr2 = algebra.parse("y+x")
     >>> expr1 == expr2
     True
-    >>> expr = algebra.parse("x+~x", simplify=False)
+    >>> expr = algebra.parse("x+~x")
     >>> expr == TRUE
     False
-    >>> expr1 = algebra.parse("x*(~x+y)", simplify=False)
-    >>> expr2 = algebra.parse("x*y", simplify=False)
+    >>> expr1 = algebra.parse("x*(~x+y)")
+    >>> expr2 = algebra.parse("x*y")
     >>> expr1 == expr2
     False
 

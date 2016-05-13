@@ -35,7 +35,7 @@ class BooleanAlgebraTestCase(unittest.TestCase):
     def test_creation(self):
         algebra = BooleanAlgebra()
         expr_str = '(a+b+c)*d*(~e+(f*g))'
-        expr = algebra.parse(expr_str, simplify=False)
+        expr = algebra.parse(expr_str)
         self.assertEqual(expr_str, str(expr))
 
     def test_parse_with_mixed_operators_multilines_and_custom_symbol(self):
@@ -48,7 +48,7 @@ class BooleanAlgebraTestCase(unittest.TestCase):
                       | (my * g OR 1 or 0) ) AND that '''
 
         algebra = BooleanAlgebra(Symbol_class=MySymbol)
-        expr = algebra.parse(expr_str, simplify=False)
+        expr = algebra.parse(expr_str)
 
         expected = algebra.AND(
             algebra.OR(
@@ -77,7 +77,7 @@ class BooleanAlgebraTestCase(unittest.TestCase):
     def test_parse_recognizes_trueish_and_falsish_symbol_tokens(self):
         expr_str = 'True or False or None or 0 or 1 or TRue or FalSE or NONe'
         algebra = BooleanAlgebra()
-        expr = algebra.parse(expr_str, simplify=False)
+        expr = algebra.parse(expr_str)
         expected = algebra.OR(
             algebra.TRUE,
             algebra.FALSE,
@@ -123,7 +123,7 @@ class BooleanAlgebraTestCase(unittest.TestCase):
                    '''
 
         algebra = CustomAlgebra()
-        expr = algebra.parse(expr_str, simplify=False)
+        expr = algebra.parse(expr_str)
         expected = algebra.AND(
             algebra.OR(
                 algebra.Symbol('Custom'),
@@ -252,7 +252,7 @@ class BooleanAlgebraTestCase(unittest.TestCase):
         '''
 
         algebra = AdvancedAlgebra()
-        expr = algebra.parse(test_expr, simplify=False)
+        expr = algebra.parse(test_expr)
         expected = algebra.AND(
             algebra.OR(
                 ColonDotVar('colon1:dot1.dot2'),
@@ -413,7 +413,7 @@ class NOTTestCase(unittest.TestCase):
         self.assertTrue(l in l.literals)
         self.assertEqual(len(l.literals), 1)
 
-        l = algebra.parse('~(a*a)', simplify=False)
+        l = algebra.parse('~(a*a)')
         self.assertFalse(l.isliteral)
         self.assertTrue(a in l.literals)
         self.assertEqual(len(l.literals), 1)
@@ -432,7 +432,7 @@ class NOTTestCase(unittest.TestCase):
         a = algebra.Symbol('a')
         self.assertEqual(~a, ~a)
         assert algebra.Symbol('a') == algebra.Symbol('a')
-        self.assertNotEqual(a, algebra.parse('~~a', simplify=False))
+        self.assertNotEqual(a, algebra.parse('~~a'))
         self.assertEqual(a, (~~a).simplify())
         self.assertEqual(~a, (~~ ~a).simplify())
         self.assertEqual(a, (~~ ~~a).simplify())
@@ -443,17 +443,17 @@ class NOTTestCase(unittest.TestCase):
         algebra = BooleanAlgebra()
         a = algebra.Symbol('a')
         self.assertEqual(~a, (~a).cancel())
-        self.assertEqual(a, algebra.parse('~~a', simplify=False).cancel())
-        self.assertEqual(~a, algebra.parse('~~~a', simplify=False).cancel())
-        self.assertEqual(a, algebra.parse('~~~~a', simplify=False).cancel())
+        self.assertEqual(a, algebra.parse('~~a').cancel())
+        self.assertEqual(~a, algebra.parse('~~~a').cancel())
+        self.assertEqual(a, algebra.parse('~~~~a').cancel())
 
     def test_demorgan(self):
         algebra = BooleanAlgebra()
         a = algebra.Symbol('a')
         b = algebra.Symbol('b')
-        self.assertEqual(algebra.parse('~(a*b)', simplify=False).demorgan(), ~a + ~b)
-        self.assertEqual(algebra.parse('~(a+b+c)', simplify=False).demorgan(), algebra.parse('~a*~b*~c'))
-        self.assertEqual(algebra.parse('~(~a*b)', simplify=False).demorgan(), a + ~b)
+        self.assertEqual(algebra.parse('~(a*b)').demorgan(), ~a + ~b)
+        self.assertEqual(algebra.parse('~(a+b+c)').demorgan(), algebra.parse('~a*~b*~c'))
+        self.assertEqual(algebra.parse('~(~a*b)').demorgan(), a + ~b)
 
     def test_order(self):
         algebra = BooleanAlgebra()
@@ -469,7 +469,7 @@ class NOTTestCase(unittest.TestCase):
         a = algebra.Symbol('a')
         self.assertEqual(str(~a), '~a')
         self.assertEqual(repr(~a), "NOT(Symbol('a'))")
-        expr = algebra.parse('~(a*a)', simplify=False)
+        expr = algebra.parse('~(a*a)')
         self.assertEqual(str(expr), '~(a*a)')
         self.assertEqual(repr(expr), "NOT(AND(Symbol('a'), Symbol('a')))")
 
@@ -516,12 +516,12 @@ class DualBaseTestCase(unittest.TestCase):
 
     def test_literalize(self):
         parse = BooleanAlgebra().parse
-        self.assertEqual(parse('a+~(b+c)', simplify=False).literalize(), parse('a+(~b*~c)', simplify=False))
+        self.assertEqual(parse('a+~(b+c)').literalize(), parse('a+(~b*~c)'))
 
     def test_annihilator(self):
         algebra = BooleanAlgebra()
-        self.assertEqual(algebra.parse('a*a', simplify=False).annihilator, algebra.FALSE)
-        self.assertEqual(algebra.parse('a+a', simplify=False).annihilator, algebra.TRUE)
+        self.assertEqual(algebra.parse('a*a').annihilator, algebra.FALSE)
+        self.assertEqual(algebra.parse('a+a').annihilator, algebra.TRUE)
 
     def test_identity(self):
         algebra = BooleanAlgebra()
@@ -565,11 +565,11 @@ class DualBaseTestCase(unittest.TestCase):
         # Elimination
         self.assertEqual(a, ((a * ~b) + (a * b)).simplify())
 
-        expected = algebra.parse('(a*b)+(b*c)+(a*c)', simplify=False)
+        expected = algebra.parse('(a*b)+(b*c)+(a*c)')
         result = algebra.parse('(~a*b*c) + (a*~b*c) + (a*b*~c) + (a*b*c)', simplify=True)
         self.assertEqual(expected, result)
 
-        expected = algebra.parse('b*d', simplify=False)
+        expected = algebra.parse('b*d')
         result = algebra.parse('(a*b*c*d) + (b*d)', simplify=True)
         self.assertEqual(expected, result)
 
@@ -584,7 +584,7 @@ class DualBaseTestCase(unittest.TestCase):
         a, b, c = algebra.symbols(*'abc')
 
         test_expression_str = '''(~a | ~b | ~c)'''
-        parsed = algebra.parse(test_expression_str, simplify=False)
+        parsed = algebra.parse(test_expression_str)
         test_expression = (~a | ~b | ~c)  # * ~d
         # print()
         # print('parsed')
@@ -638,7 +638,7 @@ class DualBaseTestCase(unittest.TestCase):
             a*~b*~c*d + ~a*b*c*d + a*~b*c*d + a*b*c*d
             '''
 
-        parsed = algebra.parse(test_expression_str, simplify=False)
+        parsed = algebra.parse(test_expression_str)
 
         test_expression = (
             ~a * ~b * ~c * ~d + ~a * ~b * ~c * d + ~a * b * ~c * ~d +
@@ -671,7 +671,7 @@ class DualBaseTestCase(unittest.TestCase):
             (a * ~b * ~c * d) + (~a * b * c * d) + (a * ~b * c * d) + (a * b * c * d)
         )
 
-        parsed = parse(test_expression_str, simplify=False)
+        parsed = parse(test_expression_str)
         self.assertEqual(test_expression_str, str(parsed))
 
         expected = (a * ~b * d) + (~a * b) + (~a * ~c) + (b * c * d)
@@ -687,7 +687,7 @@ class DualBaseTestCase(unittest.TestCase):
         expected_str = '(a*~b*d)+(~a*b)+(~a*~c)+(b*c*d)'
         self.assertEqual(expected_str, str(parsed))
 
-        parsed2 = parse(test_expression_str, simplify=False)
+        parsed2 = parse(test_expression_str)
         self.assertEqual(expected.pretty(), parsed2.simplify().pretty())
 
         self.assertEqual(expected_str, str(parsed2.simplify()))
@@ -770,13 +770,13 @@ class DualBaseTestCase(unittest.TestCase):
     def test_flatten(self):
         parse = BooleanAlgebra().parse
 
-        t1 = parse('a * (b*c)', simplify=False)
-        t2 = parse('a*b*c', simplify=False)
+        t1 = parse('a * (b*c)')
+        t2 = parse('a*b*c')
         self.assertNotEqual(t1, t2)
         self.assertEqual(t1.flatten(), t2)
 
-        t1 = parse('a + ((b*c) + (a*c)) + b', simplify=False)
-        t2 = parse('a + (b*c) + (a*c) + b', simplify=False)
+        t1 = parse('a + ((b*c) + (a*c)) + b')
+        t2 = parse('a + (b*c) + (a*c) + b')
         self.assertNotEqual(t1, t2)
         self.assertEqual(t1.flatten(), t2)
 
@@ -833,12 +833,12 @@ class DualBaseTestCase(unittest.TestCase):
 
     def test_printing(self):
         parse = BooleanAlgebra().parse
-        self.assertEqual(str(parse('a*a', simplify=False)), 'a*a')
-        self.assertEqual(repr(parse('a*a', simplify=False)), "AND(Symbol('a'), Symbol('a'))")
-        self.assertEqual(str(parse('a+a', simplify=False)), 'a+a')
-        self.assertEqual(repr(parse('a+a', simplify=False)), "OR(Symbol('a'), Symbol('a'))")
-        self.assertEqual(str(parse('(a+b)*c', simplify=False)), '(a+b)*c')
-        self.assertEqual(repr(parse('(a+b)*c', simplify=False)), "AND(OR(Symbol('a'), Symbol('b')), Symbol('c'))")
+        self.assertEqual(str(parse('a*a')), 'a*a')
+        self.assertEqual(repr(parse('a*a')), "AND(Symbol('a'), Symbol('a'))")
+        self.assertEqual(str(parse('a+a')), 'a+a')
+        self.assertEqual(repr(parse('a+a')), "OR(Symbol('a'), Symbol('a'))")
+        self.assertEqual(str(parse('(a+b)*c')), '(a+b)*c')
+        self.assertEqual(repr(parse('(a+b)*c')), "AND(OR(Symbol('a'), Symbol('b')), Symbol('c'))")
 
 
 class OtherTestCase(unittest.TestCase):
@@ -874,7 +874,7 @@ class OtherTestCase(unittest.TestCase):
         self.assertEqual(algebra.parse('~(a)'), algebra.parse('(~a)'))
         self.assertEqual(algebra.parse('~a'), ~a)
         self.assertEqual(algebra.parse('(~a)'), ~a)
-        self.assertEqual(algebra.parse('~~a'), (~~a).simplify())
+        self.assertEqual(algebra.parse('~~a', simplify=True), (~~a).simplify())
         self.assertEqual(algebra.parse('a*b'), a * b)
         self.assertEqual(algebra.parse('~a*b'), ~a * b)
         self.assertEqual(algebra.parse('a*~b'), a * ~b)
@@ -889,10 +889,10 @@ class OtherTestCase(unittest.TestCase):
         self.assertEqual(algebra.parse('a+b+c'), algebra.OR(a, b, c))
         self.assertEqual(algebra.parse('~a+~b+~c'), algebra.OR(~a, ~b, ~c))
         self.assertEqual(algebra.parse('(a+b)'), a + b)
-        self.assertEqual(algebra.parse('a*(a+b)'), (a * (a + b)).simplify())
-        self.assertEqual(algebra.parse('a*(a+~b)'), (a * (a + ~b)).simplify())
-        self.assertEqual(algebra.parse('(a*b)+(b*((c+a)*(b+(c*a))))'), ((a * b) + (b * ((c + a) * (b + (c * a))))).simplify())
-        self.assertEqual(algebra.parse('(a*b)+(b*((c+a)*(b+(c*a))))'), algebra.parse('a*b + b*(c+a)*(b+c*a)'))
+        self.assertEqual(algebra.parse('a*(a+b)', simplify=True), (a * (a + b)).simplify())
+        self.assertEqual(algebra.parse('a*(a+~b)', simplify=True), (a * (a + ~b)).simplify())
+        self.assertEqual(algebra.parse('(a*b)+(b*((c+a)*(b+(c*a))))', simplify=True), ((a * b) + (b * ((c + a) * (b + (c * a))))).simplify())
+        self.assertEqual(algebra.parse('(a*b)+(b*((c+a)*(b+(c*a))))', simplify=True), algebra.parse('a*b + b*(c+a)*(b+c*a)', simplify=True))
 
     def test_subs(self):
         algebra = BooleanAlgebra()
@@ -918,10 +918,10 @@ class BooleanBoolTestCase(unittest.TestCase):
         algebra = BooleanAlgebra()
         a, b, c = algebra.Symbol('a'), algebra.Symbol('b'), algebra.Symbol('c')
         expr = a * b + c
-        self.assertRaises(TypeError, bool, expr.subs({a: algebra.TRUE}, simplify=False))
-        self.assertRaises(TypeError, bool, expr.subs({b: algebra.TRUE}, simplify=False))
-        self.assertRaises(TypeError, bool, expr.subs({c: algebra.TRUE}, simplify=False))
-        self.assertRaises(TypeError, bool, expr.subs({a: algebra.TRUE, b: algebra.TRUE}, simplify=False))
+        self.assertRaises(TypeError, bool, expr.subs({a: algebra.TRUE}))
+        self.assertRaises(TypeError, bool, expr.subs({b: algebra.TRUE}))
+        self.assertRaises(TypeError, bool, expr.subs({c: algebra.TRUE}))
+        self.assertRaises(TypeError, bool, expr.subs({a: algebra.TRUE, b: algebra.TRUE}))
         result = expr.subs({c: algebra.TRUE}, simplify=True)
         result = result.simplify()
         self.assertTrue(result)
