@@ -507,7 +507,7 @@ class Expression(object):
         Include recursively subexpressions symbols.
         This includes duplicates.
         """
-        return [s for s in self.literals if isinstance(s, Symbol)]
+        return [s for s in self.get_literals() if isinstance(s, Symbol)]
 
     @property
     def symbols(self,):
