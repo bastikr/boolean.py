@@ -16,6 +16,8 @@ from boolean.boolean import BooleanAlgebra
 
 from boolean.boolean import Expression
 from boolean.boolean import Symbol
+from boolean.boolean import ParseError
+from boolean.boolean import PARSE_ERRORS
 
 from boolean.boolean import AND
 from boolean.boolean import NOT

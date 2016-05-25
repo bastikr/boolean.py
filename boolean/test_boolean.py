@@ -19,6 +19,7 @@ except NameError:
 
 
 from boolean import BooleanAlgebra
+from boolean import ParseError
 from boolean import Symbol
 from boolean import TOKEN_NOT
 from boolean import TOKEN_AND
@@ -264,6 +265,28 @@ class BooleanAlgebraTestCase(unittest.TestCase):
             )
         )
         self.assertEqual(expected, expr)
+
+    def test_parse_raise_ParseError(self):
+        algebra = BooleanAlgebra()
+        invalid_expressions = [
+            'l-a AND none',
+            '(l-a + AND l-b',
+            '(l-a + AND l-b)',
+            '(l-a AND l-b',
+            '(l-a + AND l-b))',
+            '(l-a  AND l-b))',
+            'l-a AND',
+            'OR l-a',
+            '+ l-a',
+        ]
+
+        for expr in invalid_expressions:
+            print(expr)
+            try:
+                algebra.parse(expr)
+                self.fail("Exception should be raised when parsing '%s'" % expr)
+            except ParseError:
+                pass
 
 
 class BaseElementTestCase(unittest.TestCase):

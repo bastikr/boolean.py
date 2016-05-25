@@ -60,14 +60,14 @@ PARSE_INVALID_EXPRESSION = 3
 
 PARSE_ERRORS = {
     PARSE_UNKNOWN_TOKEN: 'Unknown token',
-    PARSE_UNBALANCED_CLOSING_PARENS: 'Bad closing parenthesis',
+    PARSE_UNBALANCED_CLOSING_PARENS: 'Unbalanced parenthesis',
     PARSE_INVALID_EXPRESSION: 'Invalid expression',
 }
 
 
 class ParseError(Exception):
     """
-    Raised when the parser or tokemizer encounters a syntax error. Instances of
+    Raised when the parser or tokenizer encounters a syntax error. Instances of
     this class have attributes token_type, token_string, position, error_code to
     access the details of the error. str() of the exception instance returns a
     formatted message.
@@ -80,21 +80,16 @@ class ParseError(Exception):
         self.error_code = error_code
 
     def __str__(self, *args, **kwargs):
-        ttype = ''
-        if self.token_type:
-            ttype = TOKEN_TYPES.get(self.token_type) or repr(self.token_type)
-            ttype = ' for token type: %r' % (ttype)
-
         tstr = ''
         if self.token_string:
-            tstr = ' with value: %r' % (self.token_string)
+            tstr = ' for token: %r' % (self.token_string)
 
         pos = ''
         if self.position > 0:
             pos = ' at position: %d' % (self.position)
         emsg = PARSE_ERRORS.get(self.error_code, 'Unknown parsing error')
 
-        return '{emsg){ttype}{tstr}(pos}.'.format(ttype=ttype, tstr=tstr, pos=pos, emsg=emsg)
+        return '{emsg}{tstr}{pos}.'.format(tstr=tstr, pos=pos, emsg=emsg)
 
 
 class BooleanAlgebra(object):
@@ -225,32 +220,36 @@ class BooleanAlgebra(object):
             elif token == TOKEN_RPAR:
                 while True:
                     if ast[0] is None:
-                        raise ParseError(token, tokstr, position,
-                                         PARSE_UNBALANCED_CLOSING_PARENS)
+                        raise ParseError(token, tokstr, position, PARSE_UNBALANCED_CLOSING_PARENS)
                     if ast[1] is TOKEN_LPAR:
                         ast[0].append(ast[2])
                         ast = ast[0]
                         break
+                    if isinstance(ast[1], int):
+                        raise ParseError(token, tokstr, position, PARSE_UNBALANCED_CLOSING_PARENS)
                     subex = ast[1](*ast[2:])
                     ast[0].append(subex)
                     ast = ast[0]
             else:
                 raise ParseError(token, tokstr, position, PARSE_UNKNOWN_TOKEN)
 
-        while True:
-            if ast[0] is None:
-                if ast[1] is None:
-
-                    if len(ast) != 3:
-                        raise ParseError(error_code=PARSE_INVALID_EXPRESSION)
-                    parsed = ast[2]
+        try:
+            while True:
+                if ast[0] is None:
+                    if ast[1] is None:
+    
+                        if len(ast) != 3:
+                            raise ParseError(error_code=PARSE_INVALID_EXPRESSION)
+                        parsed = ast[2]
+                    else:
+                        parsed = ast[1](*ast[2:])
+                    break
                 else:
-                    parsed = ast[1](*ast[2:])
-                break
-            else:
-                subex = ast[1](*ast[2:])
-                ast[0].append(subex)
-                ast = ast[0]
+                    subex = ast[1](*ast[2:])
+                    ast[0].append(subex)
+                    ast = ast[0]
+        except TypeError:
+            raise ParseError(error_code=PARSE_INVALID_EXPRESSION)
 
         if simplify:
             return parsed.simplify()
