@@ -781,6 +781,11 @@ class DualBaseTestCase(unittest.TestCase):
         result = result.simplify()
         self.assertEqual(expected, result)
 
+    def test_parse_invalid_nested_and_should_raise_a_proper_exception(self):
+        algebra = BooleanAlgebra()
+        test_expression_str = '''a (and b)'''
+        self.assertRaises(ParseError, algebra.parse, test_expression_str)
+
     def test_subtract(self):
         parse = BooleanAlgebra().parse
         expr = parse('a&b&c')
