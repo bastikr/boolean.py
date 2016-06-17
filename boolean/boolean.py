@@ -2,7 +2,7 @@
 Boolean expressions algebra.
 
 This module defines a Boolean algebra over the set {TRUE, FALSE} with boolean
-variables called Symbols and the boolean functions AND, OR, NOT. 
+variables called Symbols and the boolean functions AND, OR, NOT.
 
 Some basic logic comparison are supported: Two expressions can be compared for
 equivalence or containment. Furthermore you can simplify an expression and
@@ -23,6 +23,7 @@ Released under revised BSD license.
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
+import inspect
 import itertools
 
 try:
@@ -57,11 +58,13 @@ TOKEN_TYPES = {
 PARSE_UNKNOWN_TOKEN = 1
 PARSE_UNBALANCED_CLOSING_PARENS = 2
 PARSE_INVALID_EXPRESSION = 3
+PARSE_INVALID_NESTING = 4
 
 PARSE_ERRORS = {
     PARSE_UNKNOWN_TOKEN: 'Unknown token',
     PARSE_UNBALANCED_CLOSING_PARENS: 'Unbalanced parenthesis',
     PARSE_INVALID_EXPRESSION: 'Invalid expression',
+    PARSE_INVALID_NESTING: 'Invalid expression nesting such as (AND xx)'
 }
 
 
@@ -71,7 +74,6 @@ class ParseError(Exception):
     this class have attributes token_type, token_string, position, error_code to
     access the details of the error. str() of the exception instance returns a
     formatted message.
-    
     """
     def __init__(self, token_type=None, token_string='', position=-1, error_code=0):
         self.token_type = token_type
@@ -96,8 +98,8 @@ class BooleanAlgebra(object):
     """
     An algebra is defined by:
     - the types of its operations and Symbol.
-    - the tokenizer used when parsing expressions from strings. 
-    
+    - the tokenizer used when parsing expressions from strings.
+
     This class also serves as a base class for all boolean expressions,
     including base elements, functions and variable symbols.
     """
@@ -177,11 +179,11 @@ class BooleanAlgebra(object):
         Optionally simplify the expression if `simplify` is True.
 
         Raise ParseError on errors.
-        
+
         If `expr` is a string, the standard `tokenizer` is used for tokenization
         and the algebra configured Symbol type is used to create Symbol
         instances from Symbol tokens.
-    
+
         If `expr` is an iterable, it should contain 3-tuples of: (token,
         token_string, position). In this case, the `token` can be a Symbol
         instance or one of the TOKEN_* types.
@@ -225,8 +227,15 @@ class BooleanAlgebra(object):
                         ast[0].append(ast[2])
                         ast = ast[0]
                         break
+
                     if isinstance(ast[1], int):
                         raise ParseError(token, tokstr, position, PARSE_UNBALANCED_CLOSING_PARENS)
+
+                    # the parens are properly nested
+                    # the top ast node should be a function subclass
+                    if not (inspect.isclass(ast[1]) and issubclass(ast[1], Function)):
+                        raise ParseError(token, tokstr, position, PARSE_INVALID_NESTING)
+
                     subex = ast[1](*ast[2:])
                     ast[0].append(subex)
                     ast = ast[0]
@@ -237,7 +246,7 @@ class BooleanAlgebra(object):
             while True:
                 if ast[0] is None:
                     if ast[1] is None:
-    
+
                         if len(ast) != 3:
                             raise ParseError(error_code=PARSE_INVALID_EXPRESSION)
                         parsed = ast[2]
@@ -273,6 +282,10 @@ class BooleanAlgebra(object):
             if prec == op_prec:  # op=&, [ast, &, x] -> [ast, &, x]
                 return ast
 
+            if not (inspect.isclass(ast[1]) and issubclass(ast[1], Function)):
+                # the top ast node should be a function subclass at this stage
+                raise ParseError(error_code=PARSE_INVALID_NESTING)
+
             if ast[0] is None:  # op=|, [None, &, x, y] -> [None, |, x&y]
                 subexp = ast[1](*ast[2:])
                 return [ast[0], operation, subexp]
@@ -285,29 +298,29 @@ class BooleanAlgebra(object):
         """
         Return an iterable of 3-tuple describing each token given an expression
         unicode string.
-    
+
         This 3-tuple contains (token, token string, position):
         - token: either a Symbol instance or one of TOKEN_* token types..
         - token string: the original token unicode string.
         - position: some simple object describing the starting position of the
           original token string in the `expr` string. It can be an int for a
           character offset, or a tuple of starting (row/line, column).
-    
+
         The token position is used only for error reporting and can be None or
         empty.
-    
+
         Raise ParseError on errors. The ParseError.args is a tuple of:
         (token_string, position, error message)
-    
+
         You can use this tokenizer as a base to create specialized tokenizers
         for your custom algebra by subclassing BooleanAlgebra. See also the
         tests for other examples of alternative tokenizers.
-    
+
         This tokenizer has these characteristics:
         - The `expr` string can span multiple lines,
-        - Whitespace is not significant. 
+        - Whitespace is not significant.
         - The returned position is the starting character offset of a token.
-    
+
         - A TOKEN_SYMBOL is returned for valid identifiers which is a string
         without spaces. These are valid identifiers:
             - Python identifiers.
@@ -318,12 +331,12 @@ class BooleanAlgebra(object):
             These are not identifiers:
             - quoted strings.
             - any punctuation which is not an operation
-    
+
         - Recognized operators are (in any upper/lower case combinations):
             - for and:  '*', '&', 'and'
             - for or: '+', '|', 'or'
             - for not: '~', '!', 'not'
-    
+
         - Recognized special symbols are (in any upper/lower case combinations):
             - True symbols: 1 and True
             - False symbols: 0, False and None
@@ -399,12 +412,12 @@ class BooleanAlgebra(object):
         """
         Return a normalized expression transformed to its normal form in the
         given AND or OR operation.
-    
+
         The new expression arguments will satisfy these conditions:
         - operation(*args) == expr (here mathematical equality is meant)
-        - the operation does not occur in any of its arg. 
+        - the operation does not occur in any of its arg.
         - NOT is only appearing in literals (aka. Negation normal form).
-        
+
         The operation must be an AND or OR operation or a subclass.
         """
         # ensure that the operation is not NOT
@@ -597,8 +610,8 @@ class Expression(object):
         This method does not make any simplification or transformation, so it
         will return False although the expression terms may be mathematically
         equal. Use simplify() before testing equality.
-        
-        For literals, plain equality is used. 
+
+        For literals, plain equality is used.
         For functions, it uses the facts that operations are:
         - commutative and considers different ordering as equal.
         - idempotent, so args can appear more often in one term than in the other.
@@ -729,7 +742,7 @@ class _FALSE(BaseElement):
 class Symbol(Expression):
     """
     Boolean variable.
-    
+
     A Symbol can hold an object used to determine equality between symbols.
     """
 
@@ -737,7 +750,7 @@ class Symbol(Expression):
     # not have a value assigned, so how could they ever be FALSE
     """
     Symbols (also called boolean variables) can only take on the values TRUE or
-    FALSE. 
+    FALSE.
     """
 
     sort_order = 5
@@ -803,7 +816,7 @@ class Function(Expression):
         # Specifies an infix notation of an operator for printing such as | or &.
         self.operator = None
 
-        assert (all(isinstance(arg, Expression) for arg in args), 
+        assert (all(isinstance(arg, Expression) for arg in args),
                 'Bad arguments: all arguments must be an Expression: %r' % (args,))
         self.args = tuple(args)
 
@@ -883,7 +896,7 @@ class NOT(Function):
     The operator "~" can be used as abbreviation for NOT, e.g. instead of NOT(x)
     one can write ~x (where x is some boolean expression). Also for printing "~"
     is used for better readability.
-    
+
     You can subclass to define alternative string representation.
     For example::
     >>> class NOT2(NOT):
@@ -1152,7 +1165,7 @@ class DualBase(Function):
         """
         Given an `args` sequence of expressions, return a new list of expression
         applying absorption and negative absorption.
-        
+
         See https://en.wikipedia.org/wiki/Absorption_law
 
         Absorption: A & (A | B) = A, A | (A & B) = A
@@ -1286,8 +1299,8 @@ class DualBase(Function):
 
 class AND(DualBase):
     """
-    Boolean AND operation, taking 2 or more arguments. 
-    
+    Boolean AND operation, taking 2 or more arguments.
+
     It can also be created by using "&" between two boolean expressions.
 
     You can subclass to define alternative string representation.
@@ -1311,7 +1324,7 @@ class AND(DualBase):
 class OR(DualBase):
     """
     Boolean OR operation, taking 2 or more arguments
-    
+
     It can also be created by using "|" between two boolean expressions.
 
     You can subclass to define alternative string representation.
