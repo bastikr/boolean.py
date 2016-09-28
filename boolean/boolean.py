@@ -814,8 +814,8 @@ class Function(Expression):
         # Specifies an infix notation of an operator for printing such as | or &.
         self.operator = None
 
-        assert (all(isinstance(arg, Expression) for arg in args),
-                'Bad arguments: all arguments must be an Expression: %r' % (args,))
+        assert all(isinstance(arg, Expression) for arg in args), \
+            'Bad arguments: all arguments must be an Expression: %r' % (args,)
         self.args = tuple(args)
 
     def __str__(self):
