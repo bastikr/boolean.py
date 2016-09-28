@@ -557,21 +557,19 @@ class Expression(object):
         new_args = []
         changed_something = False
         for arg in self.args:
-            matched = False
             for expr, substitution in substitutions.items():
                 if arg == expr:
                     new_args.append(substitution)
-                    changed_something = matched = True
+                    changed_something = True
                     break
-
-            if not matched:
+            else:
                 # FIXME: this is not right
                 new_arg = None if not arg.args else arg._subs(substitutions, simplify)
                 if new_arg is None:
                     new_args.append(arg)
                 else:
-                    changed_something = True
                     new_args.append(new_arg)
+                    changed_something = True
 
         if changed_something:
             newexpr = self.__class__(*new_args)
