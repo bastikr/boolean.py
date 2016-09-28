@@ -768,6 +768,14 @@ class OtherTestCase(unittest.TestCase):
         self.assertEqual(expr.subs({a * b: a}), a + c)
         self.assertEqual(expr.subs({c: boolean.TRUE}), boolean.TRUE)
 
+    def test_subs_default(self):
+        a, b, c = boolean.symbols("a", "b", "c")
+        expr = boolean.parse("a * b + c")
+        self.assertEqual(expr.subs({}, default=boolean.TRUE), boolean.TRUE)
+        self.assertEqual(expr.subs({a: boolean.FALSE, c: boolean.FALSE}, default=boolean.TRUE), boolean.FALSE)
+        self.assertEqual(boolean.TRUE.subs({}, default=boolean.FALSE), boolean.TRUE)
+        self.assertEqual(boolean.FALSE.subs({}, default=boolean.TRUE), boolean.FALSE)
+
     def test_normalize(self):
         parse = boolean.parse
         expr = parse("((s+a)*(s+b)*(s+c)*(s+d)*(e+c+d))+(a*e*d)")

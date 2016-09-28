@@ -149,19 +149,26 @@ class Expression(object):
                 s |= arg.symbols
             return s
 
-    def subs(self, subs_dict, simplify=True):
+    def subs(self, subs_dict, default=None, simplify=True):
         """
         Return an expression where all subterms equal to a key are substituted.
         """
         for expr, substitution in subs_dict.items():
             if expr == self:
                 return substitution
-        expr = self._subs(subs_dict, simplify=simplify)
+        expr = self._subs(subs_dict, default=default, simplify=simplify)
         return self if expr is None else expr
 
-    def _subs(self, subs_dict, simplify):
+    def _subs(self, subs_dict, default, simplify):
         new_args = []
         changed_something = False
+
+        domain = self.algebra.domain
+        if self is domain.TRUE or self is domain.FALSE:
+            return self
+        elif self.args is None:
+            return self if default is None else default
+
         for arg in self.args:
             matched = False
             for expr, substitution in subs_dict.items():
@@ -170,7 +177,7 @@ class Expression(object):
                     changed_something = matched = True
                     break
             if not matched:
-                new_arg = None if arg.args is None else arg._subs(subs_dict, simplify)
+                new_arg = arg._subs(subs_dict, default, simplify)
                 if new_arg is None:
                     new_args.append(arg)
                 else:
