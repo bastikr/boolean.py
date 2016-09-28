@@ -932,6 +932,15 @@ class OtherTestCase(unittest.TestCase):
         self.assertEqual(expr.subs({a & b: a}).simplify(), a | c)
         self.assertEqual(expr.subs({c: algebra.TRUE}).simplify(), algebra.TRUE)
 
+    def test_subs_default(self):
+        algebra = BooleanAlgebra()
+        a, b, c = algebra.Symbol('a'), algebra.Symbol('b'), algebra.Symbol('c')
+        expr = a & b | c
+        self.assertEqual(expr.subs({}, default=algebra.TRUE).simplify(), algebra.TRUE)
+        self.assertEqual(expr.subs({a: algebra.FALSE, c: algebra.FALSE}, default=algebra.TRUE).simplify(), algebra.FALSE)
+        self.assertEqual(algebra.TRUE.subs({}, default=algebra.FALSE).simplify(), algebra.TRUE)
+        self.assertEqual(algebra.FALSE.subs({}, default=algebra.TRUE).simplify(), algebra.FALSE)
+
     def test_normalize(self):
         algebra = BooleanAlgebra()
         expr = algebra.parse('((s|a)&(s|b)&(s|c)&(s|d)&(e|c|d))|(a&e&d)')
