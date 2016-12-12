@@ -144,7 +144,7 @@ class BooleanAlgebra(object):
     def _wrap_type(self, base_class):
         """
         Return a new type wrapping the base class using the base class name as
-        wrapped type name. .
+        wrapped type name.
         """
         wrapped_type = type(base_class.__name__, (base_class,), {})
         return wrapped_type
