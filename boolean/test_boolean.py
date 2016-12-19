@@ -948,6 +948,26 @@ class OtherTestCase(unittest.TestCase):
         expected = algebra.parse('(a|s)&(b|e|s)&(c|d|e)&(c|e|s)&(d|s)')
         self.assertEqual(result, expected)
 
+    def test_get_literals_return_all_literals_in_original_order(self):
+        alg = BooleanAlgebra()
+        exp = alg.parse('a and b or a and c')
+        assert [alg.Symbol('a'), alg.Symbol('b'), alg.Symbol('a'), alg.Symbol('c')] == exp.get_literals()
+
+    def test_get_symbols_return_all_symbols_in_original_order(self):
+        alg = BooleanAlgebra()
+        exp = alg.parse('a and b or True and a and c')
+        assert [alg.Symbol('a'), alg.Symbol('b'), alg.Symbol('a'), alg.Symbol('c')] == exp.get_symbols()
+
+    def test_literals_return_set_of_unique_literals(self):
+        alg = BooleanAlgebra()
+        exp = alg.parse('a and b or a and c')
+        assert set([alg.Symbol('a'), alg.Symbol('b'), alg.Symbol('c')]) == exp.literals
+
+    def test_objects_return_set_of_unique_Symbol_objs(self):
+        alg = BooleanAlgebra()
+        exp = alg.parse('a and b or a and c')
+        assert set(['a', 'b', 'c']) == exp.objects
+
 
 class BooleanBoolTestCase(unittest.TestCase):
 

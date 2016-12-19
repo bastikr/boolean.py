@@ -491,7 +491,7 @@ class Expression(object):
             return [self]
         if not self.args:
             return []
-        return list(itertools.chain.from_iterable(arg.literals for arg in self.args))
+        return list(itertools.chain.from_iterable(arg.get_literals() for arg in self.args))
 
     @property
     def literals(self):
