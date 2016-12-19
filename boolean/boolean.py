@@ -531,7 +531,7 @@ class Expression(object):
         """
         return set(self.get_symbols())
 
-    def subs(self, substitutions, simplify=False):
+    def subs(self, substitutions, default=None, simplify=False):
         """
         Return an expression where the expression or all subterms equal to a key
         expression are substituted with the corresponding value expression using
@@ -545,10 +545,10 @@ class Expression(object):
             if expr == self:
                 return substitution
 
-        expr = self._subs(substitutions, simplify=simplify)
+        expr = self._subs(substitutions, default, simplify)
         return self if expr is None else expr
 
-    def _subs(self, substitutions, simplify=False):
+    def _subs(self, substitutions, default, simplify):
         """
         Return an expression where all subterms equal to a key expression are
         substituted by the corresponding value expression using a mapping of:
@@ -556,6 +556,13 @@ class Expression(object):
         """
         new_args = []
         changed_something = False
+
+        if self is self.TRUE or self is self.FALSE:
+            return self
+
+        if not self.args:
+            return default
+
         for arg in self.args:
             for expr, substitution in substitutions.items():
                 if arg == expr:
@@ -563,8 +570,7 @@ class Expression(object):
                     changed_something = True
                     break
             else:
-                # FIXME: this is not right
-                new_arg = None if not arg.args else arg._subs(substitutions, simplify)
+                new_arg = arg._subs(substitutions, default, simplify)
                 if new_arg is None:
                     new_args.append(arg)
                 else:
