@@ -199,7 +199,9 @@ class BooleanAlgebra(object):
 
         ast = [None, None]
 
-        for token, tokstr, position in tokenized:
+        prev = None
+        for tok in tokenized:
+            token, tokstr, position = tok
             if token == TOKEN_SYMBOL:
                 ast.append(self.Symbol(tokstr))
             elif isinstance(token, Symbol):
@@ -218,6 +220,12 @@ class BooleanAlgebra(object):
                 ast = self._start_operation(ast, self.OR, precedence)
 
             elif token == TOKEN_LPAR:
+                if prev:
+                    ptoktype, _ptokstr, _pposition = prev
+                    # Check that an opening parens is preceded by a function
+                    # or an opening parens
+                    if ptoktype not in (TOKEN_NOT, TOKEN_AND, TOKEN_OR, TOKEN_LPAR):
+                        raise ParseError(token, tokstr, position, PARSE_INVALID_NESTING)
                 ast = [ast, TOKEN_LPAR]
             elif token == TOKEN_RPAR:
                 while True:
@@ -241,12 +249,13 @@ class BooleanAlgebra(object):
                     ast = ast[0]
             else:
                 raise ParseError(token, tokstr, position, PARSE_UNKNOWN_TOKEN)
+            
+            prev = tok
 
         try:
             while True:
                 if ast[0] is None:
                     if ast[1] is None:
-
                         if len(ast) != 3:
                             raise ParseError(error_code=PARSE_INVALID_EXPRESSION)
                         parsed = ast[2]
