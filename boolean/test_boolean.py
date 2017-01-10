@@ -165,7 +165,7 @@ class BooleanAlgebraTestCase(unittest.TestCase):
                 colon- and dot-separated string is recognized and stored in custom
                 symbols. In contrast with the standard tokenizer, only these
                 boolean operators are recognized : & | ! and or not.
-    
+
                 For more advanced tokenization you could also consider forking the
                 `tokenize` standard library module.
                 """
@@ -943,6 +943,27 @@ class OtherTestCase(unittest.TestCase):
 
     def test_normalize(self):
         algebra = BooleanAlgebra()
+
+        expr = algebra.parse("a&b")
+        self.assertEqual(algebra.dnf(expr), expr)
+        self.assertEqual(algebra.cnf(expr), expr)
+
+        expr = algebra.parse("a|b")
+        self.assertEqual(algebra.dnf(expr), expr)
+        self.assertEqual(algebra.cnf(expr), expr)
+
+        expr = algebra.parse("(a&b)|(c&b)")
+        result_dnf = algebra.parse("(a&b)|(b&c)")
+        result_cnf = algebra.parse("b&(a|c)")
+        self.assertEqual(algebra.dnf(expr), result_dnf)
+        self.assertEqual(algebra.cnf(expr), result_cnf)
+
+        expr = algebra.parse("(a|b)&(c|b)")
+        result_dnf = algebra.parse("b|(a&c)")
+        result_cnf = algebra.parse("(a|b)&(b|c)")
+        self.assertEqual(algebra.dnf(expr), result_dnf)
+        self.assertEqual(algebra.cnf(expr), result_cnf)
+
         expr = algebra.parse('((s|a)&(s|b)&(s|c)&(s|d)&(e|c|d))|(a&e&d)')
         result = algebra.normalize(expr, expr.AND)
         expected = algebra.parse('(a|s)&(b|e|s)&(c|d|e)&(c|e|s)&(d|s)')

@@ -439,9 +439,7 @@ class BooleanAlgebra(object):
         expr = self._rdistributive(expr, operation_example)
         # Canonicalize
         expr = expr.simplify()
-        if isinstance(expr, operation):
-            return expr
-        return operation(*expr.args)
+        return expr
 
     def cnf(self, expr):
         """
