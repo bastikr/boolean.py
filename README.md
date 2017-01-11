@@ -12,6 +12,8 @@ It runs on Python 2.7 and Python 3.
 
 https://github.com/bastikr/boolean.py
 
+Build status: [![Build Status](https://travis-ci.org/bastikr/boolean.py.svg?branch=master)](https://travis-ci.org/bastikr/boolean.py)
+
 Example
 -------
 ```
