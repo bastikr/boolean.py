@@ -91,7 +91,7 @@ elements
 and the property :math:`AND(x, y, z) = AND(x, AND(y, z))` where
 :math:`x, y, z` are boolean variables.
 
-Instead of :math:`AND(x, y, z)` one can write :math:`x & y & z`.
+Instead of :math:`AND(x, y, z)` one can write :math:`x \& y \& z`.
 
 *Implemented as class* :class:`AND`.
 
@@ -135,7 +135,7 @@ Disjunctive normal form (DNF)
 
 A disjunction of conjunctions of literals where the conjunctions don't
 contain a boolean variable *and* it's negation. An example would be
-:math:`x&y | x&z`.
+:math:`x\&y | x\&z`.
 
 *Implemented as* :attr:`BooleanAlgebra.dnf`.
 
@@ -145,7 +145,7 @@ Full disjunctive normal form (FDNF)
 
 A DNF where all conjunctions have the same count of literals as the
 whole DNF has boolean variables. An example would be
-:math:`x&y&z | x&y&(\sim z) | x&(\sim y)&z`.
+:math:`x\&y\&z | x\&y\&(\sim z) | x\&(\sim y)\&z`.
 
 
 Conjunctive normal form (CNF)
@@ -153,7 +153,7 @@ Conjunctive normal form (CNF)
 
 A conjunction of disjunctions of literals where the disjunctions don't
 contain a boolean variable *and* it's negation. An example would be
-:math:`(x|y) & (x|z)`.
+:math:`(x|y) \& (x|z)`.
 
 *Implemented as* :attr:`BooleanAlgebra.cnf`.
 
@@ -163,7 +163,7 @@ Full conjunctive normal form (FCNF)
 
 A CNF where all disjunctions have the same count of literals as the
 whole CNF has boolean variables. An example would be:
-:math:`(x|y|z) & (x|y|(\sim z)) & (x|(\sim y)|z)`.
+:math:`(x|y|z) \& (x|y|(\sim z)) \& (x|(\sim y)|z)`.
 
 
 Laws
@@ -179,7 +179,7 @@ In the following :math:`x, y, z` are boolean expressions.
 Associativity
 ^^^^^^^^^^^^^
 
-* :math:`x&(y&z) = (x&y)&z`
+* :math:`x\&(y\&z) = (x\&y)\&z`
 * :math:`x|(y|z) = (x|y)|z`
 
 
@@ -188,7 +188,7 @@ Associativity
 Commutativity
 ^^^^^^^^^^^^^
 
-* :math:`x&y = y&x`
+* :math:`x\&y = y\&x`
 * :math:`x|y = y|x`
 
 
@@ -197,8 +197,8 @@ Commutativity
 Distributivity
 ^^^^^^^^^^^^^^
 
-* :math:`x&(y|z) = x&y | x&z`
-* :math:`x|y&z = (x|y)&(x|z)`
+* :math:`x\&(y|z) = x\&y | x\&z`
+* :math:`x|y\&z = (x|y)\&(x|z)`
 
 
 .. _identity:
@@ -206,7 +206,7 @@ Distributivity
 Identity
 ^^^^^^^^
 
-* :math:`x&1 = x`
+* :math:`x\&1 = x`
 * :math:`x|0 = x`
 
 
@@ -215,7 +215,7 @@ Identity
 Annihilator
 ^^^^^^^^^^^
 
-* :math:`x&0 = 0`
+* :math:`x\&0 = 0`
 * :math:`x|1 = 1`
 
 
@@ -224,7 +224,7 @@ Annihilator
 Idempotence
 ^^^^^^^^^^^
 
-* :math:`x&x = x`
+* :math:`x\&x = x`
 * :math:`x|x = x`
 
 
@@ -233,8 +233,8 @@ Idempotence
 Absorption
 ^^^^^^^^^^
 
-* :math:`x&(x|y) = x`
-* :math:`x|(x&y) = x`
+* :math:`x\&(x|y) = x`
+* :math:`x|(x\&y) = x`
 
 
 .. _negative-absorption:
@@ -242,8 +242,8 @@ Absorption
 Negative absorption
 ^^^^^^^^^^^^^^^^^^^
 
-* :math:`x&((\sim x)|y) = x&y`
-* :math:`x|(\sim x)&y = x|y`
+* :math:`x\&((\sim x)|y) = x\&y`
+* :math:`x|(\sim x)\&y = x|y`
 
 
 .. _complementation:
@@ -251,7 +251,7 @@ Negative absorption
 Complementation
 ^^^^^^^^^^^^^^^
 
-* :math:`x&(\sim x) = 0`
+* :math:`x\&(\sim x) = 0`
 * :math:`x|(\sim x) = 1`
 
 
@@ -268,8 +268,8 @@ Double negation
 De Morgan
 ^^^^^^^^^
 
-* :math:`\sim (x&y) = (\sim x) | (\sim y)`
-* :math:`\sim (x|y) = (\sim x) & (\sim y)`
+* :math:`\sim (x\&y) = (\sim x) | (\sim y)`
+* :math:`\sim (x|y) = (\sim x) \& (\sim y)`
 
 
 .. _elimination:
@@ -277,5 +277,5 @@ De Morgan
 Elimination
 ^^^^^^^^^^^
 
-* :math:`x&y | x&(\sim y) = x`
-* :math:`(x|y) & (x|(\sim y)) = x`
+* :math:`x\&y | x\&(\sim y) = x`
+* :math:`(x|y) \& (x|(\sim y)) = x`
