@@ -7,16 +7,18 @@ Copyright (c) 2009-2016 Sebastian Kraemer, basti.kr@gmail.com and others
 Released under revised BSD license.
 """
 
-from __future__ import absolute_import, unicode_literals
-
-import unittest
-from unittest.case import expectedFailure
+from __future__ import absolute_import
+from __future__ import unicode_literals
+from __future__ import print_function
+from boolean.boolean import PARSE_UNKNOWN_TOKEN
 
 try:
     basestring  # Python 2
 except NameError:
     basestring = str  # Python 3
 
+import unittest
+from unittest.case import expectedFailure
 
 from boolean import BooleanAlgebra
 from boolean import ParseError
@@ -29,6 +31,9 @@ from boolean import TOKEN_FALSE
 from boolean import TOKEN_SYMBOL
 from boolean import TOKEN_LPAR
 from boolean import TOKEN_RPAR
+from boolean.boolean import PARSE_INVALID_SYMBOL_SEQUENCE
+from boolean.boolean import PARSE_INVALID_EXPRESSION
+from boolean.boolean import PARSE_INVALID_NESTING
 
 
 class BooleanAlgebraTestCase(unittest.TestCase):
@@ -281,13 +286,43 @@ class BooleanAlgebraTestCase(unittest.TestCase):
         ]
 
         for expr in invalid_expressions:
-            print(expr)
             try:
                 algebra.parse(expr)
                 self.fail("Exception should be raised when parsing '%s'" % expr)
-            except ParseError:
-                pass
+            except ParseError as pe:
+                assert pe.error_code == PARSE_UNKNOWN_TOKEN
 
+    def test_parse_side_by_side_symbols_should_raise_exception_but_not(self):
+        algebra = BooleanAlgebra()
+        expr_str = 'a or b c'
+        try:
+            algebra.parse(expr_str)
+        except ParseError as pe:
+            assert pe.error_code == PARSE_INVALID_SYMBOL_SEQUENCE
+
+    def test_parse_side_by_side_symbols_should_raise_exception_but_not2(self):
+        algebra = BooleanAlgebra()
+        expr_str = '(a or b) c'
+        try:
+            algebra.parse(expr_str)
+        except ParseError as pe:
+            assert pe.error_code == PARSE_INVALID_EXPRESSION
+
+    def test_parse_side_by_side_symbols_raise_exception(self):
+        algebra = BooleanAlgebra()
+        expr_str = 'a b'
+        try:
+            algebra.parse(expr_str)
+        except ParseError as pe:
+            assert pe.error_code == PARSE_INVALID_SYMBOL_SEQUENCE
+
+    def test_parse_side_by_side_symbols_with_parens_raise_exception(self):
+        algebra = BooleanAlgebra()
+        expr_str = '(a) (b)'
+        try:
+            algebra.parse(expr_str)
+        except ParseError as pe:
+            assert pe.error_code == PARSE_INVALID_NESTING
 
 class BaseElementTestCase(unittest.TestCase):
 
@@ -783,8 +818,11 @@ class DualBaseTestCase(unittest.TestCase):
 
     def test_parse_invalid_nested_and_should_raise_a_proper_exception(self):
         algebra = BooleanAlgebra()
-        test_expression_str = '''a (and b)'''
-        self.assertRaises(ParseError, algebra.parse, test_expression_str)
+        expr = '''a (and b)'''
+        try:
+            algebra.parse(expr)
+        except ParseError as pe:
+            assert pe.error_code == PARSE_INVALID_NESTING
 
     def test_subtract(self):
         parse = BooleanAlgebra().parse
