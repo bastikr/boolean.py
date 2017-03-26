@@ -16,7 +16,7 @@ presented.
 For extensive documentation look either into the docs directory or view it
 online, at https://booleanpy.readthedocs.org/en/latest/.
 
-Copyright (c) 2009-2010 Sebastian Kraemer, basti.kr@gmail.com and others
+Copyright (c) 2009-2017 Sebastian Kraemer, basti.kr@gmail.com and others
 Released under revised BSD license.
 """
 
