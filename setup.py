@@ -19,7 +19,7 @@ https://booleanpy.readthedocs.org/en/latest/
 
 https://github.com/bastikr/boolean.py
 
-Copyright (c) 2009-2016 Sebastian Kraemer, basti.kr@gmail.com and others
+Copyright (c) 2009-2017 Sebastian Kraemer, basti.kr@gmail.com and others
 
 Released under revised BSD license.
 '''

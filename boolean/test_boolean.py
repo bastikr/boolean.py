@@ -3,7 +3,7 @@ Boolean Algebra.
 
 Tests
 
-Copyright (c) 2009-2016 Sebastian Kraemer, basti.kr@gmail.com and others
+Copyright (c) 2009-2017 Sebastian Kraemer, basti.kr@gmail.com and others
 Released under revised BSD license.
 """
 
@@ -819,10 +819,13 @@ class DualBaseTestCase(unittest.TestCase):
     def test_parse_invalid_nested_and_should_raise_a_proper_exception(self):
         algebra = BooleanAlgebra()
         expr = '''a (and b)'''
-        try:
+
+        with self.assertRaises(ParseError) as context:
             algebra.parse(expr)
-        except ParseError as pe:
-            assert pe.error_code == PARSE_INVALID_NESTING
+
+            self.assertEqual(
+                context.exception.error_code, PARSE_INVALID_NESTING
+            )
 
     def test_subtract(self):
         parse = BooleanAlgebra().parse

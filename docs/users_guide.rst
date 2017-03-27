@@ -78,8 +78,8 @@ You can build an expression by using the algebra functions::
 Evaluation of expressions
 -------------------------
 
-By default, an expression is not evaluated. You need to call the .simplify() 
-method explicitly an expression to perform some minimal 
+By default, an expression is not evaluated. You need to call the :meth:`simplify`
+method explicitly an expression to perform some minimal
 simplification to evaluate an expression:
 
 .. doctest:: boolean
@@ -114,7 +114,7 @@ When simplify() is called, the following boolean logic laws are used recursively
 
 Also double negations are canceled out (:ref:`double-negation`).
 
-A simplified expression is return and many not be fully evaluated nor minimal:
+A simplified expression is return and may not be fully evaluated nor minimal:
 
 .. doctest:: boolean
 
@@ -156,7 +156,7 @@ Symbols are equal if they are the same or their associated objects are equal.
 Equality of structure
 ^^^^^^^^^^^^^^^^^^^^^
 
-Here some examples of equal and unequal structures:
+Here are some examples of equal and unequal structures:
 
 .. doctest:: boolean
 
@@ -234,7 +234,7 @@ Or get a set() or list of all literals contained in an expression::
     >>> (~(x|~y)).get_literals()
     [Symbol('x'), NOT(Symbol('y'))]
 
-To remove negations except in literals use the :meth:`literalize`::
+To remove negations except in literals use :meth:`literalize`::
 
     >>> (~(x|~y)).literalize()
     ~x&y
