@@ -580,7 +580,7 @@ class Expression(object):
         Include recursively subexpressions symbols.
         This includes duplicates.
         """
-        return [s for s in self.get_literals() if isinstance(s, Symbol)]
+        return [s if isinstance(s, Symbol) else s.args[0] for s in self.get_literals()]
 
     @property
     def symbols(self,):
@@ -971,7 +971,7 @@ class NOT(Function):
 
     def __init__(self, arg1):
         super(NOT, self).__init__(arg1)
-        self.isliteral = self.args[0].isliteral
+        self.isliteral = isinstance(self.args[0], Symbol)
         self.operator = '~'
 
     def literalize(self):
