@@ -1025,6 +1025,16 @@ class OtherTestCase(unittest.TestCase):
         exp = alg.parse('a and b or a and c')
         assert set([alg.Symbol('a'), alg.Symbol('b'), alg.Symbol('c')]) == exp.literals
 
+    def test_literals_and_negation(self):
+        alg = BooleanAlgebra()
+        exp = alg.parse('a and not b and not not c')
+        assert set([alg.Symbol('a'), alg.parse('not b'), alg.parse('not c')]) == exp.literals
+
+    def test_symbols_and_negation(self):
+        alg = BooleanAlgebra()
+        exp = alg.parse('a and not b and not not c')
+        assert set([alg.Symbol('a'), alg.Symbol('b'), alg.Symbol('c')]) == exp.symbols
+
     def test_objects_return_set_of_unique_Symbol_objs(self):
         alg = BooleanAlgebra()
         exp = alg.parse('a and b or a and c')
