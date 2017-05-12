@@ -87,16 +87,17 @@ class ParseError(Exception):
         self.error_code = error_code
 
     def __str__(self, *args, **kwargs):
+        emsg = PARSE_ERRORS.get(self.error_code, 'Unknown parsing error')
+
         tstr = ''
         if self.token_string:
-            tstr = ' for token: %r' % (self.token_string)
+            tstr = ' for token: "%s"' % self.token_string
 
         pos = ''
         if self.position > 0:
-            pos = ' at position: %d' % (self.position)
-        emsg = PARSE_ERRORS.get(self.error_code, 'Unknown parsing error')
+            pos = ' at position: %d' % self.position
 
-        return '{emsg}{tstr}{pos}.'.format(tstr=tstr, pos=pos, emsg=emsg)
+        return '{emsg}{tstr}{pos}'.format(**locals())
 
 
 class BooleanAlgebra(object):
