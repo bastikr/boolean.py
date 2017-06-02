@@ -38,13 +38,30 @@ Documentation
 
 http://readthedocs.org/docs/booleanpy/en/latest/
 
+Installation
+------------
 
+`pip install boolean.py`
 
-Download and installation
--------------------------
+Testing
+-------
 
-    `pip install boolean.py`
+Test `boolean.py` with your current Python environment:
 
+`python setup.py test`
+
+Test with all of the supported Python environments using `tox`:
+
+```
+pip install -r test-requirements.txt
+tox
+```
+
+If `tox` throws `InterpreterNotFound`, limit it to python interpreters that are actually installed on your machine:
+
+```
+tox -e py27,py36
+```
 
 License
 -------
