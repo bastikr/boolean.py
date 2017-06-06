@@ -25,9 +25,10 @@ Other compositions like XOR and NAND are not implemented.
 
 Installation
 ------------
-::
-    pip install boolean.py
 
+.. code-block:: sh
+
+   pip install boolean.py
 
 Creating boolean expressions
 ----------------------------
@@ -39,7 +40,7 @@ an algebra, then use algebra attributes and methods to build expressions.
 You can build an expression from a string:
 
 .. doctest:: boolean
-    
+
     >>> import boolean
     >>> algebra = boolean.BooleanAlgebra()
     >>> algebra.parse('x & y')
@@ -59,7 +60,7 @@ You can build an expression from a Python expression:
     >>> x & y
     AND(Symbol('x'), Symbol('y'))
 
-You can build an expression by using the algebra functions::
+You can build an expression by using the algebra functions:
 
 .. doctest:: boolean
 
@@ -254,9 +255,9 @@ Using boolean.py to define your own boolean algebra
 ---------------------------------------------------
 
 You can customize about everything in boolean.py to create your own custom algebra:
-1. You can subclass :class:`BooleanAlgebra` and override or extend the 
-:meth:`tokenize`:: and :meth:`parse`:: method to parse custom expression creating
-your own mini expression language. Seen the tests for examples.
+1. You can subclass :class:`BooleanAlgebra` and override or extend the
+:meth:`tokenize` and :meth:`parse` methods to parse custom expressions creating
+your own mini expression language. See the tests for examples.
 
 2. You can subclass the Symbol, NOT, AND and OR functions to add additional 
 methods or for custom representations.

@@ -10,6 +10,28 @@ and laws are stated in :doc:`concepts`.
     :depth: 2
     :backlinks: top
 
+Testing
+-------
+
+Test `boolean.py` with your current Python environment:
+
+.. code-block:: shell
+
+   python setup.py test
+
+Test with all of the supported Python environments using `tox`:
+
+.. code-block:: shell
+
+   pip install -r test-requirements.txt
+   tox
+
+If `tox` throws `InterpreterNotFound`, limit it to python interpreters that are actually installed on your machine:
+
+.. code-block:: shell
+
+   tox -e py27,py36
+
 Classes Hierarchy
 -----------------
 ..
