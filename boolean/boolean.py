@@ -4,14 +4,14 @@ Boolean expressions algebra.
 This module defines a Boolean algebra over the set {TRUE, FALSE} with boolean
 variables called Symbols and the boolean functions AND, OR, NOT.
 
-Some basic logic comparison are supported: Two expressions can be compared for
-equivalence or containment. Furthermore you can simplify an expression and
-obtain its normal form.
+Some basic logic comparison is supported: two expressions can be
+compared for equivalence or containment. Furthermore you can simplify
+an expression and obtain its normal form.
 
-You can create expressions in Python using familiar boolean operators or parse
-expressions from strings. The parsing`easy to extend with your own tokenizer.
-You can also subclass some classes to customize how expressions behave and are
-presented.
+You can create expressions in Python using familiar boolean operators
+or parse expressions from strings. The parsing can be extended with
+your own tokenizer.  You can also customize how expressions behave and
+how they are presented.
 
 For extensive documentation look either into the docs directory or view it
 online, at https://booleanpy.readthedocs.org/en/latest/.
@@ -57,7 +57,7 @@ TOKEN_TYPES = {
 }
 
 
-# parsing errors code and messages
+# parsing error code and messages
 PARSE_UNKNOWN_TOKEN = 1
 PARSE_UNBALANCED_CLOSING_PARENS = 2
 PARSE_INVALID_EXPRESSION = 3
@@ -149,11 +149,9 @@ class BooleanAlgebra(object):
 
     def _wrap_type(self, base_class):
         """
-        Return a new type wrapping the base class using the base class name as
-        wrapped type name.
+        Wrap the base class using its name as the name of the new type
         """
-        wrapped_type = type(base_class.__name__, (base_class,), {})
-        return wrapped_type
+        return type(base_class.__name__, (base_class,), {})
 
     def _cross_refs(self, objects):
         """
@@ -215,9 +213,9 @@ class BooleanAlgebra(object):
             return _t == TOKEN_SYMBOL or isinstance(_t, Symbol)
 
         prev = None
-        for tok in tokenized:
-            if TRACE_PARSE: print('\nprocessing token:', repr(tok))
-            token, tokstr, position = tok
+        for token, tokstr, position in tokenized:
+            if TRACE_PARSE:
+                print('\nprocessing token:', repr(token), repr(tokstr), repr(position))
 
             if prev:
                 prev_token, _, _ = prev
@@ -226,11 +224,13 @@ class BooleanAlgebra(object):
 
             if token == TOKEN_SYMBOL:
                 ast.append(self.Symbol(tokstr))
-                if TRACE_PARSE: print(' ast: token == TOKEN_SYMBOL: append new symbol', repr(ast))
+                if TRACE_PARSE:
+                    print(' ast: token == TOKEN_SYMBOL: append new symbol', repr(ast))
 
             elif isinstance(token, Symbol):
                 ast.append(token)
-                if TRACE_PARSE: print(' ast: isinstance(token, Symbol): append existing symbol', repr(ast))
+                if TRACE_PARSE:
+                    print(' ast: isinstance(token, Symbol): append existing symbol', repr(ast))
 
             elif token == TOKEN_TRUE:
                 ast.append(self.TRUE)
@@ -288,7 +288,7 @@ class BooleanAlgebra(object):
             else:
                 raise ParseError(token, tokstr, position, PARSE_UNKNOWN_TOKEN)
 
-            prev = tok
+            prev = (token, tokstr, position)
 
         try:
             while True:
@@ -363,7 +363,7 @@ class BooleanAlgebra(object):
         unicode string.
 
         This 3-tuple contains (token, token string, position):
-        - token: either a Symbol instance or one of TOKEN_* token types..
+        - token: either a Symbol instance or one of TOKEN_* token types.
         - token string: the original token unicode string.
         - position: some simple object describing the starting position of the
           original token string in the `expr` string. It can be an int for a
@@ -420,8 +420,8 @@ class BooleanAlgebra(object):
             'false': TOKEN_FALSE, '0': TOKEN_FALSE, 'none': TOKEN_FALSE
         }
 
-        length = len(expr)
-        position = 0
+        position, length = 0, len(expr)
+
         while position < length:
             tok = expr[position]
 
