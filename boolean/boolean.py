@@ -602,10 +602,13 @@ class Expression(object):
 
         Note that this can be used to tested for expression containment.
         """
+        # shortcut: check if we have our whole expression as a possible
+        # subsitution source
         for expr, substitution in substitutions.items():
             if expr == self:
                 return substitution
 
+        # otherwise, do a proper substitution of sub expressions
         expr = self._subs(substitutions, default, simplify)
         return self if expr is None else expr
 
@@ -615,34 +618,53 @@ class Expression(object):
         substituted by the corresponding value expression using a mapping of:
         {expr->expr to substitute.}
         """
-        new_args = []
+        # track the new list of unchanged args or replaced args through
+        # a substitution
+        new_arguments = []
         changed_something = False
 
+        # shortcut for basic logic True or False
         if self is self.TRUE or self is self.FALSE:
             return self
 
+        # if the expression has no elements, e.g. is empty, do not apply
+        # substitions
         if not self.args:
             return default
 
+        # iterate the subexpressions: either plain symbols or a subexpressions
         for arg in self.args:
+            # collect substitutions for exact matches
+            # break as soon as we have a match
             for expr, substitution in substitutions.items():
                 if arg == expr:
-                    new_args.append(substitution)
+                    new_arguments.append(substitution)
                     changed_something = True
                     break
+
+            # this will execute only if we did not break out of the
+            # loop, e.g. if we did not change anything and did not
+            # collect any substitutions
             else:
+                # recursively call _subs on each arg to see if we get a
+                # substituted arg
                 new_arg = arg._subs(substitutions, default, simplify)
                 if new_arg is None:
-                    new_args.append(arg)
+                    # if we did not collect a substitution for this arg,
+                    # keep the arg as-is, it is not replaced by anything
+                    new_arguments.append(arg)
                 else:
-                    new_args.append(new_arg)
+                    # otherwise, we add the substitution for this arg instead
+                    new_arguments.append(new_arg)
                     changed_something = True
 
-        if changed_something:
-            newexpr = self.__class__(*new_args)
-            if simplify:
-                newexpr = newexpr.simplify()
-            return newexpr
+        if not changed_something:
+            return
+
+        # here we did some substitution: we return a new expression
+        # built from the new_arguments
+        newexpr = self.__class__(*new_arguments)
+        return newexpr.simplify() if simplify else newexpr
 
     def simplify(self):
         """
