@@ -21,7 +21,7 @@ setup(
     include_package_data=True,
     zip_safe=False,
     test_loader='unittest:TestLoader',
-    test_suite='boolean.test_boolean',
+    test_suite='tests.test_boolean',
     keywords='boolean expression, boolean algebra, logic, expression parser',
     classifiers=[
         'Development Status :: 4 - Beta',
