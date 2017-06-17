@@ -31,6 +31,8 @@ from boolean.boolean import PARSE_INVALID_SYMBOL_SEQUENCE
 from boolean.boolean import PARSE_INVALID_EXPRESSION
 from boolean.boolean import PARSE_INVALID_NESTING
 
+from tests.mock_custom_algebra import CustomAlgebra
+
 from tests.mock_advanced_algebra import AdvancedAlgebra
 from tests.mock_advanced_algebra import PlainVar, ColonDotVar
 
@@ -95,33 +97,6 @@ class BooleanAlgebraTestCase(unittest.TestCase):
         self.assertEqual(expected, expr)
 
     def test_parse_can_use_iterable_from_alternative_tokenizer(self):
-
-        class CustomSymbol(Symbol):
-            pass
-
-        class CustomAlgebra(BooleanAlgebra):
-            def __init__(self, Symbol_class=CustomSymbol):
-                super(CustomAlgebra, self).__init__(Symbol_class=CustomSymbol)
-
-            def tokenize(self, s):
-                "Sample tokenizer using custom operators and symbols"
-                ops = {
-                    'WHY_NOT': TOKEN_OR,
-                    'ALSO': TOKEN_AND,
-                    'NEITHER': TOKEN_NOT,
-                    '(': TOKEN_LPAR,
-                    ')': TOKEN_RPAR,
-                }
-
-                for row, line in enumerate(s.splitlines(False)):
-                    for col, tok in enumerate(line.split()):
-                        if tok in ops:
-                            yield ops[tok], tok, (row, col)
-                        elif tok == 'Custom':
-                            yield self.Symbol(tok), tok, (row, col)
-                        else:
-                            yield TOKEN_SYMBOL, tok, (row, col)
-
         expr_str = '''( Custom WHY_NOT regular ) ALSO NEITHER  (
                       not_custom ALSO standard )
                    '''
