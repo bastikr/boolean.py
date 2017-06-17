@@ -20,8 +20,8 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
-    test_loader='unittest:TestLoader',
-    test_suite='tests.test_boolean',
+    setup_requires=['pytest-runner'],
+    tests_require=['pytest'],
     keywords='boolean expression, boolean algebra, logic, expression parser',
     classifiers=[
         'Development Status :: 4 - Beta',
