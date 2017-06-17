@@ -249,14 +249,6 @@ class BaseElementTestCase(unittest.TestCase):
 
 class SymbolTestCase(unittest.TestCase):
 
-    def test_init(self):
-        Symbol(1)
-        Symbol('a')
-        Symbol(None)
-        Symbol(sum)
-        Symbol((1, 2, 3))
-        Symbol([1, 2])
-
     def test_isliteral(self):
         self.assertTrue(Symbol(1).isliteral is True)
 
