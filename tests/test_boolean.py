@@ -14,6 +14,7 @@ from __future__ import print_function
 import copy
 import pytest
 
+from boolean.boolean import BaseElement
 from boolean.boolean import PARSE_UNKNOWN_TOKEN
 
 import unittest
@@ -194,61 +195,86 @@ class BooleanAlgebraTestCase(unittest.TestCase):
         except ParseError as pe:
             assert pe.error_code == PARSE_INVALID_NESTING
 
-class BaseElementTestCase(unittest.TestCase):
+class TestBaseElement:
 
-    def test_creation(self):
-        from boolean.boolean import BaseElement
+    def test_base_element_raises(self):
+        with pytest.raises(TypeError):
+            BaseElement(2)
+
+        with pytest.raises(TypeError):
+            BaseElement('a')
+
+    def test_true_and_false(self):
         algebra = BooleanAlgebra()
-        self.assertEqual(algebra.TRUE, algebra.TRUE)
-        BaseElement()
-        self.assertRaises(TypeError, BaseElement, 2)
-        self.assertRaises(TypeError, BaseElement, 'a')
-        self.assertTrue(algebra.TRUE is algebra.TRUE)
-        self.assertTrue(algebra.TRUE is not algebra.FALSE)
-        self.assertTrue(algebra.FALSE is algebra.FALSE)
-        self.assertTrue(bool(algebra.TRUE) is True)
-        self.assertTrue(bool(algebra.FALSE) is False)
-        self.assertEqual(algebra.TRUE, True)
-        self.assertEqual(algebra.FALSE, False)
+
+        assert algebra.TRUE is algebra.TRUE
+        assert algebra.FALSE is algebra.FALSE
+
+        assert algebra.TRUE == algebra.TRUE
+        assert algebra.FALSE == algebra.FALSE
+
+        assert algebra.TRUE is not algebra.FALSE
+        assert algebra.FALSE is not algebra.TRUE
+
+        assert algebra.TRUE != algebra.FALSE
+        assert algebra.FALSE != algebra.TRUE
+
+        assert bool(algebra.TRUE) is True
+        assert bool(algebra.FALSE) is False
+
+        assert algebra.TRUE == True
+        assert algebra.FALSE == False
 
     def test_literals(self):
         algebra = BooleanAlgebra()
-        self.assertEqual(algebra.TRUE.literals, set())
-        self.assertEqual(algebra.FALSE.literals, set())
+
+        assert algebra.TRUE.literals == set()
+        assert algebra.FALSE.literals == set()
 
     def test_literalize(self):
         algebra = BooleanAlgebra()
-        self.assertEqual(algebra.TRUE.literalize(), algebra.TRUE)
-        self.assertEqual(algebra.FALSE.literalize(), algebra.FALSE)
+
+        assert algebra.TRUE.literalize() == algebra.TRUE
+        assert algebra.FALSE.literalize() == algebra.FALSE
+
+        assert algebra.TRUE.literalize() != algebra.FALSE
+        assert algebra.FALSE.literalize() != algebra.TRUE
 
     def test_simplify(self):
         algebra = BooleanAlgebra()
-        self.assertEqual(algebra.TRUE.simplify(), algebra.TRUE)
-        self.assertEqual(algebra.FALSE.simplify(), algebra.FALSE)
+
+        assert algebra.TRUE.simplify() == algebra.TRUE
+        assert algebra.FALSE.simplify() == algebra.FALSE
 
     def test_dual(self):
         algebra = BooleanAlgebra()
-        self.assertEqual(algebra.TRUE.dual, algebra.FALSE)
-        self.assertEqual(algebra.FALSE.dual, algebra.TRUE)
+
+        assert algebra.TRUE.dual ==  algebra.FALSE
+        assert algebra.FALSE.dual ==  algebra.TRUE
 
     def test_equality(self):
         algebra = BooleanAlgebra()
-        self.assertEqual(algebra.TRUE, algebra.TRUE)
-        self.assertEqual(algebra.FALSE, algebra.FALSE)
-        self.assertNotEqual(algebra.TRUE, algebra.FALSE)
+
+        assert algebra.TRUE == algebra.TRUE
+        assert algebra.FALSE == algebra.FALSE
+
+        assert     algebra.TRUE != algebra.FALSE
+        assert not algebra.TRUE == algebra.FALSE
 
     def test_order(self):
         algebra = BooleanAlgebra()
-        self.assertTrue(algebra.FALSE < algebra.TRUE)
-        self.assertTrue(algebra.TRUE > algebra.FALSE)
+
+        assert algebra.FALSE < algebra.TRUE
+        assert algebra.TRUE > algebra.FALSE
 
     def test_printing(self):
         algebra = BooleanAlgebra()
-        self.assertEqual(str(algebra.TRUE), '1')
-        self.assertEqual(str(algebra.FALSE), '0')
-        self.assertEqual(repr(algebra.TRUE), 'TRUE')
-        self.assertEqual(repr(algebra.FALSE), 'FALSE')
 
+        assert str(algebra.TRUE) == '1'
+        assert str(algebra.FALSE) == '0'
+
+        assert repr(algebra.TRUE) == 'TRUE'
+        assert repr(algebra.FALSE) == 'FALSE'
 
 class TestSymbolCase:
 
