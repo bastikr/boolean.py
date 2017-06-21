@@ -12,6 +12,7 @@ from __future__ import unicode_literals
 from __future__ import print_function
 
 import copy
+import pytest
 
 from boolean.boolean import PARSE_UNKNOWN_TOKEN
 
@@ -249,34 +250,40 @@ class BaseElementTestCase(unittest.TestCase):
         self.assertEqual(repr(algebra.FALSE), 'FALSE')
 
 
-class SymbolTestCase(unittest.TestCase):
+class TestSymbolCase:
 
     def test_isliteral(self):
-        self.assertTrue(Symbol(1).isliteral is True)
+        assert Symbol(1).isliteral is True
 
     def test_literals(self):
         l1 = Symbol(1)
         l2 = Symbol(1)
-        self.assertTrue(l1 in l1.literals)
-        self.assertTrue(l1 in l2.literals)
-        self.assertTrue(l2 in l1.literals)
-        self.assertTrue(l2 in l2.literals)
-        self.assertRaises(AttributeError, setattr, l1, 'literals', 1)
+
+        assert l1 in l1.literals
+        assert l1 in l2.literals
+        assert l2 in l1.literals
+        assert l2 in l2.literals
+
+        for symbol in [l1, l2]:
+            with pytest.raises(AttributeError):
+                symbol.setattr('literals', 1)
 
     def test_literalize(self):
         s = Symbol(1)
-        self.assertEqual(s.literalize(), s)
+
+        assert s.literalize() == s
 
     def test_simplify(self):
         s = Symbol(1)
-        self.assertEqual(s.simplify(), s)
+
+        assert s.simplify() == s
 
     def test_symbols_eq_0(self):
         algebra = BooleanAlgebra()
 
         a = algebra.Symbol('a')
 
-        self.assertTrue(a == a)
+        assert a == a
 
     def test_symbols_eq_1(self):
         algebra = BooleanAlgebra()
@@ -284,8 +291,8 @@ class SymbolTestCase(unittest.TestCase):
         a0 = algebra.Symbol('a')
         a1 = algebra.Symbol('a')
 
-        self.assertTrue(a0 == a1)
-        self.assertTrue(a1 == a0)
+        assert a0 == a1
+        assert a1 == a0
 
     def test_symbols_eq_2(self):
         algebra = BooleanAlgebra()
@@ -293,21 +300,21 @@ class SymbolTestCase(unittest.TestCase):
         a = algebra.Symbol('a')
         b = algebra.Symbol('b')
 
-        self.assertFalse(a == b)
-        self.assertFalse(b == a)
+        assert not a == b
+        assert not b == a
 
     def test_symbols_eq_3(self):
         algebra = BooleanAlgebra()
 
-        self.assertTrue(algebra.Symbol('a') == algebra.Symbol('a'))
-        self.assertFalse(algebra.Symbol('a') == algebra.Symbol('b'))
+        assert     algebra.Symbol('a') == algebra.Symbol('a')
+        assert not algebra.Symbol('a') == algebra.Symbol('b')
 
     def test_symbols_ne_0(self):
         algebra = BooleanAlgebra()
 
         a = algebra.Symbol('a')
 
-        self.assertFalse(a != a)
+        assert not a != a
 
     def test_symbols_ne_1(self):
         algebra = BooleanAlgebra()
@@ -315,8 +322,8 @@ class SymbolTestCase(unittest.TestCase):
         a0 = algebra.Symbol('a')
         a1 = algebra.Symbol('a')
 
-        self.assertFalse(a0 != a1)
-        self.assertFalse(a1 != a0)
+        assert not a0 != a1
+        assert not a1 != a0
 
     def test_symbols_ne_2(self):
         algebra = BooleanAlgebra()
@@ -324,14 +331,14 @@ class SymbolTestCase(unittest.TestCase):
         a = algebra.Symbol('a')
         b = algebra.Symbol('b')
 
-        self.assertTrue(a != b)
-        self.assertTrue(b != a)
+        assert a != b
+        assert b != a
 
     def test_symbols_ne_3(self):
         algebra = BooleanAlgebra()
 
-        self.assertFalse(algebra.Symbol('a') != algebra.Symbol('a'))
-        self.assertTrue(algebra.Symbol('a') != algebra.Symbol('b'))
+        assert not algebra.Symbol('a') != algebra.Symbol('a')
+        assert     algebra.Symbol('a') != algebra.Symbol('b')
 
     def test_symbols_eq_ne(self):
         algebra = BooleanAlgebra()
@@ -346,6 +353,9 @@ class SymbolTestCase(unittest.TestCase):
             algebra.Symbol('0'),
             algebra.Symbol('1'),
             algebra.Symbol('^'),
+            algebra.Symbol(-1),
+            algebra.Symbol(0),
+            algebra.Symbol(1),
             algebra.Symbol('123'),
             algebra.Symbol('!!!'),
         ]
@@ -353,37 +363,43 @@ class SymbolTestCase(unittest.TestCase):
         symbols1 = copy.deepcopy(symbols0)
 
         for symbol in symbols0:
-            self.assertTrue(symbol == symbol)
-            self.assertFalse(symbol != symbol)
+            assert     symbol == symbol
+            assert not symbol != symbol
 
         for symbol0, symbol1 in zip(symbols0, symbols1):
-            self.assertTrue(symbol0 == symbol1)
-            self.assertTrue(symbol1 == symbol0)
+            assert symbol0 == symbol1
+            assert symbol1 == symbol0
 
-            self.assertFalse(symbol0 != symbol1)
-            self.assertFalse(symbol1 != symbol0)
+            assert not symbol0 != symbol1
+            assert not symbol1 != symbol0
 
         for i in range(len(symbols0)):
             for j in range(i + 1, len(symbols0)):
-                self.assertFalse(symbols0[i] == symbols1[j])
-                self.assertFalse(symbols1[j] == symbols0[i])
+                assert not symbols0[i] == symbols1[j]
+                assert not symbols1[j] == symbols0[i]
 
-                self.assertTrue(symbols0[i] != symbols1[j])
-                self.assertTrue(symbols1[j] != symbols0[i])
+                assert symbols0[i] != symbols1[j]
+                assert symbols1[j] != symbols0[i]
 
     def test_order(self):
-        S = Symbol
-        self.assertTrue(S('x') < S('y'))
-        self.assertTrue(S('y') > S('x'))
-        self.assertTrue(S(1) < S(2))
-        self.assertTrue(S(2) > S(1))
+        assert Symbol(-1) < Symbol(0)
+        assert Symbol(0) > Symbol(-1)
+
+        assert Symbol(1) < Symbol(2)
+        assert Symbol(2) > Symbol(1)
+
+        assert Symbol('x') < Symbol('y')
+        assert Symbol('y') > Symbol('x')
 
     def test_printing(self):
-        self.assertEqual('a', str(Symbol('a')))
-        self.assertEqual('1', str(Symbol(1)))
-        self.assertEqual("Symbol('a')", repr(Symbol('a')))
-        self.assertEqual('Symbol(1)', repr(Symbol(1)))
+        assert 'a' == str(Symbol('a'))
+        assert "Symbol('a')" == repr(Symbol('a'))
 
+        assert '1' == str(Symbol(1))
+        assert 'Symbol(1)' == repr(Symbol(1))
+
+        assert '-1' == str(Symbol(-1))
+        assert 'Symbol(-1)' == repr(Symbol(-1))
 
 class NOTTestCase(unittest.TestCase):
 
