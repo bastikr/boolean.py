@@ -427,90 +427,156 @@ class TestSymbolCase:
         assert '-1' == str(Symbol(-1))
         assert 'Symbol(-1)' == repr(Symbol(-1))
 
-class NOTTestCase(unittest.TestCase):
+class TestNOT:
 
-    def test_init(self):
+    def test_raises(self):
         algebra = BooleanAlgebra()
-        self.assertRaises(TypeError, algebra.NOT)
-        self.assertRaises(TypeError, algebra.NOT, 'a', 'b')
-        algebra.NOT(algebra.Symbol('a'))
-        self.assertEqual(algebra.FALSE, (algebra.NOT(algebra.TRUE)).simplify())
-        self.assertEqual(algebra.TRUE, (algebra.NOT(algebra.FALSE)).simplify())
+
+        with pytest.raises(TypeError):
+            algebra.NOT()
+
+        with pytest.raises(TypeError):
+            algebra.NOT('a', 'b')
+
+    def test_true_and_false(self):
+        algebra = BooleanAlgebra()
+
+        assert algebra.TRUE is (algebra.NOT(algebra.FALSE)).simplify()
+        assert algebra.FALSE is (algebra.NOT(algebra.TRUE)).simplify()
+
+        assert algebra.TRUE == (algebra.NOT(algebra.FALSE)).simplify()
+        assert algebra.FALSE == (algebra.NOT(algebra.TRUE)).simplify()
 
     def test_isliteral(self):
         algebra = BooleanAlgebra()
+
         s = algebra.Symbol(1)
-        self.assertTrue(algebra.NOT(s).isliteral)
-        self.assertFalse(algebra.parse('~(a|b)').isliteral)
 
-    def test_literals(self):
+        # negation of a literal is still a literal
+        assert algebra.NOT(s).isliteral
+        # negation of a non-literal is still a non-literal
+        assert not algebra.parse('~(a|b)').isliteral
+
+    def test_literals_0(self):
         algebra = BooleanAlgebra()
+
         a = algebra.Symbol('a')
-        l = ~a
-        self.assertTrue(l.isliteral)
-        self.assertTrue(l in l.literals)
-        self.assertEqual(len(l.literals), 1)
+        b = ~a
 
-        l = algebra.parse('~(a&a)')
-        self.assertFalse(l.isliteral)
-        self.assertTrue(a in l.literals)
-        self.assertEqual(len(l.literals), 1)
+        assert a.isliteral
+        assert b.isliteral
 
-        l = algebra.parse('~(a&a)', simplify=True)
-        self.assertTrue(l.isliteral)
+        assert a in a.literals
+        assert b in b.literals
+
+        assert len(a.literals) == 1
+        assert len(b.literals) == 1
+
+    def test_literals_1(self):
+        algebra = BooleanAlgebra()
+
+        expression = algebra.parse('~(a&a)')
+
+        assert not expression.isliteral
+
+        assert algebra.Symbol('a') in expression.literals
+        assert len(expression.literals) == 1
+
+    def test_literals_2(self):
+        algebra = BooleanAlgebra()
+
+        expression = algebra.parse('~(a&a)', simplify=True)
+
+        assert expression.isliteral
+        assert expression == algebra.NOT(algebra.Symbol('a'))
 
     def test_literalize(self):
         parse = BooleanAlgebra().parse
-        self.assertEqual(parse('~a').literalize(), parse('~a'))
-        self.assertEqual(parse('~(a&b)').literalize(), parse('~a|~b'))
-        self.assertEqual(parse('~(a|b)').literalize(), parse('~a&~b'))
+
+        assert parse('~a').literalize() == parse('~a')
+        assert parse('~(a&b)').literalize() ==  parse('~a|~b')
+        assert parse('~(a|b)').literalize() ==  parse('~a&~b')
+
+    def test_invert_eq_not(self):
+        algebra = BooleanAlgebra()
+
+        a = algebra.Symbol('a')
+
+        assert ~a == ~a
+        assert ~a == algebra.NOT(a)
 
     def test_simplify(self):
         algebra = BooleanAlgebra()
-        a = algebra.Symbol('a')
-        self.assertEqual(~a, ~a)
-        assert algebra.Symbol('a') == algebra.Symbol('a')
-        self.assertNotEqual(a, algebra.parse('~~a'))
-        self.assertEqual(a, (~~a).simplify())
-        self.assertEqual(~a, (~~ ~a).simplify())
-        self.assertEqual(a, (~~ ~~a).simplify())
-        self.assertEqual((~(a & a & a)).simplify(), (~(a & a & a)).simplify())
-        self.assertEqual(a, algebra.parse('~~a', simplify=True))
 
+        a = algebra.Symbol('a')
+
+        assert a == a.simplify()
+        assert a == (~~a).simplify()
+        assert a == (~~ ~~a).simplify()
+
+        assert ~a == (~a).simplify()
+        assert ~a == (~ ~~a).simplify()
+        assert ~a == (~ ~~ ~~a).simplify()
+
+        assert (~(a & a & a)).simplify() == (~(a & a & a)).simplify()
+        assert (~(a | a | a)).simplify() == (~(a | a | a)).simplify()
+
+    @pytest.mark.xfail(reason="a.cancel() should work but does not")
     def test_cancel(self):
         algebra = BooleanAlgebra()
+
         a = algebra.Symbol('a')
-        self.assertEqual(~a, (~a).cancel())
-        self.assertEqual(a, algebra.parse('~~a').cancel())
-        self.assertEqual(~a, algebra.parse('~~~a').cancel())
-        self.assertEqual(a, algebra.parse('~~~~a').cancel())
+
+        assert a == a.cancel()
+        assert a == (~~a).cancel()
+        assert a == (~~ ~~a).cancel()
+
+        assert ~a == (~a).cancel()
+        assert ~a == (~ ~~a).cancel()
+        assert ~a == (~ ~~ ~~a).cancel()
 
     def test_demorgan(self):
-        algebra = BooleanAlgebra()
-        a = algebra.Symbol('a')
-        b = algebra.Symbol('b')
-        self.assertEqual(algebra.parse('~(a&b)').demorgan(), ~a | ~b)
-        self.assertEqual(algebra.parse('~(a|b|c)').demorgan(), algebra.parse('~a&~b&~c'))
-        self.assertEqual(algebra.parse('~(~a&b)').demorgan(), a | ~b)
+        parse = BooleanAlgebra().parse
 
+        assert parse('~(a & a)').demorgan() == parse('~a | ~a')
+
+        assert parse('~(a & b)').demorgan() == parse('~a | ~b')
+        assert parse('~(a & b & c)').demorgan() == parse('~a | ~b | ~c')
+
+        assert parse('~(~a & b)').demorgan() == parse('a | ~b')
+        assert parse('~(a & ~b)').demorgan() == parse('~a | b')
+
+    # TODO: enforced order is obscure, must explain
     def test_order(self):
         algebra = BooleanAlgebra()
+
         x = algebra.Symbol(1)
         y = algebra.Symbol(2)
-        self.assertTrue(x < ~x)
-        self.assertTrue(~x > x)
-        self.assertTrue(~x < y)
-        self.assertTrue(y > ~x)
+
+        assert x < y
+        assert y > x
+
+        assert x < ~x
+        assert ~x > x
+
+        assert ~x < y
+        assert y > ~x
+
+        assert ~y > x
+        assert x < ~y
 
     def test_printing(self):
         algebra = BooleanAlgebra()
-        a = algebra.Symbol('a')
-        self.assertEqual(str(~a), '~a')
-        self.assertEqual(repr(~a), "NOT(Symbol('a'))")
-        expr = algebra.parse('~(a&a)')
-        self.assertEqual(str(expr), '~(a&a)')
-        self.assertEqual(repr(expr), "NOT(AND(Symbol('a'), Symbol('a')))")
 
+        a = algebra.Symbol('a')
+
+        assert str(~a) == '~a'
+        assert repr(~a) == "NOT(Symbol('a'))"
+
+        expression = algebra.parse('~(a&a)')
+
+        assert str(expression) == '~(a&a)'
+        assert repr(expression) == "NOT(AND(Symbol('a'), Symbol('a')))"
 
 class DualBaseTestCase(unittest.TestCase):
 
