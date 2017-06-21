@@ -580,8 +580,6 @@ class TestNOT:
 
 class DualBaseTestCase(unittest.TestCase):
 
-    maxDiff = None
-
     def test_init(self):
         from boolean.boolean import DualBase
         a, b, c = Symbol('a'), Symbol('b'), Symbol('c')
