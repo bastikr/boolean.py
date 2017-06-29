@@ -5,7 +5,6 @@ from __future__ import absolute_import
 from setuptools import find_packages
 from setuptools import setup
 
-
 long_desc = '''
 This library helps you deal with boolean expressions and algebra with variables
 and the boolean functions AND, OR, NOT.
@@ -40,6 +39,11 @@ setup(
     test_loader='unittest:TestLoader',
     test_suite='boolean.test_boolean',
     keywords='boolean expression, boolean algebra, logic, expression parser',
+    entry_points={
+        'console_scripts': [
+            'transpile = transpile.transpile:transpile'
+        ],
+    },
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
