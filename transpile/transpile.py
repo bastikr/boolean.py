@@ -1,27 +1,48 @@
-from setuptools import Command
+import yaml
+import logging
+import logging.config
 
-# class Transpile(Command):
-#     """
-#     Transpile (part of) boolean.py to JavaScript
-#     """
+from pathlib import Path
+from argparse import ArgumentParser
 
-#     description  = 'transpile (part of) boolean.py to JavaScript'
-#     user_options = [()]
+logger = logging.getLogger(__name__)
 
-#     def initialize_options(self):
-#         print('initialize_options call')
-#         print('initialize_options done')
+def configure_logging(parent):
+    with open(Path(parent, 'transpile.yml'), 'r') as config:
+        params = yaml.load(config)
 
-#     def finalize_options(self):
-#         print('finalize_options call')
-#         print('finalize_options done')
-
-#     def run(self):
-#         print('run call')
-#         print('run done')
+        logging.config.dictConfig(params['logging'])
 
 def transpile():
-    print("Using a function now")
+    """
+    Call transcrypt to transpile boolean.py into JavaScript
+    """
+    fpath = Path(__file__).resolve()
+
+    configure_logging(fpath.parent)
+
+    logger.debug('transpile() call')
+
+    parser = ArgumentParser(
+        prog=fpath.name,
+        description="Transpile boolean.py into JavaScript"
+    )
+
+    # file path to boolean.py, usually ../boolean/boolean.py
+    bpath = Path(fpath.parent, 'boolean', 'boolean.py')
+    parser.add_argument(
+        'src', nargs='?', default=[bpath],
+        help='start transpilation from here'
+    )
+
+    # path to produced javascript output
+    jpath = Path(fpath.parent, '__javascript__')
+    parser.add_argument(
+        'dst', nargs=1, default=[jpath],
+        help='store produced javascript here'
+    )
+
+    logger.debug('transpile() done')
 
 if __name__ == "__main__":
-    print("About to transpile some stuff!")
+    transpile()
