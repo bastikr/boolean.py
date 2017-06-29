@@ -5,6 +5,7 @@ from __future__ import absolute_import
 from setuptools import find_packages
 from setuptools import setup
 
+
 long_desc = '''
 This library helps you deal with boolean expressions and algebra with variables
 and the boolean functions AND, OR, NOT.
@@ -43,6 +44,12 @@ setup(
         'console_scripts': [
             'transpile = transpile.transpile:transpile'
         ],
+    },
+    extras_require={
+        'transpile': [
+            'transcrypt',
+            'pyaml'
+        ]
     },
     classifiers=[
         'Development Status :: 4 - Beta',
