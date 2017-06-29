@@ -521,19 +521,48 @@ class TestNOT:
         assert (~(a & a & a)).simplify() == (~(a & a & a)).simplify()
         assert (~(a | a | a)).simplify() == (~(a | a | a)).simplify()
 
-    @pytest.mark.xfail(reason="a.cancel() should work but does not")
-    def test_cancel(self):
+    def test_cancel_0(self):
+        """
+        Test .cancel() on python variables
+        """
         algebra = BooleanAlgebra()
 
         a = algebra.Symbol('a')
 
-        assert a == a.cancel()
         assert a == (~~a).cancel()
         assert a == (~~ ~~a).cancel()
 
         assert ~a == (~a).cancel()
         assert ~a == (~ ~~a).cancel()
         assert ~a == (~ ~~ ~~a).cancel()
+
+    def test_cancel_1(self):
+        """
+        Test .cancel() on .parse() results
+        """
+        parse = BooleanAlgebra().parse
+
+        assert parse('a') == parse('~~a').cancel()
+        assert parse('a') == parse('~~ ~~a').cancel()
+
+        assert parse('~a') == parse('~a').cancel()
+        assert parse('~a') == parse('~ ~~a').cancel()
+        assert parse('~a') == parse('~ ~~ ~~a').cancel()
+
+    def test_cancel_2(self):
+        """
+        Test .cancel() on both Python variables and .parse() results
+        """
+        algebra = BooleanAlgebra()
+
+        a, parse = algebra.Symbol('a'), algebra.parse
+
+        assert a == parse('~~a').cancel()
+        assert a == parse('~~ ~~a').cancel()
+
+        assert ~a == parse('~a').cancel()
+        assert ~a == parse('~ ~~a').cancel()
+        assert ~a == parse('~ ~~ ~~a').cancel()
 
     def test_demorgan(self):
         parse = BooleanAlgebra().parse
