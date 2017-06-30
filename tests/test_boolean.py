@@ -529,11 +529,11 @@ class TestNOT:
 
         assert a == a.simplify()
         assert a == (~~a).simplify()
-        assert a == (~~ ~~a).simplify()
+        assert a == (~~~~a).simplify()
 
         assert ~a == (~a).simplify()
-        assert ~a == (~ ~~a).simplify()
-        assert ~a == (~ ~~ ~~a).simplify()
+        assert ~a == (~~~a).simplify()
+        assert ~a == (~~~~~a).simplify()
 
         assert (~(a & a & a)).simplify() == (~(a & a & a)).simplify()
         assert (~(a | a | a)).simplify() == (~(a | a | a)).simplify()
@@ -547,11 +547,11 @@ class TestNOT:
         a = algebra.Symbol('a')
 
         assert a == (~~a).cancel()
-        assert a == (~~ ~~a).cancel()
+        assert a == (~~~~a).cancel()
 
         assert ~a == (~a).cancel()
-        assert ~a == (~ ~~a).cancel()
-        assert ~a == (~ ~~ ~~a).cancel()
+        assert ~a == (~~~a).cancel()
+        assert ~a == (~~~~~a).cancel()
 
     def test_cancel_1(self):
         """
@@ -560,11 +560,11 @@ class TestNOT:
         parse = BooleanAlgebra().parse
 
         assert parse('a') == parse('~~a').cancel()
-        assert parse('a') == parse('~~ ~~a').cancel()
+        assert parse('a') == parse('~~~~a').cancel()
 
         assert parse('~a') == parse('~a').cancel()
-        assert parse('~a') == parse('~ ~~a').cancel()
-        assert parse('~a') == parse('~ ~~ ~~a').cancel()
+        assert parse('~a') == parse('~~~a').cancel()
+        assert parse('~a') == parse('~~~~~a').cancel()
 
     def test_cancel_2(self):
         """
@@ -575,11 +575,11 @@ class TestNOT:
         a, parse = algebra.Symbol('a'), algebra.parse
 
         assert a == parse('~~a').cancel()
-        assert a == parse('~~ ~~a').cancel()
+        assert a == parse('~~~~a').cancel()
 
         assert ~a == parse('~a').cancel()
-        assert ~a == parse('~ ~~a').cancel()
-        assert ~a == parse('~ ~~ ~~a').cancel()
+        assert ~a == parse('~~~a').cancel()
+        assert ~a == parse('~~~~~a').cancel()
 
     def test_demorgan(self):
         parse = BooleanAlgebra().parse
@@ -592,8 +592,8 @@ class TestNOT:
         assert parse('~(~a & b)').demorgan() == parse('a | ~b')
         assert parse('~(a & ~b)').demorgan() == parse('~a | b')
 
-    # TODO: enforced order is obscure, must explain
     def test_order(self):
+        # TODO: enforced order is obscure, must explain
         algebra = BooleanAlgebra()
 
         x = algebra.Symbol(1)
