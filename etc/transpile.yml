@@ -9,7 +9,7 @@ logging:
       level: DEBUG
       formatter: simple
   loggers:
-    transpile.transpile:
+    __main__:
       level: DEBUG
       handlers: [console]
       propagate: no

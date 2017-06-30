@@ -40,17 +40,6 @@ setup(
     test_loader='unittest:TestLoader',
     test_suite='boolean.test_boolean',
     keywords='boolean expression, boolean algebra, logic, expression parser',
-    entry_points={
-        'console_scripts': [
-            'transpile = transpile.transpile:transpile'
-        ],
-    },
-    extras_require={
-        'transpile': [
-            'transcrypt',
-            'pyaml'
-        ]
-    },
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
