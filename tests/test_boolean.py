@@ -197,6 +197,12 @@ class BooleanAlgebraTestCase(unittest.TestCase):
 
 class TestBaseElement:
 
+    def test_base_element_works(self):
+        try:
+            BaseElement()
+        except Exception as e:
+            pytest.fail('Unexpected exception: ' + str(e))
+
     def test_base_element_raises(self):
         with pytest.raises(TypeError):
             BaseElement(2)
@@ -277,6 +283,17 @@ class TestBaseElement:
         assert repr(algebra.FALSE) == 'FALSE'
 
 class TestSymbolCase:
+
+    def test_symbol_works(self):
+        try:
+            Symbol(1)
+            Symbol('a')
+            Symbol(None)
+            Symbol(sum)
+            Symbol((1, 2, 3))
+            Symbol([1, 2])
+        except Exception as e:
+            pytest.fail('Unexpected exception: ' + str(e))
 
     def test_isliteral(self):
         assert Symbol(1).isliteral is True
