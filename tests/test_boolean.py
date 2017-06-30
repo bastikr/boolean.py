@@ -10,12 +10,12 @@ Released under revised BSD license.
 from __future__ import absolute_import
 from __future__ import unicode_literals
 from __future__ import print_function
-from boolean.boolean import PARSE_UNKNOWN_TOKEN
 
-try:
-    basestring  # Python 2
-except NameError:
-    basestring = str  # Python 3
+import copy
+import pytest
+
+from boolean.boolean import BaseElement
+from boolean.boolean import PARSE_UNKNOWN_TOKEN
 
 import unittest
 from unittest.case import expectedFailure
@@ -35,6 +35,10 @@ from boolean.boolean import PARSE_INVALID_SYMBOL_SEQUENCE
 from boolean.boolean import PARSE_INVALID_EXPRESSION
 from boolean.boolean import PARSE_INVALID_NESTING
 
+from tests.mock_custom_algebra import CustomAlgebra
+
+from tests.mock_advanced_algebra import AdvancedAlgebra
+from tests.mock_advanced_algebra import PlainVar, ColonDotVar
 
 class BooleanAlgebraTestCase(unittest.TestCase):
 
@@ -97,33 +101,6 @@ class BooleanAlgebraTestCase(unittest.TestCase):
         self.assertEqual(expected, expr)
 
     def test_parse_can_use_iterable_from_alternative_tokenizer(self):
-
-        class CustomSymbol(Symbol):
-            pass
-
-        class CustomAlgebra(BooleanAlgebra):
-            def __init__(self, Symbol_class=CustomSymbol):
-                super(CustomAlgebra, self).__init__(Symbol_class=CustomSymbol)
-
-            def tokenize(self, s):
-                "Sample tokenizer using custom operators and symbols"
-                ops = {
-                    'WHY_NOT': TOKEN_OR,
-                    'ALSO': TOKEN_AND,
-                    'NEITHER': TOKEN_NOT,
-                    '(': TOKEN_LPAR,
-                    ')': TOKEN_RPAR,
-                }
-
-                for row, line in enumerate(s.splitlines(False)):
-                    for col, tok in enumerate(line.split()):
-                        if tok in ops:
-                            yield ops[tok], tok, (row, col)
-                        elif tok == 'Custom':
-                            yield self.Symbol(tok), tok, (row, col)
-                        else:
-                            yield TOKEN_SYMBOL, tok, (row, col)
-
         expr_str = '''( Custom WHY_NOT regular ) ALSO NEITHER  (
                       not_custom ALSO standard )
                    '''
@@ -145,112 +122,6 @@ class BooleanAlgebraTestCase(unittest.TestCase):
         self.assertEqual(expected, expr)
 
     def test_parse_with_advanced_tokenizer_example(self):
-        import tokenize
-
-        try:
-            from io import StringIO
-        except ImportError:
-            try:
-                from cStringIO import StringIO
-            except ImportError:
-                from StringIO import StringIO
-
-
-        class PlainVar(Symbol):
-            "Plain boolean variable"
-
-        class ColonDotVar(Symbol):
-            "Colon and dot-separated string boolean variable"
-
-        class AdvancedAlgebra(BooleanAlgebra):
-            def tokenize(self, expr):
-                """
-                Example custom tokenizer derived from the standard Python tokenizer
-                with a few extra features: #-style comments are supported and a
-                colon- and dot-separated string is recognized and stored in custom
-                symbols. In contrast with the standard tokenizer, only these
-                boolean operators are recognized : & | ! and or not.
-
-                For more advanced tokenization you could also consider forking the
-                `tokenize` standard library module.
-                """
-
-                if not isinstance(expr, basestring):
-                    raise TypeError('expr must be string but it is %s.' % type(expr))
-
-                # mapping of lowercase token strings to a token object instance for
-                # standard operators, parens and common true or false symbols
-                TOKENS = {
-                    '&': TOKEN_AND,
-                    'and': TOKEN_AND,
-                    '|': TOKEN_OR,
-                    'or': TOKEN_OR,
-                    '!': TOKEN_NOT,
-                    'not': TOKEN_NOT,
-                    '(': TOKEN_LPAR,
-                    ')': TOKEN_RPAR,
-                    'true': TOKEN_TRUE,
-                    '1': TOKEN_TRUE,
-                    'false': TOKEN_FALSE,
-                    '0': TOKEN_FALSE,
-                    'none': TOKEN_FALSE,
-                }
-
-                ignored_token_types = (
-                    tokenize.NL, tokenize.NEWLINE, tokenize.COMMENT,
-                    tokenize.INDENT, tokenize.DEDENT,
-                    tokenize.ENDMARKER
-                )
-
-                # note: an unbalanced expression may raise a TokenError here.
-                tokens = ((toktype, tok, row, col,) for toktype, tok, (row, col,), _, _
-                          in tokenize.generate_tokens(StringIO(expr).readline)
-                          if tok and tok.strip())
-
-                COLON_DOT = (':', '.',)
-
-                def build_symbol(current_dotted):
-                    if current_dotted:
-                        if any(s in current_dotted for s in COLON_DOT):
-                            sym = ColonDotVar(current_dotted)
-                        else:
-                            sym = PlainVar(current_dotted)
-                        return sym
-
-                # accumulator for dotted symbols that span several `tokenize` tokens
-                dotted, srow, scol = '', None, None
-
-                for toktype, tok, row, col in tokens:
-                    if toktype in ignored_token_types:
-                        # we reached a break point and should yield the current dotted
-                        symbol = build_symbol(dotted)
-                        if symbol is not None:
-                            yield symbol, dotted, (srow, scol)
-                            dotted, srow, scol = '', None, None
-
-                        continue
-
-                    std_token = TOKENS.get(tok.lower())
-                    if std_token is not None:
-                        # we reached a break point and should yield the current dotted
-                        symbol = build_symbol(dotted)
-                        if symbol is not None:
-                            yield symbol, dotted, (srow, scol)
-                            dotted, srow, scol = '', 0, 0
-
-                        yield std_token, tok, (row, col)
-
-                        continue
-
-                    if toktype == tokenize.NAME or (toktype == tokenize.OP and tok in COLON_DOT):
-                        if not dotted:
-                            srow = row
-                            scol = col
-                        dotted += tok
-
-                    else:
-                        raise TypeError('Unknown token: %(tok)r at line: %(row)r, column: %(col)r' % locals())
-
         test_expr = '''
             (colon1:dot1.dot2 or colon2_name:col_on3:do_t1.do_t2.do_t3 )
             and
@@ -324,217 +195,436 @@ class BooleanAlgebraTestCase(unittest.TestCase):
         except ParseError as pe:
             assert pe.error_code == PARSE_INVALID_NESTING
 
-class BaseElementTestCase(unittest.TestCase):
+class TestBaseElement:
 
-    def test_creation(self):
-        from boolean.boolean import BaseElement
+    def test_base_element_works(self):
+        try:
+            BaseElement()
+        except Exception as e:
+            pytest.fail('Unexpected exception: ' + str(e))
+
+    def test_base_element_raises(self):
+        with pytest.raises(TypeError):
+            BaseElement(2)
+
+        with pytest.raises(TypeError):
+            BaseElement('a')
+
+    def test_true_and_false(self):
         algebra = BooleanAlgebra()
-        self.assertEqual(algebra.TRUE, algebra.TRUE)
-        BaseElement()
-        self.assertRaises(TypeError, BaseElement, 2)
-        self.assertRaises(TypeError, BaseElement, 'a')
-        self.assertTrue(algebra.TRUE is algebra.TRUE)
-        self.assertTrue(algebra.TRUE is not algebra.FALSE)
-        self.assertTrue(algebra.FALSE is algebra.FALSE)
-        self.assertTrue(bool(algebra.TRUE) is True)
-        self.assertTrue(bool(algebra.FALSE) is False)
-        self.assertEqual(algebra.TRUE, True)
-        self.assertEqual(algebra.FALSE, False)
+
+        assert algebra.TRUE is algebra.TRUE
+        assert algebra.FALSE is algebra.FALSE
+
+        assert algebra.TRUE == algebra.TRUE
+        assert algebra.FALSE == algebra.FALSE
+
+        assert algebra.TRUE is not algebra.FALSE
+        assert algebra.FALSE is not algebra.TRUE
+
+        assert algebra.TRUE != algebra.FALSE
+        assert algebra.FALSE != algebra.TRUE
+
+        assert bool(algebra.TRUE) is True
+        assert bool(algebra.FALSE) is False
+
+        assert algebra.TRUE == True
+        assert algebra.FALSE == False
 
     def test_literals(self):
         algebra = BooleanAlgebra()
-        self.assertEqual(algebra.TRUE.literals, set())
-        self.assertEqual(algebra.FALSE.literals, set())
+
+        assert algebra.TRUE.literals == set()
+        assert algebra.FALSE.literals == set()
 
     def test_literalize(self):
         algebra = BooleanAlgebra()
-        self.assertEqual(algebra.TRUE.literalize(), algebra.TRUE)
-        self.assertEqual(algebra.FALSE.literalize(), algebra.FALSE)
+
+        assert algebra.TRUE.literalize() == algebra.TRUE
+        assert algebra.FALSE.literalize() == algebra.FALSE
+
+        assert algebra.TRUE.literalize() != algebra.FALSE
+        assert algebra.FALSE.literalize() != algebra.TRUE
 
     def test_simplify(self):
         algebra = BooleanAlgebra()
-        self.assertEqual(algebra.TRUE.simplify(), algebra.TRUE)
-        self.assertEqual(algebra.FALSE.simplify(), algebra.FALSE)
+
+        assert algebra.TRUE.simplify() == algebra.TRUE
+        assert algebra.FALSE.simplify() == algebra.FALSE
 
     def test_dual(self):
         algebra = BooleanAlgebra()
-        self.assertEqual(algebra.TRUE.dual, algebra.FALSE)
-        self.assertEqual(algebra.FALSE.dual, algebra.TRUE)
+
+        assert algebra.TRUE.dual ==  algebra.FALSE
+        assert algebra.FALSE.dual ==  algebra.TRUE
 
     def test_equality(self):
         algebra = BooleanAlgebra()
-        self.assertEqual(algebra.TRUE, algebra.TRUE)
-        self.assertEqual(algebra.FALSE, algebra.FALSE)
-        self.assertNotEqual(algebra.TRUE, algebra.FALSE)
+
+        assert algebra.TRUE == algebra.TRUE
+        assert algebra.FALSE == algebra.FALSE
+
+        assert      algebra.TRUE != algebra.FALSE
+        assert not (algebra.TRUE == algebra.FALSE)
 
     def test_order(self):
         algebra = BooleanAlgebra()
-        self.assertTrue(algebra.FALSE < algebra.TRUE)
-        self.assertTrue(algebra.TRUE > algebra.FALSE)
+
+        assert algebra.FALSE < algebra.TRUE
+        assert algebra.TRUE > algebra.FALSE
 
     def test_printing(self):
         algebra = BooleanAlgebra()
-        self.assertEqual(str(algebra.TRUE), '1')
-        self.assertEqual(str(algebra.FALSE), '0')
-        self.assertEqual(repr(algebra.TRUE), 'TRUE')
-        self.assertEqual(repr(algebra.FALSE), 'FALSE')
 
+        assert str(algebra.TRUE) == '1'
+        assert str(algebra.FALSE) == '0'
 
-class SymbolTestCase(unittest.TestCase):
+        assert repr(algebra.TRUE) == 'TRUE'
+        assert repr(algebra.FALSE) == 'FALSE'
 
-    def test_init(self):
-        Symbol(1)
-        Symbol('a')
-        Symbol(None)
-        Symbol(sum)
-        Symbol((1, 2, 3))
-        Symbol([1, 2])
+class TestSymbolCase:
+
+    def test_symbol_works(self):
+        try:
+            Symbol(1)
+            Symbol('a')
+            Symbol(None)
+            Symbol(sum)
+            Symbol((1, 2, 3))
+            Symbol([1, 2])
+        except Exception as e:
+            pytest.fail('Unexpected exception: ' + str(e))
 
     def test_isliteral(self):
-        self.assertTrue(Symbol(1).isliteral is True)
+        assert Symbol(1).isliteral is True
 
     def test_literals(self):
         l1 = Symbol(1)
         l2 = Symbol(1)
-        self.assertTrue(l1 in l1.literals)
-        self.assertTrue(l1 in l2.literals)
-        self.assertTrue(l2 in l1.literals)
-        self.assertTrue(l2 in l2.literals)
-        self.assertRaises(AttributeError, setattr, l1, 'literals', 1)
+
+        assert l1 in l1.literals
+        assert l1 in l2.literals
+        assert l2 in l1.literals
+        assert l2 in l2.literals
+
+        for symbol in [l1, l2]:
+            with pytest.raises(AttributeError):
+                symbol.setattr('literals', 1)
 
     def test_literalize(self):
         s = Symbol(1)
-        self.assertEqual(s.literalize(), s)
+
+        assert s.literalize() == s
 
     def test_simplify(self):
         s = Symbol(1)
-        self.assertEqual(s.simplify(), s)
 
-    def test_equal_symbols(self):
+        assert s.simplify() == s
+
+    def test_symbols_eq_0(self):
         algebra = BooleanAlgebra()
+
         a = algebra.Symbol('a')
-        a2 = algebra.Symbol('a')
 
-        c = algebra.Symbol('b')
-        d = algebra.Symbol('d')
-        e = algebra.Symbol('e')
+        assert a == a
 
-        # Test __eq__.
-        self.assertTrue(a == a)
-        self.assertTrue(a == a2)
-        self.assertFalse(a == c)
-        self.assertFalse(a2 == c)
-        self.assertTrue(d == d)
-        self.assertFalse(d == e)
-        self.assertFalse(a == d)
-        # Test __ne__.
-        self.assertFalse(a != a)
-        self.assertFalse(a != a2)
-        self.assertTrue(a != c)
-        self.assertTrue(a2 != c)
+    def test_symbols_eq_1(self):
+        algebra = BooleanAlgebra()
+
+        a0 = algebra.Symbol('a')
+        a1 = algebra.Symbol('a')
+
+        assert a0 == a1
+        assert a1 == a0
+
+    def test_symbols_eq_2(self):
+        algebra = BooleanAlgebra()
+
+        a = algebra.Symbol('a')
+        b = algebra.Symbol('b')
+
+        assert not (a == b)
+        assert not (b == a)
+
+    def test_symbols_eq_3(self):
+        algebra = BooleanAlgebra()
+
+        assert      algebra.Symbol('a') == algebra.Symbol('a')
+        assert not (algebra.Symbol('a') == algebra.Symbol('b'))
+
+    def test_symbols_ne_0(self):
+        algebra = BooleanAlgebra()
+
+        a = algebra.Symbol('a')
+
+        assert not (a != a)
+
+    def test_symbols_ne_1(self):
+        algebra = BooleanAlgebra()
+
+        a0 = algebra.Symbol('a')
+        a1 = algebra.Symbol('a')
+
+        assert not (a0 != a1)
+        assert not (a1 != a0)
+
+    def test_symbols_ne_2(self):
+        algebra = BooleanAlgebra()
+
+        a = algebra.Symbol('a')
+        b = algebra.Symbol('b')
+
+        assert a != b
+        assert b != a
+
+    def test_symbols_ne_3(self):
+        algebra = BooleanAlgebra()
+
+        assert not (algebra.Symbol('a') != algebra.Symbol('a'))
+        assert      algebra.Symbol('a') != algebra.Symbol('b')
+
+    def test_symbols_eq_ne(self):
+        algebra = BooleanAlgebra()
+
+        symbols0 = [
+            algebra.Symbol('knights'),
+            algebra.Symbol('who'),
+            algebra.Symbol('say'),
+            algebra.Symbol('ni!'),
+            algebra.Symbol('Beautiful is better than ugly.'),
+            algebra.Symbol('Explicit is better than implicit.'),
+            algebra.Symbol('0'),
+            algebra.Symbol('1'),
+            algebra.Symbol('^'),
+            algebra.Symbol(-1),
+            algebra.Symbol(0),
+            algebra.Symbol(1),
+            algebra.Symbol('123'),
+            algebra.Symbol('!!!'),
+        ]
+
+        symbols1 = copy.deepcopy(symbols0)
+
+        for symbol in symbols0:
+            assert      symbol == symbol
+            assert not (symbol != symbol)
+
+        for symbol0, symbol1 in zip(symbols0, symbols1):
+            assert symbol0 == symbol1
+            assert symbol1 == symbol0
+
+            assert not (symbol0 != symbol1)
+            assert not (symbol1 != symbol0)
+
+        for i in range(len(symbols0)):
+            for j in range(i + 1, len(symbols0)):
+                assert not (symbols0[i] == symbols1[j])
+                assert not (symbols1[j] == symbols0[i])
+
+                assert symbols0[i] != symbols1[j]
+                assert symbols1[j] != symbols0[i]
 
     def test_order(self):
-        S = Symbol
-        self.assertTrue(S('x') < S('y'))
-        self.assertTrue(S('y') > S('x'))
-        self.assertTrue(S(1) < S(2))
-        self.assertTrue(S(2) > S(1))
+        assert Symbol(-1) < Symbol(0)
+        assert Symbol(0) > Symbol(-1)
+
+        assert Symbol(1) < Symbol(2)
+        assert Symbol(2) > Symbol(1)
+
+        assert Symbol('x') < Symbol('y')
+        assert Symbol('y') > Symbol('x')
 
     def test_printing(self):
-        self.assertEqual('a', str(Symbol('a')))
-        self.assertEqual('1', str(Symbol(1)))
-        self.assertEqual("Symbol('a')", repr(Symbol('a')))
-        self.assertEqual('Symbol(1)', repr(Symbol(1)))
+        assert 'a' == str(Symbol('a'))
+        assert "Symbol('a')" == repr(Symbol('a'))
 
+        assert '1' == str(Symbol(1))
+        assert 'Symbol(1)' == repr(Symbol(1))
 
-class NOTTestCase(unittest.TestCase):
+        assert '-1' == str(Symbol(-1))
+        assert 'Symbol(-1)' == repr(Symbol(-1))
 
-    def test_init(self):
+class TestNOT:
+
+    def test_raises(self):
         algebra = BooleanAlgebra()
-        self.assertRaises(TypeError, algebra.NOT)
-        self.assertRaises(TypeError, algebra.NOT, 'a', 'b')
-        algebra.NOT(algebra.Symbol('a'))
-        self.assertEqual(algebra.FALSE, (algebra.NOT(algebra.TRUE)).simplify())
-        self.assertEqual(algebra.TRUE, (algebra.NOT(algebra.FALSE)).simplify())
+
+        with pytest.raises(TypeError):
+            algebra.NOT()
+
+        with pytest.raises(TypeError):
+            algebra.NOT('a', 'b')
+
+    def test_true_and_false(self):
+        algebra = BooleanAlgebra()
+
+        assert algebra.TRUE is (algebra.NOT(algebra.FALSE)).simplify()
+        assert algebra.FALSE is (algebra.NOT(algebra.TRUE)).simplify()
+
+        assert algebra.TRUE == (algebra.NOT(algebra.FALSE)).simplify()
+        assert algebra.FALSE == (algebra.NOT(algebra.TRUE)).simplify()
 
     def test_isliteral(self):
         algebra = BooleanAlgebra()
+
         s = algebra.Symbol(1)
-        self.assertTrue(algebra.NOT(s).isliteral)
-        self.assertFalse(algebra.parse('~(a|b)').isliteral)
 
-    def test_literals(self):
+        # negation of a literal is still a literal
+        assert algebra.NOT(s).isliteral
+        # negation of a non-literal is still a non-literal
+        assert not algebra.parse('~(a|b)').isliteral
+
+    def test_literals_0(self):
         algebra = BooleanAlgebra()
+
         a = algebra.Symbol('a')
-        l = ~a
-        self.assertTrue(l.isliteral)
-        self.assertTrue(l in l.literals)
-        self.assertEqual(len(l.literals), 1)
+        b = ~a
 
-        l = algebra.parse('~(a&a)')
-        self.assertFalse(l.isliteral)
-        self.assertTrue(a in l.literals)
-        self.assertEqual(len(l.literals), 1)
+        assert a.isliteral
+        assert b.isliteral
 
-        l = algebra.parse('~(a&a)', simplify=True)
-        self.assertTrue(l.isliteral)
+        assert a in a.literals
+        assert b in b.literals
+
+        assert len(a.literals) == 1
+        assert len(b.literals) == 1
+
+    def test_literals_1(self):
+        algebra = BooleanAlgebra()
+
+        expression = algebra.parse('~(a&a)')
+
+        assert not expression.isliteral
+
+        assert algebra.Symbol('a') in expression.literals
+        assert len(expression.literals) == 1
+
+    def test_literals_2(self):
+        algebra = BooleanAlgebra()
+
+        expression = algebra.parse('~(a&a)', simplify=True)
+
+        assert expression.isliteral
+        assert expression == algebra.NOT(algebra.Symbol('a'))
 
     def test_literalize(self):
         parse = BooleanAlgebra().parse
-        self.assertEqual(parse('~a').literalize(), parse('~a'))
-        self.assertEqual(parse('~(a&b)').literalize(), parse('~a|~b'))
-        self.assertEqual(parse('~(a|b)').literalize(), parse('~a&~b'))
+
+        assert parse('~a').literalize() == parse('~a')
+        assert parse('~(a&b)').literalize() ==  parse('~a|~b')
+        assert parse('~(a|b)').literalize() ==  parse('~a&~b')
+
+    def test_invert_eq_not(self):
+        algebra = BooleanAlgebra()
+
+        a = algebra.Symbol('a')
+
+        assert ~a == ~a
+        assert ~a == algebra.NOT(a)
 
     def test_simplify(self):
         algebra = BooleanAlgebra()
-        a = algebra.Symbol('a')
-        self.assertEqual(~a, ~a)
-        assert algebra.Symbol('a') == algebra.Symbol('a')
-        self.assertNotEqual(a, algebra.parse('~~a'))
-        self.assertEqual(a, (~~a).simplify())
-        self.assertEqual(~a, (~~ ~a).simplify())
-        self.assertEqual(a, (~~ ~~a).simplify())
-        self.assertEqual((~(a & a & a)).simplify(), (~(a & a & a)).simplify())
-        self.assertEqual(a, algebra.parse('~~a', simplify=True))
 
-    def test_cancel(self):
-        algebra = BooleanAlgebra()
         a = algebra.Symbol('a')
-        self.assertEqual(~a, (~a).cancel())
-        self.assertEqual(a, algebra.parse('~~a').cancel())
-        self.assertEqual(~a, algebra.parse('~~~a').cancel())
-        self.assertEqual(a, algebra.parse('~~~~a').cancel())
+
+        assert a == a.simplify()
+        assert a == (~~a).simplify()
+        assert a == (~~~~a).simplify()
+
+        assert ~a == (~a).simplify()
+        assert ~a == (~~~a).simplify()
+        assert ~a == (~~~~~a).simplify()
+
+        assert (~(a & a & a)).simplify() == (~(a & a & a)).simplify()
+        assert (~(a | a | a)).simplify() == (~(a | a | a)).simplify()
+
+    def test_cancel_0(self):
+        """
+        Test .cancel() on python variables
+        """
+        algebra = BooleanAlgebra()
+
+        a = algebra.Symbol('a')
+
+        assert a == (~~a).cancel()
+        assert a == (~~~~a).cancel()
+
+        assert ~a == (~a).cancel()
+        assert ~a == (~~~a).cancel()
+        assert ~a == (~~~~~a).cancel()
+
+    def test_cancel_1(self):
+        """
+        Test .cancel() on .parse() results
+        """
+        parse = BooleanAlgebra().parse
+
+        assert parse('a') == parse('~~a').cancel()
+        assert parse('a') == parse('~~~~a').cancel()
+
+        assert parse('~a') == parse('~a').cancel()
+        assert parse('~a') == parse('~~~a').cancel()
+        assert parse('~a') == parse('~~~~~a').cancel()
+
+    def test_cancel_2(self):
+        """
+        Test .cancel() on both Python variables and .parse() results
+        """
+        algebra = BooleanAlgebra()
+
+        a, parse = algebra.Symbol('a'), algebra.parse
+
+        assert a == parse('~~a').cancel()
+        assert a == parse('~~~~a').cancel()
+
+        assert ~a == parse('~a').cancel()
+        assert ~a == parse('~~~a').cancel()
+        assert ~a == parse('~~~~~a').cancel()
 
     def test_demorgan(self):
-        algebra = BooleanAlgebra()
-        a = algebra.Symbol('a')
-        b = algebra.Symbol('b')
-        self.assertEqual(algebra.parse('~(a&b)').demorgan(), ~a | ~b)
-        self.assertEqual(algebra.parse('~(a|b|c)').demorgan(), algebra.parse('~a&~b&~c'))
-        self.assertEqual(algebra.parse('~(~a&b)').demorgan(), a | ~b)
+        parse = BooleanAlgebra().parse
+
+        assert parse('~(a & a)').demorgan() == parse('~a | ~a')
+
+        assert parse('~(a & b)').demorgan() == parse('~a | ~b')
+        assert parse('~(a & b & c)').demorgan() == parse('~a | ~b | ~c')
+
+        assert parse('~(~a & b)').demorgan() == parse('a | ~b')
+        assert parse('~(a & ~b)').demorgan() == parse('~a | b')
 
     def test_order(self):
+        # TODO: enforced order is obscure, must explain
         algebra = BooleanAlgebra()
+
         x = algebra.Symbol(1)
         y = algebra.Symbol(2)
-        self.assertTrue(x < ~x)
-        self.assertTrue(~x > x)
-        self.assertTrue(~x < y)
-        self.assertTrue(y > ~x)
+
+        assert x < y
+        assert y > x
+
+        assert x < ~x
+        assert ~x > x
+
+        assert ~x < y
+        assert y > ~x
+
+        assert ~y > x
+        assert x < ~y
 
     def test_printing(self):
         algebra = BooleanAlgebra()
-        a = algebra.Symbol('a')
-        self.assertEqual(str(~a), '~a')
-        self.assertEqual(repr(~a), "NOT(Symbol('a'))")
-        expr = algebra.parse('~(a&a)')
-        self.assertEqual(str(expr), '~(a&a)')
-        self.assertEqual(repr(expr), "NOT(AND(Symbol('a'), Symbol('a')))")
 
+        a = algebra.Symbol('a')
+
+        assert str(~a) == '~a'
+        assert repr(~a) == "NOT(Symbol('a'))"
+
+        expression = algebra.parse('~(a&a)')
+
+        assert str(expression) == '~(a&a)'
+        assert repr(expression) == "NOT(AND(Symbol('a'), Symbol('a')))"
 
 class DualBaseTestCase(unittest.TestCase):
-
-    maxDiff = None
 
     def test_init(self):
         from boolean.boolean import DualBase

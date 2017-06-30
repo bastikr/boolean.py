@@ -5,40 +5,23 @@ from __future__ import absolute_import
 from setuptools import find_packages
 from setuptools import setup
 
-
-long_desc = '''
-This library helps you deal with boolean expressions and algebra with variables
-and the boolean functions AND, OR, NOT.
-
-You can parse expressions from strings and simplify and compare expressions.
-You can also easily create your custom algreba and mini DSL and create custom
-tokenizers to handle custom expressions.  
-
-For extensive documentation look either into the docs directory or view it online, at
-https://booleanpy.readthedocs.org/en/latest/
-
-https://github.com/bastikr/boolean.py
-
-Copyright (c) 2009-2017 Sebastian Kraemer, basti.kr@gmail.com and others
-
-Released under revised BSD license.
-'''
-
+with open('README.rst') as readme:
+    long_description = readme.read()
 
 setup(
     name='boolean.py',
     version='3.4',
-    license='revised BSD license',
+    license='Simplified BSD license',
     description='Define boolean algebras, create and parse boolean expressions and create custom boolean DSL.',
-    long_description=long_desc,
+    long_description=long_description,
     author='Sebastian Kraemer',
     author_email='basti.kr@gmail.com',
     url='https://github.com/bastikr/boolean.py',
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
-    test_loader='unittest:TestLoader',
-    test_suite='boolean.test_boolean',
+    setup_requires=['pytest-runner'],
+    tests_require=['pytest'],
     keywords='boolean expression, boolean algebra, logic, expression parser',
     classifiers=[
         'Development Status :: 4 - Beta',
