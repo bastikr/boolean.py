@@ -258,8 +258,8 @@ class TestBaseElement:
         assert algebra.TRUE == algebra.TRUE
         assert algebra.FALSE == algebra.FALSE
 
-        assert     algebra.TRUE != algebra.FALSE
-        assert not algebra.TRUE == algebra.FALSE
+        assert      algebra.TRUE != algebra.FALSE
+        assert not (algebra.TRUE == algebra.FALSE)
 
     def test_order(self):
         algebra = BooleanAlgebra()
@@ -326,21 +326,21 @@ class TestSymbolCase:
         a = algebra.Symbol('a')
         b = algebra.Symbol('b')
 
-        assert not a == b
-        assert not b == a
+        assert not (a == b)
+        assert not (b == a)
 
     def test_symbols_eq_3(self):
         algebra = BooleanAlgebra()
 
-        assert     algebra.Symbol('a') == algebra.Symbol('a')
-        assert not algebra.Symbol('a') == algebra.Symbol('b')
+        assert      algebra.Symbol('a') == algebra.Symbol('a')
+        assert not (algebra.Symbol('a') == algebra.Symbol('b'))
 
     def test_symbols_ne_0(self):
         algebra = BooleanAlgebra()
 
         a = algebra.Symbol('a')
 
-        assert not a != a
+        assert not (a != a)
 
     def test_symbols_ne_1(self):
         algebra = BooleanAlgebra()
@@ -348,8 +348,8 @@ class TestSymbolCase:
         a0 = algebra.Symbol('a')
         a1 = algebra.Symbol('a')
 
-        assert not a0 != a1
-        assert not a1 != a0
+        assert not (a0 != a1)
+        assert not (a1 != a0)
 
     def test_symbols_ne_2(self):
         algebra = BooleanAlgebra()
@@ -363,8 +363,8 @@ class TestSymbolCase:
     def test_symbols_ne_3(self):
         algebra = BooleanAlgebra()
 
-        assert not algebra.Symbol('a') != algebra.Symbol('a')
-        assert     algebra.Symbol('a') != algebra.Symbol('b')
+        assert not (algebra.Symbol('a') != algebra.Symbol('a'))
+        assert      algebra.Symbol('a') != algebra.Symbol('b')
 
     def test_symbols_eq_ne(self):
         algebra = BooleanAlgebra()
@@ -389,20 +389,20 @@ class TestSymbolCase:
         symbols1 = copy.deepcopy(symbols0)
 
         for symbol in symbols0:
-            assert     symbol == symbol
-            assert not symbol != symbol
+            assert      symbol == symbol
+            assert not (symbol != symbol)
 
         for symbol0, symbol1 in zip(symbols0, symbols1):
             assert symbol0 == symbol1
             assert symbol1 == symbol0
 
-            assert not symbol0 != symbol1
-            assert not symbol1 != symbol0
+            assert not (symbol0 != symbol1)
+            assert not (symbol1 != symbol0)
 
         for i in range(len(symbols0)):
             for j in range(i + 1, len(symbols0)):
-                assert not symbols0[i] == symbols1[j]
-                assert not symbols1[j] == symbols0[i]
+                assert not (symbols0[i] == symbols1[j])
+                assert not (symbols1[j] == symbols0[i])
 
                 assert symbols0[i] != symbols1[j]
                 assert symbols1[j] != symbols0[i]
