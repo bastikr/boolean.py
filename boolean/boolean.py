@@ -754,7 +754,7 @@ class BaseElement(Expression):
     sort_order = 0
 
     def __init__(self):
-        super(BaseElement, self).__init__()
+        super().__init__()
         self.iscanonical = True
 
         # The dual Base Element class for this element: TRUE.dual returns
@@ -783,7 +783,7 @@ class _TRUE(BaseElement):
     """
 
     def __init__(self):
-        super(_TRUE, self).__init__()
+        super().__init__()
         # assigned at singleton creation: self.dual = FALSE
 
     def __hash__(self):
@@ -808,7 +808,7 @@ class _FALSE(BaseElement):
     """
 
     def __init__(self):
-        super(_FALSE, self).__init__()
+        super().__init__()
         # assigned at singleton creation: self.dual = TRUE
 
     def __hash__(self):
@@ -843,7 +843,7 @@ class Symbol(Expression):
     sort_order = 5
 
     def __init__(self, obj):
-        super(Symbol, self).__init__()
+        super().__init__()
         # Store an associated object. This object determines equality
         self.obj = obj
         self.iscanonical = True
@@ -898,7 +898,7 @@ class Function(Expression):
     """
 
     def __init__(self, *args):
-        super(Function, self).__init__()
+        super().__init__()
 
         # Specifies an infix notation of an operator for printing such as | or &.
         self.operator = None
@@ -988,12 +988,12 @@ class NOT(Function):
     For example::
     >>> class NOT2(NOT):
         def __init__(self, *args):
-            super(NOT2, self).__init__(*args)
+            super().__init__(*args)
             self.operator = '!'
     """
 
     def __init__(self, arg1):
-        super(NOT, self).__init__(arg1)
+        super().__init__(arg1)
         self.isliteral = isinstance(self.args[0], Symbol)
         self.operator = '~'
 
@@ -1067,7 +1067,7 @@ class NOT(Function):
             pretty_literal = self.args[0].pretty(indent=0, debug=debug)
             return (' ' * indent) + '%s(%s%s)' % (self.__class__.__name__, debug_details, pretty_literal)
         else:
-            return super(NOT, self).pretty(indent=indent, debug=debug)
+            return super().pretty(indent=indent, debug=debug)
 
 
 class DualBase(Function):
@@ -1080,7 +1080,7 @@ class DualBase(Function):
     """
 
     def __init__(self, arg1, arg2, *args):
-        super(DualBase, self).__init__(arg1, arg2, *args)
+        super().__init__(arg1, arg2, *args)
 
         # identity element for the specific operation.
         # This will be TRUE for the AND operation and FALSE for the OR operation.
@@ -1394,14 +1394,14 @@ class AND(DualBase):
     For example::
     >>> class AND2(AND):
         def __init__(self, *args):
-            super(AND2, self).__init__(*args)
+            super().__init__(*args)
             self.operator = 'AND'
     """
 
     sort_order = 10
 
     def __init__(self, arg1, arg2, *args):
-        super(AND, self).__init__(arg1, arg2, *args)
+        super().__init__(arg1, arg2, *args)
         self.identity = self.TRUE
         self.annihilator = self.FALSE
         self.dual = self.OR
@@ -1418,14 +1418,14 @@ class OR(DualBase):
     For example::
     >>> class OR2(OR):
         def __init__(self, *args):
-            super(OR2, self).__init__(*args)
+            super().__init__(*args)
             self.operator = 'OR'
     """
 
     sort_order = 25
 
     def __init__(self, arg1, arg2, *args):
-        super(OR, self).__init__(arg1, arg2, *args)
+        super().__init__(arg1, arg2, *args)
         self.identity = self.FALSE
         self.annihilator = self.TRUE
         self.dual = self.AND
