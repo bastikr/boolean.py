@@ -724,7 +724,8 @@ class Expression(object):
     def __and__(self, other):
         return self.AND(self, other)
 
-    __mul__ = __and__
+    def __mul__(self, other):
+        return self.__and__(other)
 
     def __invert__(self):
         return self.NOT(self)
@@ -732,12 +733,14 @@ class Expression(object):
     def __or__(self, other):
         return self.OR(self, other)
 
-    __add__ = __or__
+    def __add__(self, other):
+        return self.__or__(other)
 
     def __bool__(self):
         raise TypeError('Cannot evaluate expression as a Python Boolean.')
 
-    __nonzero__ = __bool__
+    def __nonzero__(self):
+        return self.__bool__()
 
 
 class BaseElement(Expression):
@@ -761,7 +764,11 @@ class BaseElement(Expression):
             return self == self.FALSE
         return NotImplemented
 
-    __nonzero__ = __bool__ = lambda s: None
+    def __bool__(self):
+        return None
+
+    def __nonzero__(self):
+        return None
 
     def pretty(self, indent=0, debug=False):
         """
@@ -792,7 +799,11 @@ class _TRUE(BaseElement):
     def __repr__(self):
         return 'TRUE'
 
-    __nonzero__ = __bool__ = lambda s: True
+    def __bool__(self):
+        return True
+
+    def __nonzero__(self):
+        return True
 
 
 class _FALSE(BaseElement):
@@ -817,7 +828,11 @@ class _FALSE(BaseElement):
     def __repr__(self):
         return 'FALSE'
 
-    __nonzero__ = __bool__ = lambda s: False
+    def __bool__(self):
+        return False
+
+    def __nonzero__(self):
+        return False
 
 
 class Symbol(Expression):
