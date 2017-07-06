@@ -121,10 +121,10 @@ class BooleanAlgebra(object):
         standard types.
         """
         # TRUE and FALSE base elements are algebra-level "singleton" instances
-        self.TRUE = self._wrap_type(TRUE_class or _TRUE)
+        self.TRUE = TRUE_class or _TRUE
         self.TRUE = self.TRUE()
 
-        self.FALSE = self._wrap_type(TRUE_class or _FALSE)
+        self.FALSE = TRUE_class or _FALSE
         self.FALSE = self.FALSE()
 
         # they cross-reference each other
@@ -132,12 +132,12 @@ class BooleanAlgebra(object):
         self.FALSE.dual = self.TRUE
 
         # boolean operation types, defaulting to the standard types
-        self.NOT = self._wrap_type(NOT_class or NOT)
-        self.AND = self._wrap_type(AND_class or AND)
-        self.OR = self._wrap_type(OR_class or OR)
+        self.NOT = NOT_class or NOT
+        self.AND = AND_class or AND
+        self.OR = OR_class or OR
 
         # class used for Symbols
-        self.Symbol = self._wrap_type(Symbol_class or Symbol)
+        self.Symbol = Symbol_class or Symbol
 
         tf_nao = {'TRUE': self.TRUE, 'FALSE': self.FALSE,
                   'NOT': self.NOT, 'AND': self.AND, 'OR': self.OR,
@@ -146,12 +146,6 @@ class BooleanAlgebra(object):
         # setup cross references such that all algebra types and objects hold an
         # attribute for every other types and objects, including themselves.
         self._cross_refs(tf_nao)
-
-    def _wrap_type(self, base_class):
-        """
-        Wrap the base class using its name as the name of the new type
-        """
-        return type(base_class.__name__, (base_class,), {})
 
     def _cross_refs(self, objects):
         """

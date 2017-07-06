@@ -1,15 +1,15 @@
 "use strict";
-// Transcrypt'ed from Python, 2017-07-04 10:39:35
+// Transcrypt'ed from Python, 2017-07-06 07:23:52
 function boolean () {
-    var __symbols__ = ['__py3.6__', '__esv5__'];
+   var __symbols__ = ['__py3.6__', '__esv5__'];
     var __all__ = {};
     var __world__ = __all__;
-
+    
     // Nested object creator, part of the nesting may already exist and have attributes
     var __nest__ = function (headObject, tailNames, value) {
         // In some cases this will be a global object, e.g. 'window'
         var current = headObject;
-
+        
         if (tailNames != '') {  // Split on empty string doesn't give empty list
             // Find the last already created object in tailNames
             var tailChain = tailNames.split ('.');
@@ -21,21 +21,21 @@ function boolean () {
                 }
                 current = current [tailChain [index]];
             }
-
+            
             // Create the rest of the objects, if any
             for (var index = firstNewIndex; index < tailChain.length; index++) {
                 current [tailChain [index]] = {};
                 current = current [tailChain [index]];
             }
         }
-
+        
         // Insert it new attributes, it may have been created earlier and have other attributes
         for (var attrib in value) {
-            current [attrib] = value [attrib];
-        }
+            current [attrib] = value [attrib];          
+        }       
     };
     __all__.__nest__ = __nest__;
-
+    
     // Initialize module if not yet done and return its globals
     var __init__ = function (module) {
         if (!module.__inited__) {
@@ -45,8 +45,10 @@ function boolean () {
         return module.__all__;
     };
     __all__.__init__ = __init__;
-
-
+    
+    
+    
+    
     // Since we want to assign functions, a = b.f should make b.f produce a bound function
     // So __get__ should be called by a property rather then a function
     // Factory __get__ creates one of three curried functions for func
@@ -59,7 +61,7 @@ function boolean () {
                         value: function () {                            // So next time just call curry function that calls function
                             var args = [] .slice.apply (arguments);
                             return func.apply (null, [self] .concat (args));
-                        },
+                        },              
                         writable: true,
                         enumerable: true,
                         configurable: true
@@ -79,12 +81,12 @@ function boolean () {
         }
     }
     __all__.__get__ = __get__;
-
-    // Mother of all metaclasses
+        
+    // Mother of all metaclasses        
     var py_metatype = {
         __name__: 'type',
         __bases__: [],
-
+        
         // Overridable class creation worker
         __new__: function (meta, name, bases, attribs) {
             // Create the class cls, a functor, which the class creator function will return
@@ -92,7 +94,7 @@ function boolean () {
                 var args = [] .slice.apply (arguments); // It has a __new__ method, not yet but at call time, since it is copied from the parent in the loop below
                 return cls.__new__ (args);              // Each Python class directly or indirectly derives from object, which has the __new__ method
             };                                          // If there are no bases in the Python source, the compiler generates [object] for this parameter
-
+            
             // Copy all methods, including __new__, properties and static attributes from base classes to new cls object
             // The new class object will simply be the prototype of its instances
             // JavaScript prototypical single inheritance will do here, since any object has only one class
@@ -102,14 +104,14 @@ function boolean () {
                 for (var attrib in base) {
                     var descrip = Object.getOwnPropertyDescriptor (base, attrib);
                     Object.defineProperty (cls, attrib, descrip);
-                }
+                }           
             }
-
+            
             // Add class specific attributes to the created cls object
             cls.__metaclass__ = meta;
             cls.__name__ = name;
             cls.__bases__ = bases;
-
+            
             // Add own methods, properties and own static attributes to the created cls object
             for (var attrib in attribs) {
                 var descrip = Object.getOwnPropertyDescriptor (attribs, attrib);
@@ -121,46 +123,46 @@ function boolean () {
     };
     py_metatype.__metaclass__ = py_metatype;
     __all__.py_metatype = py_metatype;
-
+    
     // Mother of all classes
     var object = {
         __init__: function (self) {},
-
+        
         __metaclass__: py_metatype, // By default, all classes have metaclass type, since they derive from object
         __name__: 'object',
         __bases__: [],
-
+            
         // Object creator function, is inherited by all classes (so could be global)
-        __new__: function (args) {  // Args are just the constructor args
+        __new__: function (args) {  // Args are just the constructor args       
             // In JavaScript the Python class is the prototype of the Python object
             // In this way methods and static attributes will be available both with a class and an object before the dot
             // The descriptor produced by __get__ will return the right method flavor
             var instance = Object.create (this, {__class__: {value: this, enumerable: true}});
-
+            
 
             // Call constructor
             this.__init__.apply (null, [instance] .concat (args));
 
             // Return constructed instance
             return instance;
-        }
+        }   
     };
     __all__.object = object;
-
+    
     // Class creator facade function, calls class creation worker
     var __class__ = function (name, bases, attribs, meta) {         // Parameter meta is optional
         if (meta == undefined) {
             meta = bases [0] .__metaclass__;
         }
-
+                
         return meta.__new__ (meta, name, bases, attribs);
     }
     __all__.__class__ = __class__;
-
+    
     // Define __pragma__ to preserve '<all>' and '</all>', since it's never generated as a function, must be done early, so here
     var __pragma__ = function () {};
     __all__.__pragma__ = __pragma__;
-
+    
     	__nest__ (
 		__all__,
 		'org.transcrypt.__base__', {
@@ -569,7 +571,7 @@ function boolean () {
     // Define current exception, there's at most one exception in the air at any time
     var __except__ = null;
     __all__.__except__ = __except__;
-
+    
      // Creator of a marked dictionary, used to pass **kwargs parameter
     var __kwargtrans__ = function (anObject) {
         anObject.__kwargtrans__ = null; // Removable marker
@@ -588,12 +590,12 @@ function boolean () {
         }
     }
     __all__.__globals__ = __globals__
-
+    
     // Partial implementation of super () .<methodName> (<params>)
-    var __super__ = function (aClass, methodName) {
+    var __super__ = function (aClass, methodName) {        
         // Lean and fast, no C3 linearization, only call first implementation encountered
         // Will allow __super__ ('<methodName>') (self, <params>) rather than only <className>.<methodName> (self, <params>)
-
+        
         for (var index = 0; index < aClass.__bases__.length; index++) {
             var base = aClass.__bases__ [index];
             if (methodName in base) {
@@ -604,7 +606,7 @@ function boolean () {
         throw new Exception ('Superclass method not found');    // !!! Improve!
     }
     __all__.__super__ = __super__
-
+        
     // Python property installer function, no member since that would bloat classes
     var property = function (getter, setter) {  // Returns a property descriptor rather than a property
         if (!setter) {  // ??? Make setter optional instead of dummy?
@@ -613,7 +615,7 @@ function boolean () {
         return {get: function () {return getter (this)}, set: function (value) {setter (this, value)}, enumerable: true};
     }
     __all__.property = property;
-
+    
     // Conditional JavaScript property installer function, prevents redefinition of properties if multiple Transcrypt apps are on one page
     var __setProperty__ = function (anObject, name, descriptor) {
         if (!anObject.hasOwnProperty (name)) {
@@ -621,7 +623,7 @@ function boolean () {
         }
     }
     __all__.__setProperty__ = __setProperty__
-
+    
     // Assert function, call to it only generated when compiling with --dassert option
     function assert (condition, message) {  // Message may be undefined
         if (!condition) {
@@ -644,7 +646,7 @@ function boolean () {
     __all__.__merge__ = __merge__;
 
     // Manipulating attributes by name
-
+    
     var dir = function (obj) {
         var aList = [];
         for (var aKey in obj) {
@@ -1733,7 +1735,7 @@ function boolean () {
         }
         return aDefault;
     }
-
+    
     function __popitem__ () {
         var aKey = Object.keys (this) [0];
         if (aKey == null) {
@@ -1743,13 +1745,13 @@ function boolean () {
         delete this [aKey];
         return result;
     }
-
+    
     function __update__ (aDict) {
         for (var aKey in aDict) {
             this [aKey] = aDict [aKey];
         }
     }
-
+    
     function __values__ () {
         var values = [];
         for (var attrib in this) {
@@ -1760,11 +1762,11 @@ function boolean () {
         return values;
 
     }
-
+    
     function __dgetitem__ (aKey) {
         return this [aKey];
     }
-
+    
     function __dsetitem__ (aKey, aValue) {
         this [aKey] = aValue;
     }
@@ -1789,7 +1791,7 @@ function boolean () {
                          // checks to make sure that these objects
                          // get converted to dict objects instead of
                          // leaving them as js objects.
-
+                         
                          if (!isinstance (objectOrPairs, dict)) {
                              val = dict (val);
                          }
@@ -1804,7 +1806,7 @@ function boolean () {
                 // N.B. - this is a shallow copy per python std - so
                 // it is assumed that children have already become
                 // python objects at some point.
-
+                
                 var aKeys = objectOrPairs.py_keys ();
                 for (var index = 0; index < aKeys.length; index++ ) {
                     var key = aKeys [index];
@@ -1817,7 +1819,7 @@ function boolean () {
                 // We have already covered Array so this indicates
                 // that the passed object is not a js object - i.e.
                 // it is an int or a string, which is invalid.
-
+                
                 throw ValueError ("Invalid type of object for dict creation", new Error ());
             }
         }
@@ -1846,7 +1848,7 @@ function boolean () {
 
     __all__.dict = dict;
     dict.__name__ = 'dict';
-
+    
     // Docstring setter
 
     function __setdoc__ (docString) {
@@ -1899,7 +1901,7 @@ function boolean () {
         }
     };
     __all__.__jsmod__ = __jsmod__;
-
+    
     var __mod__ = function (a, b) {
         if (typeof a == 'object' && '__mod__' in a) {
             return a.__mod__ (b);
@@ -1914,7 +1916,7 @@ function boolean () {
     __all__.mod = __mod__;
 
     // Overloaded binary arithmetic
-
+    
     var __mul__ = function (a, b) {
         if (typeof a == 'object' && '__mul__' in a) {
             return a.__mul__ (b);
@@ -1974,7 +1976,7 @@ function boolean () {
     __all__.__sub__ = __sub__;
 
     // Overloaded binary bitwise
-
+    
     var __lshift__ = function (a, b) {
         if (typeof a == 'object' && '__lshift__' in a) {
             return a.__lshift__ (b);
@@ -2038,10 +2040,10 @@ function boolean () {
             return a & b;
         }
     };
-    __all__.__and__ = __and__;
-
+    __all__.__and__ = __and__;    
+        
     // Overloaded binary compare
-
+    
     var __eq__ = function (a, b) {
         if (typeof a == 'object' && '__eq__' in a) {
             return a.__eq__ (b);
@@ -2101,9 +2103,9 @@ function boolean () {
         }
     };
     __all__.__ge__ = __ge__;
-
+    
     // Overloaded augmented general
-
+    
     var __imatmul__ = function (a, b) {
         if ('__imatmul__' in a) {
             return a.__imatmul__ (b);
@@ -2145,7 +2147,7 @@ function boolean () {
         }
     };
     __all__.ijsmod__ = __ijsmod__;
-
+    
     var __imod__ = function (a, b) {
         if (typeof a == 'object' && '__imod__' in a) {
             return a.__imod__ (b);
@@ -2161,9 +2163,9 @@ function boolean () {
         }
     };
     __all__.imod = __imod__;
-
+    
     // Overloaded augmented arithmetic
-
+    
     var __imul__ = function (a, b) {
         if (typeof a == 'object' && '__imul__' in a) {
             return a.__imul__ (b);
@@ -2235,7 +2237,7 @@ function boolean () {
     __all__.__isub__ = __isub__;
 
     // Overloaded augmented bitwise
-
+    
     var __ilshift__ = function (a, b) {
         if (typeof a == 'object' && '__ilshift__' in a) {
             return a.__ilshift__ (b);
@@ -2315,7 +2317,7 @@ function boolean () {
         }
     };
     __all__.__iand__ = __iand__;
-
+    
     // Indices and slices
 
     var __getitem__ = function (container, key) {                           // Slice c.q. index, direct generated call to runtime switch
@@ -2461,21 +2463,18 @@ function boolean () {
 							if (typeof OR_class == 'undefined' || (OR_class != null && OR_class .hasOwnProperty ("__kwargtrans__"))) {;
 								var OR_class = null;
 							};
-							self.TRUE = self._wrap_type (TRUE_class || _TRUE);
+							self.TRUE = TRUE_class || _TRUE;
 							self.TRUE = self.TRUE ();
-							self.FALSE = self._wrap_type (TRUE_class || _FALSE);
+							self.FALSE = TRUE_class || _FALSE;
 							self.FALSE = self.FALSE ();
 							self.TRUE.dual = self.FALSE;
 							self.FALSE.dual = self.TRUE;
-							self.NOT = self._wrap_type (NOT_class || NOT);
-							self.AND = self._wrap_type (AND_class || AND);
-							self.OR = self._wrap_type (OR_class || OR);
-							self.Symbol = self._wrap_type (Symbol_class || Symbol);
+							self.NOT = NOT_class || NOT;
+							self.AND = AND_class || AND;
+							self.OR = OR_class || OR;
+							self.Symbol = Symbol_class || Symbol;
 							var tf_nao = dict ({'TRUE': self.TRUE, 'FALSE': self.FALSE, 'NOT': self.NOT, 'AND': self.AND, 'OR': self.OR, 'Symbol': self.Symbol});
 							self._cross_refs (tf_nao);
-						});},
-						get _wrap_type () {return __get__ (this, function (self, base_class) {
-							return py_typeof (base_class.__name__);
 						});},
 						get _cross_refs () {return __get__ (this, function (self, objects) {
 							var __iterable0__ = objects.py_values ();
