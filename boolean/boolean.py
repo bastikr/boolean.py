@@ -148,11 +148,17 @@ class BooleanAlgebra(object):
             'Symbol': self.Symbol
         }
 
-        # setup cross references such that all algebra types and
-        # objects hold a named attribute for every other types and
-        # objects, including themselves.
-        for obj in tf_nao.values():
-            for name, value in tf_nao.items():
+        # setup cross references such that all algebra types and objects hold an
+        # attribute for every other types and objects, including themselves.
+        self._cross_refs(tf_nao)
+
+    def _cross_refs(self, objects):
+        """
+        Set every object as attributes of every object in an `objects` mapping
+        of (attribute name -> object)
+        """
+        for obj in objects.values():
+            for name, value in objects.items():
                 setattr(obj, name, value)
 
     def definition(self):
