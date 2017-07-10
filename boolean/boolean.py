@@ -27,11 +27,6 @@ from __future__ import print_function
 import inspect
 import itertools
 
-try:
-    basestring  # Python 2
-except NameError:
-    basestring = str  # Python 3
-
 # Set to True to enable tracing for parsing
 TRACE_PARSE = False
 
@@ -195,7 +190,7 @@ class BooleanAlgebra(object):
 
         precedence = {self.NOT: 5, self.AND: 10, self.OR: 15, TOKEN_LPAR: 20}
 
-        if isinstance(expr, basestring):
+        if isinstance(expr, str):
             tokenized = self.tokenize(expr)
         else:
             tokenized = iter(expr)
@@ -403,7 +398,7 @@ class BooleanAlgebra(object):
             - True symbols: 1 and True
             - False symbols: 0, False and None
         """
-        if not isinstance(expr, basestring):
+        if not isinstance(expr, str):
             raise TypeError('expr must be string but it is %s.' % type(expr))
 
         # mapping of lowercase token strings to a token type id for the standard
@@ -888,7 +883,7 @@ class Symbol(Expression):
         return str(self.obj)
 
     def __repr__(self):
-        obj = "'%s'" % self.obj if isinstance(self.obj, basestring) else repr(self.obj)
+        obj = "'%s'" % self.obj if isinstance(self.obj, str) else repr(self.obj)
         return '%s(%s)' % (self.__class__.__name__, obj)
 
     def pretty(self, indent=0, debug=False):
@@ -899,7 +894,7 @@ class Symbol(Expression):
         if debug:
             debug_details += '<isliteral=%r, iscanonical=%r>' % (self.isliteral, self.iscanonical)
 
-        obj = "'%s'" % self.obj if isinstance(self.obj, basestring) else repr(self.obj)
+        obj = "'%s'" % self.obj if isinstance(self.obj, str) else repr(self.obj)
         return (' ' * indent) + ('%s(%s%s)' % (self.__class__.__name__, debug_details, obj))
 
 
