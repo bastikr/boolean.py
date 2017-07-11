@@ -426,9 +426,10 @@ class BooleanAlgebra(object):
                         break
                 position -= 1
 
-            try:
-                yield TOKENS[tok.lower()], tok, position
-            except KeyError:
+            value = TOKENS.get(tok.lower())
+            if value:
+                yield value, tok, position
+            else:
                 if sym:
                     yield TOKEN_SYMBOL, tok, position
                 elif tok not in (' ', '\t', '\r', '\n'):
