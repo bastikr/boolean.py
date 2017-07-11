@@ -63,9 +63,13 @@ def create_transcrypt_cmd(args, transcrypt_args):
     cmd += transcrypt_args
 
     # If you are manually passing transcrypt arguments, please specify
-    # them all yourself. I will not be passing my defaults:
+    # them all yourself. Otherwise, let me provide sensible defaults:
     if not transcrypt_args:
-        cmd += [str(args.src[0])]
+        # Force transpiling from scratch
+        cmd.append("-b")
+        # Force EcmaScript 6 for generator support
+        cmd.append("-e 6")
+        cmd.append(str(args.src[0]))
 
     logger.info('constructed the following command')
     logger.info(str(cmd))
