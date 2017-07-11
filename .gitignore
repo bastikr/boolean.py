@@ -1,4 +1,5 @@
 *.pyc
+__javascript__
 /boolean.py.egg-info/
 /build/
 /.tox/
