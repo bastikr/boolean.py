@@ -1,7 +1,7 @@
 "use strict";
-// Transcrypt'ed from Python, 2017-07-06 07:23:52
+// Transcrypt'ed from Python, 2017-07-11 14:02:50
 function boolean () {
-   var __symbols__ = ['__py3.6__', '__esv5__'];
+   var __symbols__ = ['__py3.6__', '__esv 6__'];
     var __all__ = {};
     var __world__ = __all__;
     
@@ -173,7 +173,7 @@ function boolean () {
 						get __init__ () {return __get__ (this, function (self) {
 							self.interpreter_name = 'python';
 							self.transpiler_name = 'transcrypt';
-							self.transpiler_version = '3.6.28';
+							self.transpiler_version = '3.6.34';
 							self.target_subdir = '__javascript__';
 						});}
 					});
@@ -375,9 +375,7 @@ function boolean () {
 					var map = function (func, iterable) {
 						return function () {
 							var __accu0__ = [];
-							var __iterable0__ = iterable;
-							for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
-								var item = __iterable0__ [__index0__];
+							for (var item of iterable) {
 								__accu0__.append (func (item));
 							}
 							return __accu0__;
@@ -389,9 +387,7 @@ function boolean () {
 						}
 						return function () {
 							var __accu0__ = [];
-							var __iterable0__ = iterable;
-							for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
-								var item = __iterable0__ [__index0__];
+							for (var item of iterable) {
 								if (func (item)) {
 									__accu0__.append (item);
 								}
@@ -437,9 +433,7 @@ function boolean () {
 							}
 							self.buffer = '{}{}{}'.format (self.buffer, sep.join (function () {
 								var __accu0__ = [];
-								var __iterable0__ = args;
-								for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
-									var arg = __iterable0__ [__index0__];
+								for (var arg of args) {
 									__accu0__.append (str (arg));
 								}
 								return __accu0__;
@@ -451,9 +445,7 @@ function boolean () {
 							else {
 								console.log (sep.join (function () {
 									var __accu0__ = [];
-									var __iterable0__ = args;
-									for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
-										var arg = __iterable0__ [__index0__];
+									for (var arg of args) {
 										__accu0__.append (str (arg));
 									}
 									return __accu0__;
@@ -898,7 +890,7 @@ function boolean () {
     var ord = function (aChar) {
         return aChar.charCodeAt (0);
     };
-    __all__.org = ord;
+    __all__.ord = ord;
 
     // Maximum of n numbers
     var max = Math.max;
@@ -2366,6 +2358,10 @@ function boolean () {
 			__all__: {
 				__inited__: false,
 				__init__: function (__all__) {
+					var all_feature_names = list ([]);
+					__pragma__ ('<all>')
+						__all__.all_feature_names = all_feature_names;
+					__pragma__ ('</all>')
 				}
 			}
 		}
@@ -2383,17 +2379,6 @@ function boolean () {
 					var print_function = __init__ (__world__.__future__).print_function;
 					__nest__ (inspect, '', __init__ (__world__.inspect));
 					__nest__ (itertools, '', __init__ (__world__.itertools));
-					try {
-						basestring;
-					}
-					catch (__except0__) {
-						if (isinstance (__except0__, NameError)) {
-							var basestring = str;
-						}
-						else {
-							throw __except0__;
-						}
-					}
 					var TRACE_PARSE = false;
 					var TOKEN_AND = 1;
 					var TOKEN_OR = 2;
@@ -2477,14 +2462,8 @@ function boolean () {
 							self._cross_refs (tf_nao);
 						});},
 						get _cross_refs () {return __get__ (this, function (self, objects) {
-							var __iterable0__ = objects.py_values ();
-							for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
-								var obj = __iterable0__ [__index0__];
-								var __iterable1__ = objects.py_items ();
-								for (var __index1__ = 0; __index1__ < __iterable1__.length; __index1__++) {
-									var __left0__ = __iterable1__ [__index1__];
-									var py_name = __left0__ [0];
-									var value = __left0__ [1];
+							for (var obj of objects.py_values ()) {
+								for (var [py_name, value] of objects.py_items ()) {
 									setattr (obj, py_name, value);
 								}
 							}
@@ -2501,7 +2480,7 @@ function boolean () {
 								var simplify = false;
 							};
 							var precedence = dict ([[self.NOT, 5], [self.AND, 10], [self.OR, 15], [TOKEN_LPAR, 20]]);
-							if (isinstance (expr, basestring)) {
+							if (isinstance (expr, str)) {
 								var tokenized = self.tokenize (expr);
 							}
 							else {
@@ -2518,12 +2497,7 @@ function boolean () {
 								return _t == TOKEN_SYMBOL || isinstance (_t, Symbol);
 							};
 							var prev = null;
-							var __iterable0__ = tokenized;
-							for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
-								var __left0__ = __iterable0__ [__index0__];
-								var token = __left0__ [0];
-								var tokstr = __left0__ [1];
-								var position = __left0__ [2];
+							for (var [token, tokstr, position] of tokenized) {
 								if (TRACE_PARSE) {
 									print ('\nprocessing token:', repr (token), repr (tokstr), repr (position));
 								}
@@ -2622,7 +2596,7 @@ function boolean () {
 											__except0__.__cause__ = null;
 											throw __except0__;
 										}
-										var subex = ast [1].apply (null, ast.__getslice__ (2, null, 1));
+										var subex = ast [1] (...ast.__getslice__ (2, null, 1));
 										ast [0].append (subex);
 										if (TRACE_PARSE) {
 											print ('ast11:', repr (ast));
@@ -2655,7 +2629,7 @@ function boolean () {
 											}
 										}
 										else {
-											var parsed = ast [1].apply (null, ast.__getslice__ (2, null, 1));
+											var parsed = ast [1] (...ast.__getslice__ (2, null, 1));
 											if (TRACE_PARSE) {
 												print ('parsed2:', repr (parsed));
 											}
@@ -2663,7 +2637,7 @@ function boolean () {
 										break;
 									}
 									else {
-										var subex = ast [1].apply (null, ast.__getslice__ (2, null, 1));
+										var subex = ast [1] (...ast.__getslice__ (2, null, 1));
 										ast [0].append (subex);
 										if (TRACE_PARSE) {
 											print ('ast13:', repr (ast));
@@ -2735,7 +2709,7 @@ function boolean () {
 									if (TRACE_PARSE) {
 										print ('       start_op: ast[0] is None:', repr (ast));
 									}
-									var subexp = ast [1].apply (null, ast.__getslice__ (2, null, 1));
+									var subexp = ast [1] (...ast.__getslice__ (2, null, 1));
 									var new_ast = list ([ast [0], operation, subexp]);
 									if (TRACE_PARSE) {
 										print ('       --> start_op: ast[0] is None:', repr (new_ast));
@@ -2746,7 +2720,7 @@ function boolean () {
 									if (TRACE_PARSE) {
 										print ('       start_op: else:', repr (ast));
 									}
-									ast [0].append (ast [1].apply (null, ast.__getslice__ (2, null, 1)));
+									ast [0].append (ast [1] (...ast.__getslice__ (2, null, 1)));
 									var ast = ast [0];
 									if (TRACE_PARSE) {
 										print ('       --> start_op: else:', repr (ast));
@@ -2755,7 +2729,7 @@ function boolean () {
 							}
 						});},
 						get tokenize () {return __get__ (this, function* (self, expr) {
-							if (!(isinstance (expr, basestring))) {
+							if (!(isinstance (expr, str))) {
 								var __except0__ = py_TypeError (__mod__ ('expr must be string but it is %s.', py_typeof (expr)));
 								__except0__.__cause__ = null;
 								throw __except0__;
@@ -2809,18 +2783,14 @@ function boolean () {
 							var expr_class = expr.__class__;
 							var args = function () {
 								var __accu0__ = [];
-								var __iterable0__ = expr.args;
-								for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
-									var arg = __iterable0__ [__index0__];
+								for (var arg of expr.args) {
 									__accu0__.append (self._rdistributive (arg, op_example));
 								}
 								return py_iter (__accu0__);
 							} ();
 							var args = tuple (function () {
 								var __accu0__ = [];
-								var __iterable0__ = args;
-								for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
-									var arg = __iterable0__ [__index0__];
+								for (var arg of args) {
 									__accu0__.append (arg.simplify ());
 								}
 								return py_iter (__accu0__);
@@ -2828,7 +2798,7 @@ function boolean () {
 							if (len (args) == 1) {
 								return args [0];
 							}
-							var expr = expr_class.apply (null, args);
+							var expr = expr_class (...args);
 							var dualoperation = op_example.dual;
 							if (isinstance (expr, dualoperation)) {
 								var expr = expr.distributive ();
@@ -2864,9 +2834,7 @@ function boolean () {
 						get objects () {return __get__ (this, function (self) {
 							return set (function () {
 								var __accu0__ = [];
-								var __iterable0__ = self.symbols;
-								for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
-									var s = __iterable0__ [__index0__];
+								for (var s of self.symbols) {
 									__accu0__.append (s.obj);
 								}
 								return py_iter (__accu0__);
@@ -2881,9 +2849,7 @@ function boolean () {
 							}
 							return list (itertools.chain.from_iterable (function () {
 								var __accu0__ = [];
-								var __iterable0__ = self.args;
-								for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
-									var arg = __iterable0__ [__index0__];
+								for (var arg of self.args) {
 									__accu0__.append (arg.get_literals ());
 								}
 								return py_iter (__accu0__);
@@ -2898,34 +2864,26 @@ function boolean () {
 							}
 							var args = tuple (function () {
 								var __accu0__ = [];
-								var __iterable0__ = self.args;
-								for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
-									var arg = __iterable0__ [__index0__];
+								for (var arg of self.args) {
 									__accu0__.append (arg.literalize ());
 								}
 								return py_iter (__accu0__);
 							} ());
 							if (all (function () {
 								var __accu0__ = [];
-								var __iterable0__ = enumerate (args);
-								for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
-									var __left0__ = __iterable0__ [__index0__];
-									var i = __left0__ [0];
-									var arg = __left0__ [1];
+								for (var [i, arg] of enumerate (args)) {
 									__accu0__.append (arg === self.args [i]);
 								}
 								return py_iter (__accu0__);
 							} ())) {
 								return self;
 							}
-							return self.__class__.apply (null, args);
+							return self.__class__ (...args);
 						});},
 						get get_symbols () {return __get__ (this, function (self) {
 							return function () {
 								var __accu0__ = [];
-								var __iterable0__ = self.get_literals ();
-								for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
-									var s = __iterable0__ [__index0__];
+								for (var s of self.get_literals ()) {
 									__accu0__.append ((isinstance (s, Symbol) ? s : s.args [0]));
 								}
 								return __accu0__;
@@ -2941,11 +2899,7 @@ function boolean () {
 							if (typeof simplify == 'undefined' || (simplify != null && simplify .hasOwnProperty ("__kwargtrans__"))) {;
 								var simplify = false;
 							};
-							var __iterable0__ = substitutions.py_items ();
-							for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
-								var __left0__ = __iterable0__ [__index0__];
-								var expr = __left0__ [0];
-								var substitution = __left0__ [1];
+							for (var [expr, substitution] of substitutions.py_items ()) {
 								if (expr == self) {
 									return substitution;
 								}
@@ -2962,15 +2916,9 @@ function boolean () {
 							if (!(self.args)) {
 								return py_default;
 							}
-							var __iterable0__ = self.args;
-							for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
-								var arg = __iterable0__ [__index0__];
+							for (var arg of self.args) {
 								var __break1__ = false;
-								var __iterable1__ = substitutions.py_items ();
-								for (var __index1__ = 0; __index1__ < __iterable1__.length; __index1__++) {
-									var __left0__ = __iterable1__ [__index1__];
-									var expr = __left0__ [0];
-									var substitution = __left0__ [1];
+								for (var [expr, substitution] of substitutions.py_items ()) {
 									if (arg == expr) {
 										new_arguments.append (substitution);
 										var changed_something = true;
@@ -2992,7 +2940,7 @@ function boolean () {
 							if (!(changed_something)) {
 								return ;
 							}
-							var newexpr = self.__class__.apply (null, new_arguments);
+							var newexpr = self.__class__ (...new_arguments);
 							return (simplify ? newexpr.simplify () : newexpr);
 						});},
 						get simplify () {return __get__ (this, function (self) {
@@ -3171,7 +3119,7 @@ function boolean () {
 							return str (self.obj);
 						});},
 						get __repr__ () {return __get__ (this, function (self) {
-							var obj = (isinstance (self.obj, basestring) ? __mod__ ("'%s'", self.obj) : repr (self.obj));
+							var obj = (isinstance (self.obj, str) ? __mod__ ("'%s'", self.obj) : repr (self.obj));
 							return __mod__ ('%s(%s)', tuple ([self.__class__.__name__, obj]));
 						});},
 						get pretty () {return __get__ (this, function (self, indent, debug) {
@@ -3185,7 +3133,7 @@ function boolean () {
 							if (debug) {
 								debug_details += __mod__ ('<isliteral=%r, iscanonical=%r>', tuple ([self.isliteral, self.iscanonical]));
 							}
-							var obj = (isinstance (self.obj, basestring) ? __mod__ ("'%s'", self.obj) : repr (self.obj));
+							var obj = (isinstance (self.obj, str) ? __mod__ ("'%s'", self.obj) : repr (self.obj));
 							return ' ' * indent + __mod__ ('%s(%s%s)', tuple ([self.__class__.__name__, debug_details, obj]));
 						});}
 					});
@@ -3205,9 +3153,7 @@ function boolean () {
 								return __mod__ ('%s(%s)', tuple ([self.operator, args [0]]));
 							}
 							var args_str = list ([]);
-							var __iterable0__ = args;
-							for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
-								var arg = __iterable0__ [__index0__];
+							for (var arg of args) {
 								if (arg.isliteral) {
 									args_str.append (str (arg));
 								}
@@ -3247,9 +3193,7 @@ function boolean () {
 							var cls = self.__class__.__name__;
 							var args = function () {
 								var __accu0__ = [];
-								var __iterable0__ = self.args;
-								for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
-									var a = __iterable0__ [__index0__];
+								for (var a of self.args) {
 									__accu0__.append (a.pretty (__kwargtrans__ ({indent: indent + 2, debug: debug})));
 								}
 								return __accu0__;
@@ -3307,11 +3251,9 @@ function boolean () {
 								return expr;
 							}
 							var op = expr.args [0];
-							return op.dual.apply (null, function () {
+							return op.dual (...function () {
 								var __accu0__ = [];
-								var __iterable0__ = op.args;
-								for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
-									var arg = __iterable0__ [__index0__];
+								for (var arg of op.args) {
 									__accu0__.append (self.__class__ (arg).cancel ());
 								}
 								return py_iter (__accu0__);
@@ -3343,7 +3285,7 @@ function boolean () {
 					var DualBase = __class__ ('DualBase', [Function], {
 						get __init__ () {return __get__ (this, function (self, arg1, arg2) {
 							var args = tuple ([].slice.apply (arguments).slice (3));
-							__super__ (DualBase, '__init__').apply (null, [self].concat ([arg1]).concat ([arg2]).concat (args));
+							__super__ (DualBase, '__init__') (self, arg1, arg2, ...args);
 							self.identity = null;
 							self.annihilator = null;
 							self.dual = null;
@@ -3355,9 +3297,7 @@ function boolean () {
 							if (isinstance (expr, self.__class__)) {
 								return all (function () {
 									var __accu0__ = [];
-									var __iterable0__ = expr.args;
-									for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
-										var arg = __iterable0__ [__index0__];
+									for (var arg of expr.args) {
 										__accu0__.append (__in__ (arg, self.args));
 									}
 									return py_iter (__accu0__);
@@ -3370,23 +3310,19 @@ function boolean () {
 							}
 							var args = function () {
 								var __accu0__ = [];
-								var __iterable0__ = self.args;
-								for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
-									var arg = __iterable0__ [__index0__];
+								for (var arg of self.args) {
 									__accu0__.append (arg.simplify ());
 								}
 								return __accu0__;
 							} ();
-							var expr = self.__class__.apply (null, args);
+							var expr = self.__class__ (...args);
 							var expr = expr.literalize ();
 							var expr = expr.flatten ();
 							if (__in__ (self.annihilator, expr.args)) {
 								return self.annihilator;
 							}
 							var args = list ([]);
-							var __iterable0__ = expr.args;
-							for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
-								var arg = __iterable0__ [__index0__];
+							for (var arg of expr.args) {
 								if (!__in__ (arg, args)) {
 									args.append (arg);
 								}
@@ -3400,9 +3336,7 @@ function boolean () {
 									return args [0];
 								}
 							}
-							var __iterable0__ = args;
-							for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
-								var arg = __iterable0__ [__index0__];
+							for (var arg of args) {
 								if (__in__ (self.NOT (arg), args)) {
 									return self.annihilator;
 								}
@@ -3422,9 +3356,7 @@ function boolean () {
 										continue;
 									}
 									var negated = null;
-									var __iterable0__ = ai.args;
-									for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
-										var arg = __iterable0__ [__index0__];
+									for (var arg of ai.args) {
 										if (__in__ (arg, aj.args)) {
 											// pass;
 										}
@@ -3450,13 +3382,13 @@ function boolean () {
 											args [i] = aiargs [0];
 										}
 										else {
-											args [i] = self.dual.apply (null, aiargs);
+											args [i] = self.dual (...aiargs);
 										}
 										if (len (args) == 1) {
 											return args [0];
 										}
 										else {
-											return self.__class__.apply (null, args).simplify ();
+											return self.__class__ (...args).simplify ();
 										}
 									}
 									j++;
@@ -3468,16 +3400,14 @@ function boolean () {
 								return args [0];
 							}
 							args.py_sort ();
-							var expr = self.__class__.apply (null, args);
+							var expr = self.__class__ (...args);
 							expr.iscanonical = true;
 							return expr;
 						});},
 						get flatten () {return __get__ (this, function (self) {
 							var args = list (self.args);
 							var i = 0;
-							var __iterable0__ = self.args;
-							for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
-								var arg = __iterable0__ [__index0__];
+							for (var arg of self.args) {
 								if (isinstance (arg, self.__class__)) {
 									args.__setslice__ (i, i + 1, null, arg.args);
 									i += len (arg.args);
@@ -3486,7 +3416,7 @@ function boolean () {
 									i++;
 								}
 							}
-							return self.__class__.apply (null, args);
+							return self.__class__ (...args);
 						});},
 						get absorb () {return __get__ (this, function (self, args) {
 							var args = list (args);
@@ -3532,9 +3462,7 @@ function boolean () {
 									}
 									if (isinstance (absorber, self.dual)) {
 										var remove = null;
-										var __iterable0__ = absorber.args;
-										for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
-											var arg = __iterable0__ [__index0__];
+										for (var arg of absorber.args) {
 											var narg = self.NOT (arg).cancel ();
 											if (__in__ (arg, target.args)) {
 												// pass;
@@ -3572,18 +3500,14 @@ function boolean () {
 							else if (isinstance (expr, self.__class__)) {
 								if (all (function () {
 									var __accu0__ = [];
-									var __iterable0__ = expr.args;
-									for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
-										var arg = __iterable0__ [__index0__];
+									for (var arg of expr.args) {
 										__accu0__.append (__in__ (arg, self.args));
 									}
 									return py_iter (__accu0__);
 								} ())) {
 									var args = tuple (function () {
 										var __accu0__ = [];
-										var __iterable0__ = self.args;
-										for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
-											var arg = __iterable0__ [__index0__];
+										for (var arg of self.args) {
 											if (!__in__ (arg, expr)) {
 												__accu0__.append (arg);
 											}
@@ -3598,7 +3522,7 @@ function boolean () {
 							if (len (args) == 1) {
 								return args [0];
 							}
-							var newexpr = self.__class__.apply (null, args);
+							var newexpr = self.__class__ (...args);
 							if (simplify) {
 								var newexpr = newexpr.simplify ();
 							}
@@ -3607,11 +3531,7 @@ function boolean () {
 						get distributive () {return __get__ (this, function (self) {
 							var dual = self.dual;
 							var args = list (self.args);
-							var __iterable0__ = enumerate (args);
-							for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
-								var __left0__ = __iterable0__ [__index0__];
-								var i = __left0__ [0];
-								var arg = __left0__ [1];
+							for (var [i, arg] of enumerate (args)) {
 								if (isinstance (arg, dual)) {
 									args [i] = arg.args;
 								}
@@ -3619,13 +3539,11 @@ function boolean () {
 									args [i] = tuple ([arg]);
 								}
 							}
-							var prod = itertools.product.apply (null, args);
+							var prod = itertools.product (...args);
 							var args = tuple (function () {
 								var __accu0__ = [];
-								var __iterable0__ = prod;
-								for (var __index0__ = 0; __index0__ < __iterable0__.length; __index0__++) {
-									var arg = __iterable0__ [__index0__];
-									__accu0__.append (self.__class__.apply (null, arg).simplify ());
+								for (var arg of prod) {
+									__accu0__.append (self.__class__ (...arg).simplify ());
 								}
 								return py_iter (__accu0__);
 							} ());
@@ -3633,7 +3551,7 @@ function boolean () {
 								return args [0];
 							}
 							else {
-								return dual.apply (null, args);
+								return dual (...args);
 							}
 						});},
 						get __lt__ () {return __get__ (this, function (self, other) {
@@ -3664,7 +3582,7 @@ function boolean () {
 						sort_order: 10,
 						get __init__ () {return __get__ (this, function (self, arg1, arg2) {
 							var args = tuple ([].slice.apply (arguments).slice (3));
-							__super__ (AND, '__init__').apply (null, [self].concat ([arg1]).concat ([arg2]).concat (args));
+							__super__ (AND, '__init__') (self, arg1, arg2, ...args);
 							self.identity = self.TRUE;
 							self.annihilator = self.FALSE;
 							self.dual = self.OR;
@@ -3675,7 +3593,7 @@ function boolean () {
 						sort_order: 25,
 						get __init__ () {return __get__ (this, function (self, arg1, arg2) {
 							var args = tuple ([].slice.apply (arguments).slice (3));
-							__super__ (OR, '__init__').apply (null, [self].concat ([arg1]).concat ([arg2]).concat (args));
+							__super__ (OR, '__init__') (self, arg1, arg2, ...args);
 							self.identity = self.FALSE;
 							self.annihilator = self.TRUE;
 							self.dual = self.AND;
@@ -3717,7 +3635,6 @@ function boolean () {
 						__all__._FALSE = _FALSE;
 						__all__._TRUE = _TRUE;
 						__all__.absolute_import = absolute_import;
-						__all__.basestring = basestring;
 						__all__.print_function = print_function;
 						__all__.unicode_literals = unicode_literals;
 					__pragma__ ('</all>')
