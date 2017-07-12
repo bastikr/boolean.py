@@ -1,5 +1,5 @@
 "use strict";
-// Transcrypt'ed from Python, 2017-07-11 14:02:50
+// Transcrypt'ed from Python, 2017-07-11 19:01:18
 function boolean () {
    var __symbols__ = ['__py3.6__', '__esv 6__'];
     var __all__ = {};
@@ -1570,6 +1570,34 @@ function boolean () {
         enumerable: true
     });
 
+    String.prototype.isalnum = function () {
+        return /^[0-9a-zA-Z]{1,}$/.test(this)
+    }
+
+    String.prototype.isalpha = function () {
+        return /^[a-zA-Z]{1,}$/.test(this)
+    }
+
+    String.prototype.isdecimal = function () {
+        return /^[0-9]{1,}$/.test(this)
+    }
+
+    String.prototype.isdigit = function () {
+        return this.isdecimal()
+    }
+
+    String.prototype.islower = function () {
+        return /^[a-z]{1,}$/.test(this)
+    }
+
+    String.prototype.isupper = function () {
+        return /^[A-Z]{1,}$/.test(this)
+    }
+
+    String.prototype.isspace = function () {
+        return /^[\s]{1,}$/.test(this)
+    }
+
     String.prototype.isnumeric = function () {
         return !isNaN (parseFloat (this)) && isFinite (this);
     };
@@ -2755,23 +2783,17 @@ function boolean () {
 									}
 									position--;
 								}
-								try {
-									yield tuple ([TOKENS [tok.lower ()], tok, position]);
+								var value = TOKENS.py_get (tok.lower ());
+								if (value !== null) {
+									yield tuple ([value, tok, position]);
 								}
-								catch (__except0__) {
-									if (isinstance (__except0__, KeyError)) {
-										if (sym) {
-											yield tuple ([TOKEN_SYMBOL, tok, position]);
-										}
-										else if (!__in__ (tok, tuple ([' ', '\t', '\r', '\n']))) {
-											var __except1__ = ParseError (__kwargtrans__ ({token_string: tok, position: position, error_code: PARSE_UNKNOWN_TOKEN}));
-											__except1__.__cause__ = null;
-											throw __except1__;
-										}
-									}
-									else {
-										throw __except0__;
-									}
+								else if (sym) {
+									yield tuple ([TOKEN_SYMBOL, tok, position]);
+								}
+								else if (!__in__ (tok, tuple ([' ', '\t', '\r', '\n']))) {
+									var __except0__ = ParseError (__kwargtrans__ ({token_string: tok, position: position, error_code: PARSE_UNKNOWN_TOKEN}));
+									__except0__.__cause__ = null;
+									throw __except0__;
 								}
 								position++;
 							}
