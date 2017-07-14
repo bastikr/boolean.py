@@ -26,6 +26,8 @@ from __future__ import print_function
 
 import inspect
 import itertools
+from operator import and_ as and_operator, or_ as or_operator
+
 
 try:
     basestring  # Python 2
@@ -849,6 +851,10 @@ class Symbol(Expression):
         self.iscanonical = True
         self.isliteral = True
 
+    def __call__(self, **kwargs):
+        """ returns the value for this symbol from kwargs """
+        return kwargs[self.obj]
+
     def __hash__(self):
         if self.obj is None:  # Anonymous Symbol.
             return id(self)
@@ -1051,6 +1057,10 @@ class NOT(Function):
             return expr
         op = expr.args[0]
         return op.dual(*(self.__class__(arg).cancel() for arg in op.args))
+
+    def __call__(self, **kwargs):
+        """ negates the value returned from self.args[0].__call__ """
+        return not self.args[0](**kwargs)
 
     def __lt__(self, other):
         return self.args[0] < other
@@ -1407,6 +1417,14 @@ class AND(DualBase):
         self.dual = self.OR
         self.operator = '&'
 
+    def __call__(self, **kwargs):
+        """
+        Calls arg.__call__ for each arg in self.args and applies python 'and' operator.
+
+        reduce is used as in e.g. AND(a, b, c, d) == AND(a, AND(b, AND(c, d)))
+        """
+        return reduce(and_operator, (a(**kwargs) for a in self.args))
+
 
 class OR(DualBase):
     """
@@ -1430,3 +1448,11 @@ class OR(DualBase):
         self.annihilator = self.TRUE
         self.dual = self.AND
         self.operator = '|'
+
+    def __call__(self, **kwargs):
+        """
+        Calls arg.__call__ for each arg in self.args and applies python 'or' operator.
+
+        reduce is used as in e.g. OR(a, b, c, d) == OR(a, OR(b, OR(c, d)))
+        """
+        return reduce(or_operator, (a(**kwargs) for a in self.args))
