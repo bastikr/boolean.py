@@ -1119,6 +1119,5 @@ class CallabilityTestCase(unittest.TestCase):
                 self.assertEqual(exp(a=a, b=b), not(a or b))
 
 
-
 if __name__ == '__main__':
     unittest.main()
