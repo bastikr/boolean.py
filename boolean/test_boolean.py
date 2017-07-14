@@ -1073,5 +1073,52 @@ class CustomSymbolTestCase(unittest.TestCase):
             self.fail(e)
 
 
+class CallabilityTestCase(unittest.TestCase):
+
+    def test_and(self):
+        algebra = BooleanAlgebra()
+        exp = algebra.parse("a&b&c")
+        for a in [True, False]:
+            for b in [True, False]:
+                for c in [True, False]:
+                    self.assertEqual(exp(a=a, b=b, c=c), a and b and c)
+
+    def test_or(self):
+        algebra = BooleanAlgebra()
+        exp = algebra.parse("a|b|c")
+        for a in [True, False]:
+            for b in [True, False]:
+                for c in [True, False]:
+                    self.assertEqual(exp(a=a, b=b, c=c), a or b or c)
+
+    def test_not(self):
+        algebra = BooleanAlgebra()
+        exp = algebra.parse("!a")
+        for a in [True, False]:
+            self.assertEqual(exp(a=a), not a)
+
+    def test_symbol(self):
+        algebra = BooleanAlgebra()
+        exp = algebra.parse("a")
+        for a in [True, False]:
+            self.assertEqual(exp(a=a), a)
+
+    def test_composite(self):
+        algebra = BooleanAlgebra()
+        exp = algebra.parse("!(a|b&(a|!c))")
+        for a in [True, False]:
+            for b in [True, False]:
+                for c in [True, False]:
+                    self.assertEqual(exp(a=a, b=b, c=c), not(a or b and (a or not c)))
+
+    def test_negate_A_or_B(self):
+        algebra = BooleanAlgebra()
+        exp = algebra.parse("!(a|b)")
+        for a in [True, False]:
+            for b in [True, False]:
+                self.assertEqual(exp(a=a, b=b), not(a or b))
+
+
+
 if __name__ == '__main__':
     unittest.main()
