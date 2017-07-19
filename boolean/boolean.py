@@ -26,13 +26,20 @@ from __future__ import print_function
 
 import inspect
 import itertools
-from operator import and_ as and_operator, or_ as or_operator
+from operator import and_ as and_operator
+from operator import or_ as or_operator
 
 
 try:
     basestring  # Python 2
 except NameError:
     basestring = str  # Python 3
+
+try:
+    reduce  # Python 2
+except NameError:
+    from functools import reduce  # Python 3
+
 
 # Set to True to enable tracing for parsing
 TRACE_PARSE = False
