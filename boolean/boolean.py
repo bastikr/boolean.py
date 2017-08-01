@@ -795,6 +795,9 @@ class _TRUE(BaseElement):
     def __repr__(self):
         return 'TRUE'
 
+    def toString(self):
+        return self.__str__()
+
     def __bool__(self):
         return True
 
@@ -823,6 +826,9 @@ class _FALSE(BaseElement):
 
     def __repr__(self):
         return 'FALSE'
+
+    def toString(self):
+        return self.__str__()
 
     def __bool__(self):
         return False
@@ -880,6 +886,9 @@ class Symbol(Expression):
     def __repr__(self):
         obj = "'%s'" % self.obj if isinstance(self.obj, str) else repr(self.obj)
         return '%s(%s)' % (self.__class__.__name__, obj)
+
+    def toString(self):
+        return self.__str__()
 
     def pretty(self, indent=0, debug=False):
         """
