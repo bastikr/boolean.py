@@ -156,6 +156,9 @@ class BooleanAlgebra(object):
             for name, value in objects.items():
                 setattr(obj, name, value)
 
+    def _is_function(self, obj):
+        return obj is self.AND or obj is self.OR or obj is self.NOT
+
     def definition(self):
         """
         Return a tuple of this algebra defined elements and types as:
@@ -271,7 +274,8 @@ class BooleanAlgebra(object):
 
                     # the parens are properly nested
                     # the top ast node should be a function subclass
-                    if not (inspect.isclass(ast[1]) and issubclass(ast[1], Function)):
+                    if not (inspect.isclass(ast[1]) and self._is_function(ast[1])):
+                        print(ast[1])
                         raise ParseError(token, tokstr, position, PARSE_INVALID_NESTING)
 
                     subex = ast[1](*ast[2:])
@@ -334,7 +338,7 @@ class BooleanAlgebra(object):
                 if TRACE_PARSE: print('       start_op: prec == op_prec:', repr(ast))
                 return ast
 
-            if not (inspect.isclass(ast[1]) and issubclass(ast[1], Function)):
+            if not (inspect.isclass(ast[1]) and self._is_function(ast[1])):
                 # the top ast node should be a function subclass at this stage
                 raise ParseError(error_code=PARSE_INVALID_NESTING)
 
