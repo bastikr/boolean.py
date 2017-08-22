@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>License Expression Sandbox</title>
+    </head>
+    <body>
+        <p>
+            If you would like to run boolean.py in the browser,
+            you should tell Transcrypt to transpile it for the browser:
+        </p>
+        <code>python transpile/transpile.py --browser</code>
+        <p>
+            This will define function <code>boolean</code> on the
+            <code>window</code> object.
+        </p>
+        <p>
+            Without the <code>--browser</code> flag, the <code>boolean</code>
+            function will be defined on the <code>module.exports</code> object,
+            which works for node.js
+        </p>
+        <p>To debug boolean.py in the browser, open developer tools.</p>
+        <script src="./__javascript__/boolean.js"></script>
+    </body>
+</html>
