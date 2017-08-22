@@ -3,8 +3,10 @@
 import argparse
 import logging
 import logging.config
+import shutil
 import subprocess
 import yaml
+import sys
 
 from argparse import ArgumentParser
 from pathlib import Path
@@ -52,6 +54,7 @@ def create_transcrypt_cmd(args, transcrypt_args):
     """
     logger.debug('create_transcrypt_cmd() call')
 
+    # Assume transcrypt executable is available
     cmd = ['transcrypt']
 
     # You can specify '--' on the command line to pass parameters
@@ -66,9 +69,26 @@ def create_transcrypt_cmd(args, transcrypt_args):
     # them all yourself. Otherwise, let me provide sensible defaults:
     if not transcrypt_args:
         # Force transpiling from scratch
-        cmd.append("-b")
-        # Force EcmaScript 6 for generator support
-        cmd.append("-e 6")
+        cmd.append('-b')
+        # Force compatibility with Python truth-value testing.
+        # There is a warning that this switch will slow everything down a lot.
+        # This forces empty dictionaries, lists, and tuples to compare as false.
+        cmd.append('-t')
+        # Force EcmaScript 6 to enable generators
+        cmd.append('-e')
+        cmd.append('6')
+
+        if args.browser:
+            logger.debug('transpile license_expression for the browser')
+
+            pass
+        else:
+            logger.debug('transpile license_expression for node.js')
+            # Drop global 'window' object and prepare for node.js runtime instead
+            cmd.append('-p')
+            cmd.append('module.exports')
+
+        # Supply path to the python file to be transpiled
         cmd.append(str(args.src[0]))
 
     logger.info('constructed the following command')
@@ -91,14 +111,17 @@ def transpile():
     )
 
     # file path to boolean.py, usually ../boolean/boolean.py
-    bpath = Path(parent.parent, 'boolean', 'boolean.py')
+    spath = Path(parent.parent, 'boolean')
+
+    # boolean.py path
+    bpath = Path(spath, 'boolean.py')
     parser.add_argument(
         '--src', nargs=1, default=[bpath],
         help='start transpilation from here'
     )
 
-    # destination for javascript output
-    jpath = Path(parent.parent, '__javascript__')
+    # javascript path, for output
+    jpath = Path(parent.parent, 'boolean.js', '__javascript__')
     parser.add_argument(
         '--dst', nargs=1, default=[jpath],
         help='store produced javascript here'
@@ -107,6 +130,11 @@ def transpile():
     parser.add_argument(
         '-v', '--verbose', action='count',
         help='print more output information'
+    )
+
+    parser.add_argument(
+        '--browser', action='store_true',
+        help='transpile boolean.py for the browser'
     )
 
     parser.add_argument(
@@ -131,8 +159,52 @@ def transpile():
     cmd = create_transcrypt_cmd(args, transcrypt_args)
 
     logger.debug('subprocess.run() call')
-    subprocess.run(cmd)
+    process = subprocess.run(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
     logger.debug('subprocess.run() done')
+
+    if process.returncode != 0:
+        logger.warning('Transcrypt failed:')
+
+        for line in str(process.stdout).split('\\n'):
+            logger.warning(line)
+        for line in str(process.stderr).split('\\n'):
+            logger.warning(line)
+
+        sys.exit(1)
+
+    # Transcrypt always puts the transpiled result into __javascript__,
+    # move it to ./src/license_expression.js, create directories if necessary
+    stdout = [line for line in str(process.stdout).split('\\n') if line]
+    lines = list(
+        filter(lambda line: line.startswith('Saving result in:'), stdout)
+    )
+
+    if len(lines) != 1:
+        logger.warning('Transcrypt output format changed!')
+        logger.warning('Expected a path to __javascript__ result, instead got:')
+
+        for line in lines:
+            logger.warning(line)
+
+    src = Path(lines[0].split(': ')[1]).parent
+    dst = args.dst[0]
+
+    if src != dst:
+        logger.debug('Copy original __javascript__')
+        logger.debug('copy src: ' + str(src))
+        logger.debug('copy dst: ' + str(dst))
+
+        if dst.exists():
+            logger.debug('Remove previous __javascript__')
+            shutil.rmtree(str(dst))
+
+        shutil.copytree(str(src), str(dst))
+
+        if src.exists():
+            logger.debug('Remove original __javascript__')
+            shutil.rmtree(str(src))
 
     logger.debug('transpile() done')
 
