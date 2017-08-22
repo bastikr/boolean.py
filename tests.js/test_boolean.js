@@ -2,6 +2,7 @@ let assert = require('assert')
 
 let boolean = require('../boolean.js/__javascript__/boolean.js')
 
+let Symbol = boolean.boolean.Symbol
 let BooleanAlgebra = boolean.boolean.BooleanAlgebra
 
 describe('BaseElement', function() {
@@ -63,5 +64,55 @@ describe('BaseElement', function() {
 
         assert.ok(algebra.FALSE.__repr__() === 'FALSE')
         assert.ok(algebra.TRUE .__repr__() === 'TRUE' )
+    })
+})
+
+describe('Symbol', function() {
+    let symbol, symbol1, symbol2, same0, same1
+
+    beforeEach(function() {
+        symbol0 = Symbol('string as a symbol')
+
+        symbol1 = Symbol(1)
+        symbol2 = Symbol(2)
+
+        same0 = Symbol('sibling symbol')
+        same1 = Symbol('sibling symbol')
+    })
+
+    it('isliteral is true by default', function() {
+        assert.equal(symbol1.isliteral, true)
+    })
+
+    it('symbol contains itself in .literals', function() {
+        assert.ok(symbol0.literals().indexOf(symbol0) !== -1)
+    })
+
+    it('symbols with same obj compare equal', function() {
+        assert.ok(same0.__eq__(same1))
+        assert.equal(same0.obj, same1.obj)
+
+        // Javascript will not let you overload !=, let alone !==
+        assert.ok(same0 != same1)
+        assert.notEqual(same0, same1)
+    })
+
+    it('.literalize() a symbol gives that symbol', function() {
+        assert.ok(symbol0.literalize() == symbol0)
+        assert.ok(symbol0.literalize() === symbol0)
+
+        assert.ok(symbol1.literalize() == symbol1)
+        assert.ok(symbol1.literalize() === symbol1)
+
+        assert.ok(symbol0.literalize() != symbol1)
+        assert.ok(symbol1.literalize() != symbol0)
+    })
+
+    it('.simplify() a symbol gives that symbol', function() {
+        assert.ok(symbol0.simplify() == symbol0)
+        assert.ok(symbol0.simplify() === symbol0)
+
+        assert.ok(symbol0.simplify() != symbol1)
+        assert.ok(symbol1.simplify() != symbol0)
     })
 })
