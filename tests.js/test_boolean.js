@@ -344,6 +344,84 @@ describe('BooleanAlgebra', function() {
             }
         })
     })
+
+    expressions = [
+        '!(a and b)', '!(a & b)', '!(a && b)',
+        '~(a and b)', '~(a & b)', '~(a && b)',
+        'not (a and b)', 'not (a & b)', 'not (a && b)',
+    ]
+    expressions.forEach((expression, i) => {
+        it('.demorgan() on ' + expression, function() {
+            expr = algebra.parse(expression).demorgan()
+
+            assert.equal(expr.__name__, 'OR')
+            assert.equal(expr.args.length, 2)
+
+            for (let j = 0; j != expr.args.length; ++j) {
+                assert.equal(expr.args[j].__name__, 'NOT')
+                assert.equal(expr.args[j].args.length, 1)
+
+                assert.equal(expr.args[j].args[0].obj, variables[j])
+            }
+        })
+    })
+
+    expressions = [
+        '!(a and b and c)', '!(a & b & c)', '!(a && b && c)',
+        '~(a and b and c)', '~(a & b & c)', '~(a && b && c)',
+        'not (a and b and c)', 'not (a & b & c)', 'not (a && b && c)'
+    ]
+    expressions.forEach((expression, i) => {
+        it('.demorgan() on ' + expression, function() {
+            expr = algebra.parse(expression).demorgan()
+
+            assert.equal(expr.__name__, 'OR')
+            assert.equal(expr.args.length, 3)
+
+            for (let j = 0; j != expr.args.length; ++j) {
+                assert.equal(expr.args[j].__name__, 'NOT')
+                assert.equal(expr.args[j].args[0], variables[j])
+            }
+        })
+    })
+
+    expressions = [
+        '!(a or b)', '!(a | b)', '!(a || b)',
+        '~(a or b)', '~(a | b)', '~(a || b)',
+        'not (a or b)', 'not (a | b)', 'not (a || b)'
+    ]
+    expressions.forEach((expression, i) => {
+        it('.demorgan() on ' + expression, function() {
+            expr = algebra.parse(expression).demorgan()
+
+            assert.equal(expr.__name__, 'AND')
+            assert.equal(expr.args.length, 2)
+
+            for (let j = 0; j != expr.args.length; ++j) {
+                assert.equal(expr.args[j].__name__, 'NOT')
+                assert.equal(expr.args[j].args[0], variables[j])
+            }
+        })
+    })
+
+    expressions = [
+        '!(a or b or c)', '!(a | b | c)', '!(a || b || c)',
+        '~(a or b or c)', '~(a | b | c)', '!(a || b || c)',
+        'not (a or b or c)', 'not (a | b | c)', 'not (a || b || c)'
+    ]
+    expressions.forEach((expression, i) => {
+        it('.demorgan() on ' + expression, function() {
+            expr = algebra.parse(expression).demorgan()
+
+            assert.equal(expr.__name__, 'AND')
+            assert.equal(expr.args.length, 3)
+
+            for (let j = 0; j != expr.args.length; ++j) {
+                assert.equal(expr.args[j].__name__, 'NOT')
+                assert.equal(expr.args[j].args[0].obj, variables[j])
+            }
+        })
+    })
 })
 
 describe('NOT', function() {
