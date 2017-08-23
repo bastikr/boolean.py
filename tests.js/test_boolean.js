@@ -422,6 +422,24 @@ describe('BooleanAlgebra', function() {
             }
         })
     })
+
+    expressions = ['a and a', 'a & a', 'a && a']
+    expressions.forEach((expression, i) => {
+        it('annihilator is *not* set for ' + expression, function() {
+            expr = algebra.parse(expression)
+
+            assert.equal(expr.annihilator, false)
+        })
+    })
+
+    expressions = ['a or a', 'a | a', 'a || a']
+    expressions.forEach((expression, i) => {
+        it('annihilator is set for ' + expression, function() {
+            expr = algebra.parse(expression)
+
+            assert.equal(expr.annihilator, true)
+        })
+    })
 })
 
 describe('NOT', function() {
