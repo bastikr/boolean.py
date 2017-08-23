@@ -440,6 +440,18 @@ describe('BooleanAlgebra', function() {
             assert.equal(expr.annihilator, true)
         })
     })
+
+    it.skip('identity is set for a & b', function() {
+        expr = algebra.parse('a & b')
+
+        assert.equal(expr.identity, true)
+    })
+
+    it.skip('identity is *not* set for a | b', function() {
+        expr = algebra.parse('a | b')
+
+        assert.equal(expr.identity, false)
+    })
 })
 
 describe('NOT', function() {
