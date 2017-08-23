@@ -27,11 +27,6 @@ from __future__ import print_function
 import inspect
 import itertools
 
-try:
-    basestring  # Python 2
-except NameError:
-    basestring = str  # Python 3
-
 # Set to True to enable tracing for parsing
 TRACE_PARSE = False
 
@@ -121,10 +116,10 @@ class BooleanAlgebra(object):
         standard types.
         """
         # TRUE and FALSE base elements are algebra-level "singleton" instances
-        self.TRUE = self._wrap_type(TRUE_class or _TRUE)
+        self.TRUE = TRUE_class or _TRUE
         self.TRUE = self.TRUE()
 
-        self.FALSE = self._wrap_type(TRUE_class or _FALSE)
+        self.FALSE = TRUE_class or _FALSE
         self.FALSE = self.FALSE()
 
         # they cross-reference each other
@@ -132,12 +127,12 @@ class BooleanAlgebra(object):
         self.FALSE.dual = self.TRUE
 
         # boolean operation types, defaulting to the standard types
-        self.NOT = self._wrap_type(NOT_class or NOT)
-        self.AND = self._wrap_type(AND_class or AND)
-        self.OR = self._wrap_type(OR_class or OR)
+        self.NOT = NOT_class or NOT
+        self.AND = AND_class or AND
+        self.OR = OR_class or OR
 
         # class used for Symbols
-        self.Symbol = self._wrap_type(Symbol_class or Symbol)
+        self.Symbol = Symbol_class or Symbol
 
         tf_nao = {'TRUE': self.TRUE, 'FALSE': self.FALSE,
                   'NOT': self.NOT, 'AND': self.AND, 'OR': self.OR,
@@ -147,12 +142,6 @@ class BooleanAlgebra(object):
         # attribute for every other types and objects, including themselves.
         self._cross_refs(tf_nao)
 
-    def _wrap_type(self, base_class):
-        """
-        Wrap the base class using its name as the name of the new type
-        """
-        return type(base_class.__name__, (base_class,), {})
-
     def _cross_refs(self, objects):
         """
         Set every object as attributes of every object in an `objects` mapping
@@ -161,6 +150,9 @@ class BooleanAlgebra(object):
         for obj in objects.values():
             for name, value in objects.items():
                 setattr(obj, name, value)
+
+    def _is_function(self, obj):
+        return obj is self.AND or obj is self.OR or obj is self.NOT
 
     def definition(self):
         """
@@ -196,7 +188,7 @@ class BooleanAlgebra(object):
 
         precedence = {self.NOT: 5, self.AND: 10, self.OR: 15, TOKEN_LPAR: 20}
 
-        if isinstance(expr, basestring):
+        if isinstance(expr, str):
             tokenized = self.tokenize(expr)
         else:
             tokenized = iter(expr)
@@ -277,7 +269,8 @@ class BooleanAlgebra(object):
 
                     # the parens are properly nested
                     # the top ast node should be a function subclass
-                    if not (inspect.isclass(ast[1]) and issubclass(ast[1], Function)):
+                    if not (inspect.isclass(ast[1]) and self._is_function(ast[1])):
+                        print(ast[1])
                         raise ParseError(token, tokstr, position, PARSE_INVALID_NESTING)
 
                     subex = ast[1](*ast[2:])
@@ -340,7 +333,7 @@ class BooleanAlgebra(object):
                 if TRACE_PARSE: print('       start_op: prec == op_prec:', repr(ast))
                 return ast
 
-            if not (inspect.isclass(ast[1]) and issubclass(ast[1], Function)):
+            if not (inspect.isclass(ast[1]) and self._is_function(ast[1])):
                 # the top ast node should be a function subclass at this stage
                 raise ParseError(error_code=PARSE_INVALID_NESTING)
 
@@ -404,7 +397,7 @@ class BooleanAlgebra(object):
             - True symbols: 1 and True
             - False symbols: 0, False and None
         """
-        if not isinstance(expr, basestring):
+        if not isinstance(expr, str):
             raise TypeError('expr must be string but it is %s.' % type(expr))
 
         # mapping of lowercase token strings to a token type id for the standard
@@ -437,9 +430,10 @@ class BooleanAlgebra(object):
                         break
                 position -= 1
 
-            try:
-                yield TOKENS[tok.lower()], tok, position
-            except KeyError:
+            value = TOKENS.get(tok.lower())
+            if value:
+                yield value, tok, position
+            else:
                 if sym:
                     yield TOKEN_SYMBOL, tok, position
                 elif tok not in (' ', '\t', '\r', '\n'):
@@ -730,7 +724,8 @@ class Expression(object):
     def __and__(self, other):
         return self.AND(self, other)
 
-    __mul__ = __and__
+    def __mul__(self, other):
+        return self.__and__(other)
 
     def __invert__(self):
         return self.NOT(self)
@@ -738,12 +733,14 @@ class Expression(object):
     def __or__(self, other):
         return self.OR(self, other)
 
-    __add__ = __or__
+    def __add__(self, other):
+        return self.__or__(other)
 
     def __bool__(self):
         raise TypeError('Cannot evaluate expression as a Python Boolean.')
 
-    __nonzero__ = __bool__
+    def __nonzero__(self):
+        return self.__bool__()
 
 
 class BaseElement(Expression):
@@ -754,7 +751,7 @@ class BaseElement(Expression):
     sort_order = 0
 
     def __init__(self):
-        super(BaseElement, self).__init__()
+        super().__init__()
         self.iscanonical = True
 
         # The dual Base Element class for this element: TRUE.dual returns
@@ -767,7 +764,11 @@ class BaseElement(Expression):
             return self == self.FALSE
         return NotImplemented
 
-    __nonzero__ = __bool__ = lambda s: None
+    def __bool__(self):
+        return None
+
+    def __nonzero__(self):
+        return None
 
     def pretty(self, indent=0, debug=False):
         """
@@ -783,7 +784,7 @@ class _TRUE(BaseElement):
     """
 
     def __init__(self):
-        super(_TRUE, self).__init__()
+        super().__init__()
         # assigned at singleton creation: self.dual = FALSE
 
     def __hash__(self):
@@ -798,7 +799,14 @@ class _TRUE(BaseElement):
     def __repr__(self):
         return 'TRUE'
 
-    __nonzero__ = __bool__ = lambda s: True
+    def toString(self):
+        return self.__str__()
+
+    def __bool__(self):
+        return True
+
+    def __nonzero__(self):
+        return True
 
 
 class _FALSE(BaseElement):
@@ -808,7 +816,7 @@ class _FALSE(BaseElement):
     """
 
     def __init__(self):
-        super(_FALSE, self).__init__()
+        super().__init__()
         # assigned at singleton creation: self.dual = TRUE
 
     def __hash__(self):
@@ -823,7 +831,14 @@ class _FALSE(BaseElement):
     def __repr__(self):
         return 'FALSE'
 
-    __nonzero__ = __bool__ = lambda s: False
+    def toString(self):
+        return self.__str__()
+
+    def __bool__(self):
+        return False
+
+    def __nonzero__(self):
+        return False
 
 
 class Symbol(Expression):
@@ -843,7 +858,7 @@ class Symbol(Expression):
     sort_order = 5
 
     def __init__(self, obj):
-        super(Symbol, self).__init__()
+        super().__init__()
         # Store an associated object. This object determines equality
         self.obj = obj
         self.iscanonical = True
@@ -873,8 +888,11 @@ class Symbol(Expression):
         return str(self.obj)
 
     def __repr__(self):
-        obj = "'%s'" % self.obj if isinstance(self.obj, basestring) else repr(self.obj)
+        obj = "'%s'" % self.obj if isinstance(self.obj, str) else repr(self.obj)
         return '%s(%s)' % (self.__class__.__name__, obj)
+
+    def toString(self):
+        return self.__str__()
 
     def pretty(self, indent=0, debug=False):
         """
@@ -884,7 +902,7 @@ class Symbol(Expression):
         if debug:
             debug_details += '<isliteral=%r, iscanonical=%r>' % (self.isliteral, self.iscanonical)
 
-        obj = "'%s'" % self.obj if isinstance(self.obj, basestring) else repr(self.obj)
+        obj = "'%s'" % self.obj if isinstance(self.obj, str) else repr(self.obj)
         return (' ' * indent) + ('%s(%s%s)' % (self.__class__.__name__, debug_details, obj))
 
 
@@ -898,7 +916,7 @@ class Function(Expression):
     """
 
     def __init__(self, *args):
-        super(Function, self).__init__()
+        super().__init__()
 
         # Specifies an infix notation of an operator for printing such as | or &.
         self.operator = None
@@ -988,12 +1006,12 @@ class NOT(Function):
     For example::
     >>> class NOT2(NOT):
         def __init__(self, *args):
-            super(NOT2, self).__init__(*args)
+            super().__init__(*args)
             self.operator = '!'
     """
 
     def __init__(self, arg1):
-        super(NOT, self).__init__(arg1)
+        super().__init__(arg1)
         self.isliteral = isinstance(self.args[0], Symbol)
         self.operator = '~'
 
@@ -1067,7 +1085,7 @@ class NOT(Function):
             pretty_literal = self.args[0].pretty(indent=0, debug=debug)
             return (' ' * indent) + '%s(%s%s)' % (self.__class__.__name__, debug_details, pretty_literal)
         else:
-            return super(NOT, self).pretty(indent=indent, debug=debug)
+            return super().pretty(indent=indent, debug=debug)
 
 
 class DualBase(Function):
@@ -1080,7 +1098,7 @@ class DualBase(Function):
     """
 
     def __init__(self, arg1, arg2, *args):
-        super(DualBase, self).__init__(arg1, arg2, *args)
+        super().__init__(arg1, arg2, *args)
 
         # identity element for the specific operation.
         # This will be TRUE for the AND operation and FALSE for the OR operation.
@@ -1394,14 +1412,14 @@ class AND(DualBase):
     For example::
     >>> class AND2(AND):
         def __init__(self, *args):
-            super(AND2, self).__init__(*args)
+            super().__init__(*args)
             self.operator = 'AND'
     """
 
     sort_order = 10
 
     def __init__(self, arg1, arg2, *args):
-        super(AND, self).__init__(arg1, arg2, *args)
+        super().__init__(arg1, arg2, *args)
         self.identity = self.TRUE
         self.annihilator = self.FALSE
         self.dual = self.OR
@@ -1418,14 +1436,14 @@ class OR(DualBase):
     For example::
     >>> class OR2(OR):
         def __init__(self, *args):
-            super(OR2, self).__init__(*args)
+            super().__init__(*args)
             self.operator = 'OR'
     """
 
     sort_order = 25
 
     def __init__(self, arg1, arg2, *args):
-        super(OR, self).__init__(arg1, arg2, *args)
+        super().__init__(arg1, arg2, *args)
         self.identity = self.FALSE
         self.annihilator = self.TRUE
         self.dual = self.AND

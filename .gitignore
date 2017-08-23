@@ -1,4 +1,8 @@
 *.pyc
+__javascript__
+node_modules
+.python-version
+yarn.lock
 /boolean.py.egg-info/
 /build/
 /.tox/
