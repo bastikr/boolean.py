@@ -360,13 +360,21 @@ describe('NOT', function() {
     ]
     expressions.forEach((expression, i) => {
         it('.cancel() on ' + expression, function() {
-            expression = algebra.parse(expression).cancel()
+            expr = algebra.parse(expression).cancel()
 
-            assert.equal(expression.obj, 'a')
+            assert.equal(expr.obj, 'a')
         })
 
         it.skip('.literalize() on ' + expression, function() {
-            expression = algebra.parse(expression).literalize()
+            expr = algebra.parse(expression).literalize()
+
+            assert.equal(expr.obj, 'a')
+        })
+
+        it('.simplify() on ' + expression, function() {
+            expr = algebra.parse(expression).simplify()
+
+            assert.equal(expr.obj, 'a')
         })
     })
 
@@ -377,19 +385,27 @@ describe('NOT', function() {
     ]
     expressions.forEach((expression, i) => {
         it('.cancel() on ' + expression, function() {
-            expression = algebra.parse(expression).cancel()
+            expr = algebra.parse(expression).cancel()
 
-            assert.equal(expression.__name__, 'NOT')
-            assert.equal(expression.args.length, 1)
-            assert.equal(expression.args[0].obj, 'a')
+            assert.equal(expr.__name__, 'NOT')
+            assert.equal(expr.args.length, 1)
+            assert.equal(expr.args[0].obj, 'a')
         })
 
         it.skip('.literalize() on ' + expression, function() {
-            expression = algebra.parse(expression).literalize()
+            expr = algebra.parse(expression).literalize()
 
             assert.equal(expression.__name__, 'NOT')
-            assert.equal(expression.args.length, 1)
-            assert.equal(expression.args[0].obj, 'a')
+            assert.equal(expr.args.length, 1)
+            assert.equal(expr.args[0].obj, 'a')
+        })
+
+        it('.simplify() on ' + expression, function() {
+            expr = algebra.parse(expression).simplify()
+
+            assert.equal(expr.__name__, 'NOT')
+            assert.equal(expr.args.length, 1)
+            assert.equal(expr.args[0].obj, 'a')
         })
     })
 })
