@@ -345,3 +345,51 @@ describe('BooleanAlgebra', function() {
         })
     })
 })
+
+describe('NOT', function() {
+    let algebra, symbol, expressions
+
+    beforeEach(function() {
+        algebra = BooleanAlgebra()
+    })
+
+    expressions = [
+        'not not a', '!!a', '~~a',
+        'not !a', '! not a', '~ not a', 'not ~ a',
+        'not not not not a', '!!!!a', '~~~~a'
+    ]
+    expressions.forEach((expression, i) => {
+        it('.cancel() on ' + expression, function() {
+            expression = algebra.parse(expression).cancel()
+
+            assert.equal(expression.obj, 'a')
+        })
+
+        it.skip('.literalize() on ' + expression, function() {
+            expression = algebra.parse(expression).literalize()
+        })
+    })
+
+    expressions = [
+        'not a', '!a', '~a',
+        'not not not a', '!!!a', '~~~a',
+        'not !!a', 'not ! not a', '! not not a'
+    ]
+    expressions.forEach((expression, i) => {
+        it('.cancel() on ' + expression, function() {
+            expression = algebra.parse(expression).cancel()
+
+            assert.equal(expression.__name__, 'NOT')
+            assert.equal(expression.args.length, 1)
+            assert.equal(expression.args[0].obj, 'a')
+        })
+
+        it.skip('.literalize() on ' + expression, function() {
+            expression = algebra.parse(expression).literalize()
+
+            assert.equal(expression.__name__, 'NOT')
+            assert.equal(expression.args.length, 1)
+            assert.equal(expression.args[0].obj, 'a')
+        })
+    })
+})
