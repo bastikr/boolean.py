@@ -116,3 +116,180 @@ describe('Symbol', function() {
         assert.ok(symbol1.simplify() != symbol0)
     })
 })
+
+describe('BooleanAlgebra', function() {
+    let algebra, expressions, variables
+
+    beforeEach(function() {
+        algebra = BooleanAlgebra()
+        variables = ['a', 'b', 'c', 'd', 'e', 'f']
+    })
+
+    it('parse a single variable', function() {
+        expression = algebra.parse('a')
+
+        assert.ok(expression.__name__ === 'Symbol')
+        assert.ok(expression.obj === 'a')
+    })
+
+    expressions = [
+        'a or b', 'a OR b', 'a | b', 'a || b', 'a oR b', 'a oR b'
+    ]
+    for (let expression of expressions) {
+        it('parse ' + expression, function() {
+            expression = algebra.parse(expression)
+
+            assert.ok(expression.__name__ === 'OR')
+            assert.equal(expression.args.length, 2)
+
+            let fst = expression.args[0], snd = expression.args[1]
+
+            assert.equal(fst.__name__, 'Symbol')
+            assert.equal(snd.__name__, 'Symbol')
+
+            assert.equal(fst.obj, 'a')
+            assert.equal(snd.obj, 'b')
+        })
+    }
+
+    expressions = [
+        'a and b', 'a AND b', 'a & b', 'a && b', 'a aND b', 'a aNd b'
+    ]
+    for (let expression of expressions) {
+        it('parse ' + expression, function() {
+            expression = algebra.parse(expression)
+
+            assert.ok(expression.__name__ === 'AND')
+            assert.equal(expression.args.length, 2)
+
+            let fst = expression.args[0], snd = expression.args[1]
+
+            assert.equal(fst.__name__, 'Symbol')
+            assert.equal(snd.__name__, 'Symbol')
+
+            assert.equal(fst.obj, 'a')
+            assert.equal(snd.obj, 'b')
+        })
+    }
+
+    expressions = ['not a', '~a', '!a', 'nOt a', 'nOT a']
+    for (let expression of expressions) {
+        it('parse ' + expression, function() {
+            expression = algebra.parse(expression)
+
+            assert.ok(expression.__name__ === 'NOT')
+            assert.equal(expression.args.length, 1)
+
+            assert.equal(expression.args[0].obj, 'a')
+        })
+    }
+
+    it.skip('parse empty parenthesis', function() {
+        expression = algebra.parse('()')
+    })
+
+    it('parse (a)', function() {
+        expression = algebra.parse('(a)')
+
+        assert.equal(expression.obj, 'a')
+    })
+
+    it('parse (a or b)', function() {
+        expression = algebra.parse('(a or b)')
+
+        assert.equal(expression.__name__, 'OR')
+        assert.equal(expression.args.length, 2)
+
+        assert.equal(expression.args[0], 'a')
+        assert.equal(expression.args[1], 'b')
+    })
+
+    it('parse (a and b)', function() {
+        expression = algebra.parse('(a and b)')
+
+        assert.equal(expression.__name__, 'AND')
+        assert.equal(expression.args.length, 2)
+
+        assert.equal(expression.args[0].obj, 'a')
+        assert.equal(expression.args[1].obj, 'b')
+    })
+
+    it('parse (not a)', function() {
+        expression = algebra.parse('(not a)')
+
+        assert.equal(expression.__name__, 'NOT')
+        assert.equal(expression.args.length, 1)
+
+        assert.equal(expression.args[0].obj, 'a')
+    })
+
+    expressions = ['not (a)', '!(a)', '! (a)', '~(a)', '~  (a)']
+    for (let expression of expressions) {
+        it('parse ' + expression, function() {
+            expression = algebra.parse(expression)
+
+            assert.equal(expression.__name__, 'NOT')
+            assert.equal(expression.args.length, 1)
+
+            assert.equal(expression.args[0].obj, 'a')
+        })
+    }
+
+    expressions = ['not a', '!a', '~a', 'not(a)', '(not a)', '!(a)']
+    for (let expression of expressions) {
+        it('literalize ' + expression, function() {
+            expression = algebra.parse(expression).literalize()
+
+            assert.equal(expression.__name__, 'NOT')
+            assert.equal(expression.args.length, 1)
+
+            assert.equal(expression.args[0].obj, 'a')
+        })
+    }
+
+    expressions = [
+        'not (a | b)', '~(a | b)', '!(a | b)',
+        'not (a || b)', '~(a || b)', '!(a || b)',
+        'not (a or b)', '~(a or b)', '!(a or b)',
+        'not (a | b | c)', '~(a | b | c)', '!(a | b | c)',
+        'not (a || b || c)', '~(a || b || c)', '!(a || b || c)',
+        'not (a or b or c)', '~(a or b or c)', '!(a or b or c)',
+        'not (a | b || c)', '~(a | b or c)', '!(a or b || c)'
+    ]
+    for (let expression of expressions) {
+        it ('literalize ' + expression, function() {
+            expression = algebra.parse(expression).literalize()
+
+            assert.equal(expression.__name__, 'AND')
+
+            for (let i = 0; i != expression.args.length; ++i) {
+                assert.equal(expression.args[i].__name__, 'NOT')
+
+                assert.equal(expression.args[i].args[0].obj, variables[i])
+            }
+        })
+    }
+
+    expressions = [
+        'not (a & b)', '~(a & b)', '!(a & b)',
+        'not (a && b)', '~(a && b)', '!(a && b)',
+        'not (a and b)', '~(a and b)', '!(a and b)',
+        'not (a & b & c)', '~(a & b & c)', '!(a & b & c)',
+        'not (a && b && c)', '~(a && b && c)', '!(a && b && c)',
+        'not (a and b and c)', '~(a and b and c)', '!(a and b and c)',
+        'not (a & b && c)', '~(a & b and c)', '!(a && b and c)'
+    ]
+    for (let expression of expressions) {
+        it('literalize ' + expression, function() {
+            expression = algebra.parse(expression).literalize()
+
+            assert.equal(expression.__name__, 'OR')
+
+            for (let i = 0; i != expression.args.length; ++i) {
+                assert.equal(expression.args[i].__name__, 'NOT')
+
+                assert.equal(expression.args[i].args[0].obj, variables[i])
+            }
+        })
+    }
+})
