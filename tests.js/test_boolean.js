@@ -235,6 +235,48 @@ describe('BooleanAlgebra', function() {
         })
     }
 
+    expressions = [
+        'not a & not b', '~a & ~b', '!a & !b',
+        'not a && not b', '~a && ~b', '!a && !b',
+        'not a and not b', '~a and ~b', '!a and !b',
+        'not a & not b & not c', '~a & ~b & ~c', '!a & !b & !c',
+        'not a && not b && not c', '~a && ~b && ~c', '!a && !b && !c',
+        'not a and not b and not c', '~a and ~b and ~c', '!a and !b and !c'
+    ]
+    expressions.forEach((expression, i) => {
+        it.skip('parse ' + expression, function() {
+            expression = algebra.parse(expression)
+
+            assert.equal(expression.__name__, 'AND')
+            if (i < 9) {
+                assert.equal(expression.args.length, 2)
+            } else {
+                assert.equal(expression.args.length, 3)
+            }
+        })
+    })
+
+    expressions = [
+        'not a | not b', '~a | ~b', '!a | !b',
+        'not a || not b', '~a || ~b', '!a || !b',
+        'not a or not b', '~a or ~b', '!a or !b',
+        'not a | not b | not c', '~a | ~b | ~c', '!a | !b | !c',
+        'not a || not b && not c', '~a || ~b || ~c', '!a || !b || !c',
+        'not a or not b or not c', '~a or ~b or ~c', '!a or !b or !c'
+    ]
+    expressions.forEach((expression, i) => {
+        it.skip('parse ' + expression, function() {
+            expression = algebra.parse(expression)
+
+            assert.equal(expression.__name__, 'OR')
+            if (i < 9) {
+                assert.equal(expression.args.length, 2)
+            } else {
+                assert.equal(expression.args.length, 3)
+            }
+        })
+    })
+
     expressions = ['not a', '!a', '~a', 'not(a)', '(not a)', '!(a)']
     for (let expression of expressions) {
         it('literalize ' + expression, function() {
@@ -256,19 +298,24 @@ describe('BooleanAlgebra', function() {
         'not (a or b or c)', '~(a or b or c)', '!(a or b or c)',
         'not (a | b || c)', '~(a | b or c)', '!(a or b || c)'
     ]
-    for (let expression of expressions) {
+    expressions.forEach((expression, i) => {
         it ('literalize ' + expression, function() {
             expression = algebra.parse(expression).literalize()
 
             assert.equal(expression.__name__, 'AND')
+            if (i < 9) {
+                assert.equal(expression.args.length, 2)
+            } else {
+                assert.equal(expression.args.length, 3)
+            }
 
-            for (let i = 0; i != expression.args.length; ++i) {
-                assert.equal(expression.args[i].__name__, 'NOT')
+            for (let j = 0; j != expression.args.length; ++j) {
+                assert.equal(expression.args[j].__name__, 'NOT')
 
-                assert.equal(expression.args[i].args[0].obj, variables[i])
+                assert.equal(expression.args[j].args[0].obj, variables[j])
             }
         })
-    }
+    })
 
     expressions = [
         'not (a & b)', '~(a & b)', '!(a & b)',
@@ -279,17 +326,22 @@ describe('BooleanAlgebra', function() {
         'not (a and b and c)', '~(a and b and c)', '!(a and b and c)',
         'not (a & b && c)', '~(a & b and c)', '!(a && b and c)'
     ]
-    for (let expression of expressions) {
+    expressions.forEach((expression, i) => {
         it('literalize ' + expression, function() {
             expression = algebra.parse(expression).literalize()
 
             assert.equal(expression.__name__, 'OR')
+            if (i < 9) {
+                assert.equal(expression.args.length, 2)
+            } else {
+                assert.equal(expression.args.length, 3)
+            }
 
-            for (let i = 0; i != expression.args.length; ++i) {
-                assert.equal(expression.args[i].__name__, 'NOT')
+            for (let j = 0; j != expression.args.length; ++j) {
+                assert.equal(expression.args[j].__name__, 'NOT')
 
-                assert.equal(expression.args[i].args[0].obj, variables[i])
+                assert.equal(expression.args[j].args[0].obj, variables[j])
             }
         })
-    }
+    })
 })
