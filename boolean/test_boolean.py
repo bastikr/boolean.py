@@ -356,6 +356,12 @@ class BaseElementTestCase(unittest.TestCase):
         self.assertEqual(algebra.TRUE.simplify(), algebra.TRUE)
         self.assertEqual(algebra.FALSE.simplify(), algebra.FALSE)
 
+    def test_simplify_two_algebra(self):
+        algebra1 = BooleanAlgebra()
+        algebra2 = BooleanAlgebra()
+        self.assertEqual(algebra1.TRUE.simplify(), algebra2.TRUE)
+        self.assertEqual(algebra1.FALSE.simplify(), algebra2.FALSE)
+
     def test_dual(self):
         algebra = BooleanAlgebra()
         self.assertEqual(algebra.TRUE.dual, algebra.FALSE)
@@ -409,6 +415,11 @@ class SymbolTestCase(unittest.TestCase):
     def test_simplify(self):
         s = Symbol(1)
         self.assertEqual(s.simplify(), s)
+
+    def test_simplify_different_instances(self):
+        s1 = Symbol(1)
+        s2 = Symbol(1)
+        self.assertEqual(s1.simplify(), s2.simplify())
 
     def test_equal_symbols(self):
         algebra = BooleanAlgebra()
@@ -496,6 +507,8 @@ class NOTTestCase(unittest.TestCase):
         self.assertEqual(a, (~~ ~~a).simplify())
         self.assertEqual((~(a & a & a)).simplify(), (~(a & a & a)).simplify())
         self.assertEqual(a, algebra.parse('~~a', simplify=True))
+        algebra2 = BooleanAlgebra()
+        self.assertEqual(a, algebra2.parse('~~a', simplify=True))
 
     def test_cancel(self):
         algebra = BooleanAlgebra()
@@ -595,13 +608,14 @@ class DualBaseTestCase(unittest.TestCase):
         self.assertEqual(algebra.parse('a&b').dual, algebra.OR)
 
     def test_simplify(self):
-        algebra = BooleanAlgebra()
-        a = algebra.Symbol('a')
-        b = algebra.Symbol('b')
-        c = algebra.Symbol('c')
+        algebra1 = BooleanAlgebra()
+        algebra2 = BooleanAlgebra()
+        a = algebra1.Symbol('a')
+        b = algebra1.Symbol('b')
+        c = algebra1.Symbol('c')
 
-        _0 = algebra.FALSE
-        _1 = algebra.TRUE
+        _0 = algebra1.FALSE
+        _1 = algebra1.TRUE
         # Idempotence
         self.assertEqual(a, (a & a).simplify())
         # Idempotence + Associativity
@@ -623,16 +637,29 @@ class DualBaseTestCase(unittest.TestCase):
         # Elimination
         self.assertEqual(a, ((a & ~b) | (a & b)).simplify())
 
-        expected = algebra.parse('(a&b)|(b&c)|(a&c)')
-        result = algebra.parse('(~a&b&c) | (a&~b&c) | (a&b&~c) | (a&b&c)', simplify=True)
+        expected = algebra1.parse('(a&b)|(b&c)|(a&c)')
+        result = algebra1.parse('(~a&b&c) | (a&~b&c) | (a&b&~c) | (a&b&c)', simplify=True)
         self.assertEqual(expected, result)
 
-        expected = algebra.parse('b&d')
-        result = algebra.parse('(a&b&c&d) | (b&d)', simplify=True)
+        expected = algebra1.parse('(a&b)|(b&c)|(a&c)')
+        result = algebra2.parse('(~a&b&c) | (a&~b&c) | (a&b&~c) | (a&b&c)', simplify=True)
         self.assertEqual(expected, result)
 
-        expected = algebra.parse('(~b&~d&a) | (~c&~d&b) | (a&c&d)', simplify=True)
-        result = algebra.parse('''(~a&b&~c&~d) | (a&~b&~c&~d) | (a&~b&c&~d) |
+        expected = algebra1.parse('b&d')
+        result = algebra1.parse('(a&b&c&d) | (b&d)', simplify=True)
+        self.assertEqual(expected, result)
+
+        expected = algebra1.parse('b&d')
+        result = algebra2.parse('(a&b&c&d) | (b&d)', simplify=True)
+        self.assertEqual(expected, result)
+
+        expected = algebra1.parse('(~b&~d&a) | (~c&~d&b) | (a&c&d)', simplify=True)
+        result = algebra1.parse('''(~a&b&~c&~d) | (a&~b&~c&~d) | (a&~b&c&~d) |
+                          (a&~b&c&d) | (a&b&~c&~d) | (a&b&c&d)''', simplify=True)
+        self.assertEqual(expected.pretty(), result.pretty())
+
+        expected = algebra1.parse('(~b&~d&a) | (~c&~d&b) | (a&c&d)', simplify=True)
+        result = algebra2.parse('''(~a&b&~c&~d) | (a&~b&~c&~d) | (a&~b&c&~d) |
                           (a&~b&c&d) | (a&b&~c&~d) | (a&b&c&d)''', simplify=True)
         self.assertEqual(expected.pretty(), result.pretty())
 
