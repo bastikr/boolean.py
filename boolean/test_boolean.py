@@ -522,10 +522,14 @@ class NOTTestCase(unittest.TestCase):
         algebra = BooleanAlgebra()
         a = algebra.Symbol('a')
         b = algebra.Symbol('b')
+        c = algebra.Symbol('c')
         self.assertEqual(algebra.parse('~(a&b)').demorgan(), ~a | ~b)
         self.assertEqual(algebra.parse('~(a|b|c)').demorgan(), algebra.parse('~a&~b&~c'))
         self.assertEqual(algebra.parse('~(~a&b)').demorgan(), a | ~b)
-        self.assertEqual(algebra.parse('~~(a&b|c)').demorgan(), algebra.parse('a&b|c'))
+        self.assertEqual((~~(a&b|c)).demorgan(), a&b|c)
+        self.assertEqual((~~~(a&b|c)).demorgan(), ~(a&b)&~c)
+        self.assertEqual(algebra.parse('~'*10 + '(a&b|c)').demorgan(), a&b|c)
+        self.assertEqual(algebra.parse('~'*11 + '(a&b|c)').demorgan(), (~(a&b|c)).demorgan())
 
     def test_order(self):
         algebra = BooleanAlgebra()
