@@ -6,3 +6,4 @@
 /tmp/
 /.cache/
 /.eggs/
+/.pytest_cache/
