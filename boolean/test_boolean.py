@@ -12,10 +12,11 @@ from __future__ import unicode_literals
 from __future__ import print_function
 from boolean.boolean import PARSE_UNKNOWN_TOKEN
 
+# Python 2 and 3
 try:
-    basestring  # Python 2
+    basestring  # NOQA
 except NameError:
-    basestring = str  # Python 3
+    basestring = str  # NOQA
 
 import unittest
 from unittest.case import expectedFailure
@@ -34,6 +35,7 @@ from boolean import TOKEN_RPAR
 from boolean.boolean import PARSE_INVALID_SYMBOL_SEQUENCE
 from boolean.boolean import PARSE_INVALID_EXPRESSION
 from boolean.boolean import PARSE_INVALID_NESTING
+from boolean.boolean import PARSE_INVALID_OPERATOR_SEQUENCE
 
 
 class BooleanAlgebraTestCase(unittest.TestCase):
@@ -271,26 +273,87 @@ class BooleanAlgebraTestCase(unittest.TestCase):
         )
         self.assertEqual(expected, expr)
 
-    def test_parse_raise_ParseError(self):
+    def test_parse_raise_ParseError1(self):
         algebra = BooleanAlgebra()
-        invalid_expressions = [
-            'l-a AND none',
-            '(l-a + AND l-b',
-            '(l-a + AND l-b)',
-            '(l-a AND l-b',
-            '(l-a + AND l-b))',
-            '(l-a  AND l-b))',
-            'l-a AND',
-            'OR l-a',
-            '+ l-a',
-        ]
+        expr = 'l-a AND none'
 
-        for expr in invalid_expressions:
-            try:
-                algebra.parse(expr)
-                self.fail("Exception should be raised when parsing '%s'" % expr)
-            except ParseError as pe:
-                assert pe.error_code == PARSE_UNKNOWN_TOKEN
+        try:
+            algebra.parse(expr)
+            self.fail("Exception should be raised when parsing '%s'" % expr)
+        except ParseError as pe:
+            assert pe.error_code == PARSE_UNKNOWN_TOKEN
+
+    def test_parse_raise_ParseError2(self):
+        algebra = BooleanAlgebra()
+        expr = '(l-a + AND l-b'
+        try:
+            algebra.parse(expr)
+            self.fail("Exception should be raised when parsing '%s'" % expr)
+        except ParseError as pe:
+            assert pe.error_code == PARSE_UNKNOWN_TOKEN
+
+    def test_parse_raise_ParseError3(self):
+        algebra = BooleanAlgebra()
+        expr = '(l-a + AND l-b)'
+        try:
+            algebra.parse(expr)
+            self.fail("Exception should be raised when parsing '%s'" % expr)
+        except ParseError as pe:
+            assert pe.error_code == PARSE_UNKNOWN_TOKEN
+
+    def test_parse_raise_ParseError4(self):
+        algebra = BooleanAlgebra()
+        expr = '(l-a AND l-b'
+        try:
+            algebra.parse(expr)
+            self.fail("Exception should be raised when parsing '%s'" % expr)
+        except ParseError as pe:
+            assert pe.error_code == PARSE_UNKNOWN_TOKEN
+
+    def test_parse_raise_ParseError5(self):
+        algebra = BooleanAlgebra()
+        expr = '(l-a + AND l-b))'
+        try:
+            algebra.parse(expr)
+            self.fail("Exception should be raised when parsing '%s'" % expr)
+        except ParseError as pe:
+            assert pe.error_code == PARSE_UNKNOWN_TOKEN
+
+    def test_parse_raise_ParseError6(self):
+        algebra = BooleanAlgebra()
+        expr = '(l-a  AND l-b))'
+        try:
+            algebra.parse(expr)
+            self.fail("Exception should be raised when parsing '%s'" % expr)
+        except ParseError as pe:
+            assert pe.error_code == PARSE_UNKNOWN_TOKEN
+
+    def test_parse_raise_ParseError7(self):
+        algebra = BooleanAlgebra()
+        expr = 'l-a AND'
+        try:
+            algebra.parse(expr)
+            self.fail("Exception should be raised when parsing '%s'" % expr)
+        except ParseError as pe:
+            assert pe.error_code == PARSE_UNKNOWN_TOKEN
+
+    def test_parse_raise_ParseError8(self):
+        algebra = BooleanAlgebra()
+        expr = 'OR l-a'
+        try:
+            algebra.parse(expr)
+            self.fail("Exception should be raised when parsing '%s'" % expr)
+        except ParseError as pe:
+            assert pe.error_code == PARSE_INVALID_OPERATOR_SEQUENCE
+
+    def test_parse_raise_ParseError9(self):
+        algebra = BooleanAlgebra()
+        expr = '+ l-a'
+        try:
+            algebra.parse(expr)
+            self.fail("Exception should be raised when parsing '%s'" % expr)
+        except ParseError as pe:
+            assert pe.error_code == PARSE_INVALID_OPERATOR_SEQUENCE
 
     def test_parse_side_by_side_symbols_should_raise_exception_but_not(self):
         algebra = BooleanAlgebra()
