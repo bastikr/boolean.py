@@ -1135,7 +1135,7 @@ class DualBase(Function):
         if isinstance(expr, self.__class__):
             return all(arg in self.args for arg in expr.args)
 
-    def simplify(self):
+    def simplify(self, sort=True):
         """
         Return a new simplified expression in canonical form from this
         expression.
@@ -1254,7 +1254,8 @@ class DualBase(Function):
             return args[0]
 
         # Commutativity: A & B = B & A, A | B = B | A
-        args.sort()
+        if sort:
+            args.sort()
 
         # Create new (now canonical) expression.
         expr = self.__class__(*args)
