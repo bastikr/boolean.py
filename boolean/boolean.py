@@ -114,7 +114,8 @@ class BooleanAlgebra(object):
     """
 
     def __init__(self, TRUE_class=None, FALSE_class=None, Symbol_class=None,
-                 NOT_class=None, AND_class=None, OR_class=None):
+                 NOT_class=None, AND_class=None, OR_class=None,
+                 allowed_in_token=('.', ':', '_')):
         """
         The types for TRUE, FALSE, NOT, AND, OR and Symbol define the boolean
         algebra elements, operations and Symbol variable. They default to the
@@ -157,6 +158,9 @@ class BooleanAlgebra(object):
         for obj in tf_nao.values():
             for name, value in tf_nao.items():
                 setattr(obj, name, value)
+
+        # Set the set of characters allowed in tokens
+        self.allowed_in_token = allowed_in_token
 
     def definition(self):
         """
@@ -461,7 +465,7 @@ class BooleanAlgebra(object):
                 position += 1
                 while position < length:
                     char = expr[position]
-                    if char.isalnum() or char in ('.', ':', '_'):
+                    if char.isalnum() or char in self.allowed_in_token:
                         position += 1
                         tok += char
                     else:

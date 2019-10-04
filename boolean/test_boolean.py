@@ -273,6 +273,17 @@ class BooleanAlgebraTestCase(unittest.TestCase):
         )
         self.assertEqual(expected, expr)
 
+    def test_allowing_additional_characters_in_tokens(self):
+        algebra = BooleanAlgebra(allowed_in_token=('.', '_', '-', '+'))
+        test_expr = 'l-a AND b+c'
+
+        expr = algebra.parse(test_expr)
+        expected = algebra.AND(
+            algebra.Symbol('l-a'),
+            algebra.Symbol('b+c')
+        )
+        self.assertEqual(expected, expr)
+
     def test_parse_raise_ParseError1(self):
         algebra = BooleanAlgebra()
         expr = 'l-a AND none'
