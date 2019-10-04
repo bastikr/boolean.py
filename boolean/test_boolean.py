@@ -705,6 +705,17 @@ class DualBaseTestCase(unittest.TestCase):
         # Elimination
         self.assertEqual(a, ((a & ~b) | (a & b)).simplify())
 
+        # Commutativity + Non-Commutativity 
+        sorted_expression = (b & b & a).simplify()
+        unsorted_expression = (b & b & a).simplify(sort=False)
+        self.assertEqual(sorted_expression, unsorted_expression)
+        self.assertNotEqual(sorted_expression.pretty(), unsorted_expression.pretty())
+
+        sorted_expression = (b | b | a).simplify()
+        unsorted_expression = (b | b | a).simplify(sort=False)
+        self.assertEqual(sorted_expression, unsorted_expression)
+        self.assertNotEqual(sorted_expression.pretty(), unsorted_expression.pretty())
+
         expected = algebra1.parse('(a&b)|(b&c)|(a&c)')
         result = algebra1.parse('(~a&b&c) | (a&~b&c) | (a&b&~c) | (a&b&c)', simplify=True)
         self.assertEqual(expected, result)
