@@ -21,14 +21,14 @@ https://github.com/bastikr/boolean.py
 
 Copyright (c) 2009-2017 Sebastian Kraemer, basti.kr@gmail.com and others
 
-Released under revised BSD license.
+Released under revised BSD license aka. BSD Simplified or BSD-2-Clause.
 '''
 
 
 setup(
     name='boolean.py',
-    version='3.6',
-    license='revised BSD license',
+    version='3.7',
+    license='BSD-2-Clause',
     description='Define boolean algebras, create and parse boolean expressions and create custom boolean DSL.',
     long_description=long_desc,
     author='Sebastian Kraemer',
@@ -41,9 +41,8 @@ setup(
     test_suite='boolean.test_boolean',
     keywords='boolean expression, boolean algebra, logic, expression parser',
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: BSD License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.7',
