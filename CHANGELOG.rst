@@ -4,11 +4,58 @@ Changelog
 
 
 next
-------------------
+----
 
 
-3.3.0 (2017-02-09)
+3.7 (2019-10-04)
+----------------
+
+* API changes
+
+ * Add new sort argument to simplify() to optionally not sort when simplifying
+   expressions (e.g. not applying "commutativity"). Thank you to Steven Esser
+   @majurg for this
+ * Add new argument to tokenizer to optionally accept extra characters in symbol
+   tokens. Thank you to @carpie for this
+
+
+3.6 (2018-08-06)
+----------------
+
+* No API changes
+
+* Bug fixes
+
+ * Fix De Morgan's laws effect on double negation propositions. Thank you to Douglas Cardoso for this
+ * Improve error checking when parsing
+
+
+3.5 (Nov 1, 2017)
+-----------------
+
+* No API changes
+
+* Bug fixes
+
+ * Documentation updates and add testing for Python 3.6. Thank you to Alexander Lisianoi @alisianoi
+ * Improve testng and expression equivalence checks
+ * Improve subs() method to an expression 
+
+ 
+
+3.4 (May 12, 2017)
 ------------------
+
+* No API changes
+
+* Bug fixes and improvements
+
+ * Fix various documentation typos and improve tests . Thank you to Alexander Lisianoi @alisianoi
+ * Fix handling for literals vs. symbols in negations Thank you to @YaronK
+
+
+3.3 (2017-02-09)
+----------------
 
 * API changes
 
@@ -27,8 +74,8 @@ next
 ------------------
 
 * API changes
- * New algebra definition. Refactored class hierarchy. Improved parsing.
 
+ * New algebra definition. Refactored class hierarchy. Improved parsing.
 
 * New features
 
