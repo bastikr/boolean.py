@@ -204,7 +204,8 @@ class BooleanAlgebra(object):
         if TRACE_PARSE:
             tokenized = list(tokenized)
             print('tokens:')
-            map(print, tokenized)
+            for t in tokenized:
+                print(t)
             tokenized = iter(tokenized)
 
         # the abstract syntax tree for this expression that will be build as we
