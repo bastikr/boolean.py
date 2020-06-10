@@ -1,11 +1,15 @@
 graft docs
 graft boolean
 
+include .gitignore
+include .travis.yml
+include CHANGELOG.rst
 include LICENSE.txt
+include MANIFEST.in
+include README.rst
 include setup.py
 include setup.cfg
-include README.md
-include MANIFEST.in
-include CHANGELOG.rst
+include test-requirements.txt
+include tox.ini
 
 global-exclude *.py[co] __pycache__
