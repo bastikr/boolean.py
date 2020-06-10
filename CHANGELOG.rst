@@ -10,12 +10,22 @@ next
 3.8 (2020-06-10)
 ----------------
 
-* No API changes
+* API changes
+ * Add support for evaluation of boolean expression
+   Thank you to Lars van Gemerden @gemerden
 
 * Bug fixes
 
- * Fix parsing of tokens that have a number as the first character
+ * Fix parsing of tokens that have a number as the first character. 
+   Thank you to Jeff Cohen @ jcohen28
+ * Restore proper Python 2 compatibility. 
+   Thank you to Benjy Weinberger @benjyw
 
+* Improve documentation
+ * Add pointers to Linux distro packages 
+   Thank you to Max Mehl @mxmehl and Carmen Bianca Bakker @carmenbianca
+ * Fix typo
+   Thank you to Gabriel Niebler @der-gabe
 
 3.7 (2019-10-04)
 ----------------
