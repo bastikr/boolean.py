@@ -6,8 +6,8 @@ variables and the boolean functions AND, OR, NOT. For extensive documentation
 look either into the docs directory or view it online, at
 https://booleanpy.readthedocs.org/en/latest/.
 
-Copyright (c) 2009-2017 Sebastian Kraemer, basti.kr@gmail.com
-Released under revised BSD license.
+Copyright (c) 2009-2020 Sebastian Kraemer, basti.kr@gmail.com and others
+SPDX-License-Identifier: BSD-3-Clause
 """
 
 from __future__ import absolute_import

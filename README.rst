@@ -99,7 +99,8 @@ interpreters that are actually installed on your machine:
 License
 -------
 
-Simplified BSD License
+Copyright (c) 2009-2020 Sebastian Kraemer, basti.kr@gmail.com and others
+SPDX-License-Identifier: BSD-2-Clause
 
 .. |Build Status| image:: https://travis-ci.org/bastikr/boolean.py.svg?branch=master
    :target: https://travis-ci.org/bastikr/boolean.py

@@ -3,20 +3,13 @@ Boolean Algebra.
 
 Tests
 
-Copyright (c) 2009-2017 Sebastian Kraemer, basti.kr@gmail.com and others
-Released under revised BSD license.
+Copyright (c) 2009-2020 Sebastian Kraemer, basti.kr@gmail.com and others
+SPDX-License-Identifier: BSD-2-Clause
 """
 
 from __future__ import absolute_import
 from __future__ import unicode_literals
 from __future__ import print_function
-from boolean.boolean import PARSE_UNKNOWN_TOKEN
-
-# Python 2 and 3
-try:
-    basestring  # NOQA
-except NameError:
-    basestring = str  # NOQA
 
 import unittest
 from unittest.case import expectedFailure
@@ -36,6 +29,13 @@ from boolean.boolean import PARSE_INVALID_SYMBOL_SEQUENCE
 from boolean.boolean import PARSE_INVALID_EXPRESSION
 from boolean.boolean import PARSE_INVALID_NESTING
 from boolean.boolean import PARSE_INVALID_OPERATOR_SEQUENCE
+from boolean.boolean import PARSE_UNKNOWN_TOKEN
+
+# Python 2 and 3
+try:
+    basestring  # NOQA
+except NameError:
+    basestring = str  # NOQA
 
 
 class BooleanAlgebraTestCase(unittest.TestCase):
@@ -104,6 +104,7 @@ class BooleanAlgebraTestCase(unittest.TestCase):
             pass
 
         class CustomAlgebra(BooleanAlgebra):
+
             def __init__(self, Symbol_class=CustomSymbol):
                 super(CustomAlgebra, self).__init__(Symbol_class=CustomSymbol)
 
@@ -157,7 +158,6 @@ class BooleanAlgebraTestCase(unittest.TestCase):
             except ImportError:
                 from StringIO import StringIO
 
-
         class PlainVar(Symbol):
             "Plain boolean variable"
 
@@ -165,6 +165,7 @@ class BooleanAlgebraTestCase(unittest.TestCase):
             "Colon and dot-separated string boolean variable"
 
         class AdvancedAlgebra(BooleanAlgebra):
+
             def tokenize(self, expr):
                 """
                 Example custom tokenizer derived from the standard Python tokenizer
@@ -398,6 +399,7 @@ class BooleanAlgebraTestCase(unittest.TestCase):
         except ParseError as pe:
             assert pe.error_code == PARSE_INVALID_NESTING
 
+
 class BaseElementTestCase(unittest.TestCase):
 
     def test_creation(self):
@@ -576,9 +578,9 @@ class NOTTestCase(unittest.TestCase):
         self.assertEqual(~a, ~a)
         assert algebra.Symbol('a') == algebra.Symbol('a')
         self.assertNotEqual(a, algebra.parse('~~a'))
-        self.assertEqual(a, (~~a).simplify())
-        self.assertEqual(~a, (~~ ~a).simplify())
-        self.assertEqual(a, (~~ ~~a).simplify())
+        self.assertEqual(a, (~ ~a).simplify())
+        self.assertEqual(~a, (~ ~ ~a).simplify())
+        self.assertEqual(a, (~ ~ ~ ~a).simplify())
         self.assertEqual((~(a & a & a)).simplify(), (~(a & a & a)).simplify())
         self.assertEqual(a, algebra.parse('~~a', simplify=True))
         algebra2 = BooleanAlgebra()
@@ -600,10 +602,10 @@ class NOTTestCase(unittest.TestCase):
         self.assertEqual(algebra.parse('~(a&b)').demorgan(), ~a | ~b)
         self.assertEqual(algebra.parse('~(a|b|c)').demorgan(), algebra.parse('~a&~b&~c'))
         self.assertEqual(algebra.parse('~(~a&b)').demorgan(), a | ~b)
-        self.assertEqual((~~(a&b|c)).demorgan(), a&b|c)
-        self.assertEqual((~~~(a&b|c)).demorgan(), ~(a&b)&~c)
-        self.assertEqual(algebra.parse('~'*10 + '(a&b|c)').demorgan(), a&b|c)
-        self.assertEqual(algebra.parse('~'*11 + '(a&b|c)').demorgan(), (~(a&b|c)).demorgan())
+        self.assertEqual((~ ~(a & b | c)).demorgan(), a & b | c)
+        self.assertEqual((~ ~ ~(a & b | c)).demorgan(), ~(a & b) & ~c)
+        self.assertEqual(algebra.parse('~' * 10 + '(a&b|c)').demorgan(), a & b | c)
+        self.assertEqual(algebra.parse('~' * 11 + '(a&b|c)').demorgan(), (~(a & b | c)).demorgan())
 
     def test_order(self):
         algebra = BooleanAlgebra()
@@ -716,7 +718,7 @@ class DualBaseTestCase(unittest.TestCase):
         # Elimination
         self.assertEqual(a, ((a & ~b) | (a & b)).simplify())
 
-        # Commutativity + Non-Commutativity 
+        # Commutativity + Non-Commutativity
         sorted_expression = (b & b & a).simplify()
         unsorted_expression = (b & b & a).simplify(sort=False)
         self.assertEqual(sorted_expression, unsorted_expression)
@@ -817,7 +819,7 @@ class DualBaseTestCase(unittest.TestCase):
 
         test_expression = (
             ~a & ~b & ~c & ~d | ~a & ~b & ~c & d | ~a & b & ~c & ~d |
-            ~ a & b & c & d | ~a & b & ~c & d | ~a & b & c & ~d |
+            ~a & b & c & d | ~a & b & ~c & d | ~a & b & c & ~d |
             a & ~b & ~c & d | ~a & b & c & d | a & ~b & c & d | a & b & c & d
         )
 
@@ -1060,7 +1062,7 @@ class OtherTestCase(unittest.TestCase):
         self.assertEqual(algebra.parse('~(a)'), algebra.parse('(~a)'))
         self.assertEqual(algebra.parse('~a'), ~a)
         self.assertEqual(algebra.parse('(~a)'), ~a)
-        self.assertEqual(algebra.parse('~~a', simplify=True), (~~a).simplify())
+        self.assertEqual(algebra.parse('~~a', simplify=True), (~ ~a).simplify())
         self.assertEqual(algebra.parse('a&b'), a & b)
         self.assertEqual(algebra.parse('~a&b'), ~a & b)
         self.assertEqual(algebra.parse('a&~b'), a & ~b)
@@ -1182,10 +1184,13 @@ class BooleanBoolTestCase(unittest.TestCase):
 class CustomSymbolTestCase(unittest.TestCase):
 
     def test_custom_symbol(self):
+
         class CustomSymbol(Symbol):
+
             def __init__(self, name, value='value'):
                 self.var = value
                 super(CustomSymbol, self).__init__(name)
+
         try:
             CustomSymbol('a', value='This is A')
         except TypeError as e:

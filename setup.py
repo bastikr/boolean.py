@@ -5,8 +5,8 @@ from __future__ import absolute_import
 from setuptools import find_packages
 from setuptools import setup
 
-
 long_desc = '''
+
 This library helps you deal with boolean expressions and algebra with variables
 and the boolean functions AND, OR, NOT.
 
@@ -20,10 +20,8 @@ https://booleanpy.readthedocs.org/en/latest/
 https://github.com/bastikr/boolean.py
 
 Copyright (c) 2009-2020 Sebastian Kraemer, basti.kr@gmail.com and others
-
-Released under revised BSD license aka. BSD Simplified or BSD-2-Clause.
+SPDX-License-Identifier: BSD-2-Clause
 '''
-
 
 setup(
     name='boolean.py',

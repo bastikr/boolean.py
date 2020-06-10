@@ -16,8 +16,8 @@ how they are presented.
 For extensive documentation look either into the docs directory or view it
 online, at https://booleanpy.readthedocs.org/en/latest/.
 
-Copyright (c) 2009-2017 Sebastian Kraemer, basti.kr@gmail.com and others
-Released under revised BSD license.
+Copyright (c) 2009-2020 Sebastian Kraemer, basti.kr@gmail.com and others
+SPDX-License-Identifier: BSD-2-Clause
 """
 
 from __future__ import absolute_import
@@ -29,18 +29,19 @@ import itertools
 from operator import and_ as and_operator
 from operator import or_ as or_operator
 
-
 # Python 2 and 3
 try:
     basestring  # NOQA
 except NameError:
     basestring = str  # NOQA
 
+# Python 2 and 3
 try:
-    reduce  # Python 2
+    # Python 2
+    reduce  # NOQA
 except NameError:
-    from functools import reduce  # Python 3
-
+    # Python 3
+    from functools import reduce  # NOQA
 
 # Set to True to enable tracing for parsing
 TRACE_PARSE = False
@@ -65,7 +66,6 @@ TOKEN_TYPES = {
     TOKEN_FALSE: 'FALSE',
     TOKEN_SYMBOL: 'SYMBOL',
 }
-
 
 # parsing error code and messages
 PARSE_UNKNOWN_TOKEN = 1
@@ -92,6 +92,7 @@ class ParseError(Exception):
     access the details of the error. str() of the exception instance returns a
     formatted message.
     """
+
     def __init__(self, token_type=None, token_string='', position=-1, error_code=0):
         self.token_type = token_type
         self.token_string = token_string
@@ -272,17 +273,11 @@ class BooleanAlgebra(object):
                 if TRACE_PARSE: print(' ast: token_type is TOKEN_NOT:', repr(ast))
 
             elif token_type == TOKEN_AND:
-                # if not prev_token or not is_sym(prev_token_type):
-                #     raise ParseError(token_type, token_string, token_position, PARSE_INVALID_OPERATOR_SEQUENCE)
-
                 ast = self._start_operation(ast, self.AND, precedence)
                 if TRACE_PARSE:
                     print('  ast:token_type is TOKEN_AND: start_operation', ast)
 
             elif token_type == TOKEN_OR:
-                # if not prev_token or not is_sym(prev_token_type):
-                #     raise ParseError(token_type, token_string, token_position, PARSE_INVALID_OPERATOR_SEQUENCE)
-
                 ast = self._start_operation(ast, self.OR, precedence)
                 if TRACE_PARSE:
                     print('  ast:token_type is TOKEN_OR: start_operation', ast)
@@ -359,7 +354,7 @@ class BooleanAlgebra(object):
 
     def _start_operation(self, ast, operation, precedence):
         """
-        Returns an AST where all operations of lower precedence are finalized.
+        Return an AST where all operations of lower precedence are finalized.
         """
         if TRACE_PARSE:
             print('   start_operation:', repr(operation), 'AST:', ast)
@@ -878,13 +873,6 @@ class Symbol(Expression):
     A Symbol can hold an object used to determine equality between symbols.
     """
 
-    # FIXME: the statement below in the original docstring is weird: Symbols do
-    # not have a value assigned, so how could they ever be FALSE
-    """
-    Symbols (also called boolean variables) can only take on the values TRUE or
-    FALSE.
-    """
-
     sort_order = 5
 
     def __init__(self, obj):
@@ -895,7 +883,9 @@ class Symbol(Expression):
         self.isliteral = True
 
     def __call__(self, **kwargs):
-        """ returns the value for this symbol from kwargs """
+        """
+        Return the evaluated value for this symbol from kwargs
+        """
         return kwargs[self.obj]
 
     def __hash__(self):
@@ -981,23 +971,25 @@ class Function(Expression):
 
         If debug is True, also prints debug information for each expression arg.
 
-        For example:
-        >>> print Expression().parse(u'not a and not b and not (a and ba and c) and c or c').pretty()
-        OR(
-          AND(
-            NOT(Symbol('a')),
-            NOT(Symbol('b')),
-            NOT(
+        For example::
+
+            >>> print(BooleanAlgebra().parse(
+            ...    u'not a and not b and not (a and ba and c) and c or c').pretty())
+            OR(
               AND(
-                Symbol('a'),
-                Symbol('ba'),
+                NOT(Symbol('a')),
+                NOT(Symbol('b')),
+                NOT(
+                  AND(
+                    Symbol('a'),
+                    Symbol('ba'),
+                    Symbol('c')
+                  )
+                ),
                 Symbol('c')
-              )
-            ),
-            Symbol('c')
-          ),
-          Symbol('c')
-        )
+              ),
+              Symbol('c')
+            )
         """
         debug_details = ''
         if debug:
@@ -1034,11 +1026,13 @@ class NOT(Function):
     is used for better readability.
 
     You can subclass to define alternative string representation.
+
     For example::
+
     >>> class NOT2(NOT):
-        def __init__(self, *args):
-            super(NOT2, self).__init__(*args)
-            self.operator = '!'
+    ...     def __init__(self, *args):
+    ...         super(NOT2, self).__init__(*args)
+    ...         self.operator = '!'
     """
 
     def __init__(self, arg1):
@@ -1102,7 +1096,9 @@ class NOT(Function):
         return op.dual(*(self.__class__(arg).cancel() for arg in op.args))
 
     def __call__(self, **kwargs):
-        """ negates the value returned from self.args[0].__call__ """
+        """
+        Return the evaluated (negated) value for this function.
+        """
         return not self.args[0](**kwargs)
 
     def __lt__(self, other):
@@ -1131,6 +1127,8 @@ class DualBase(Function):
     and OR. Both operations take 2 or more arguments and can be created using
     "|" for OR and "&" for AND.
     """
+
+    _pyoperator = None
 
     def __init__(self, arg1, arg2, *args):
         super(DualBase, self).__init__(arg1, arg2, *args)
@@ -1437,6 +1435,17 @@ class DualBase(Function):
                 return lenself < lenother
         return NotImplemented
 
+    def __call__(self, **kwargs):
+        """
+        Return the evaluation of this expression by calling each of its arg as
+        arg(**kwargs) and applying its corresponding Python operator (and or or)
+        to the results.
+
+        Reduce is used as in e.g. AND(a, b, c, d) == AND(a, AND(b, AND(c, d)))
+        ore.g. OR(a, b, c, d) == OR(a, OR(b, OR(c, d)))
+        """
+        return reduce(self._pyoperator, (a(**kwargs) for a in self.args))
+
 
 class AND(DualBase):
     """
@@ -1447,12 +1456,13 @@ class AND(DualBase):
     You can subclass to define alternative string representation.
     For example::
     >>> class AND2(AND):
-        def __init__(self, *args):
-            super(AND2, self).__init__(*args)
-            self.operator = 'AND'
+    ...     def __init__(self, *args):
+    ...         super(AND2, self).__init__(*args)
+    ...         self.operator = 'AND'
     """
 
     sort_order = 10
+    _pyoperator = and_operator
 
     def __init__(self, arg1, arg2, *args):
         super(AND, self).__init__(arg1, arg2, *args)
@@ -1460,14 +1470,6 @@ class AND(DualBase):
         self.annihilator = self.FALSE
         self.dual = self.OR
         self.operator = '&'
-
-    def __call__(self, **kwargs):
-        """
-        Calls arg.__call__ for each arg in self.args and applies python 'and' operator.
-
-        reduce is used as in e.g. AND(a, b, c, d) == AND(a, AND(b, AND(c, d)))
-        """
-        return reduce(and_operator, (a(**kwargs) for a in self.args))
 
 
 class OR(DualBase):
@@ -1478,13 +1480,15 @@ class OR(DualBase):
 
     You can subclass to define alternative string representation.
     For example::
+
     >>> class OR2(OR):
-        def __init__(self, *args):
-            super(OR2, self).__init__(*args)
-            self.operator = 'OR'
+    ...     def __init__(self, *args):
+    ...         super(OR2, self).__init__(*args)
+    ...         self.operator = 'OR'
     """
 
     sort_order = 25
+    _pyoperator = or_operator
 
     def __init__(self, arg1, arg2, *args):
         super(OR, self).__init__(arg1, arg2, *args)
@@ -1492,11 +1496,3 @@ class OR(DualBase):
         self.annihilator = self.TRUE
         self.dual = self.AND
         self.operator = '|'
-
-    def __call__(self, **kwargs):
-        """
-        Calls arg.__call__ for each arg in self.args and applies python 'or' operator.
-
-        reduce is used as in e.g. OR(a, b, c, d) == OR(a, OR(b, OR(c, d)))
-        """
-        return reduce(or_operator, (a(**kwargs) for a in self.args))
