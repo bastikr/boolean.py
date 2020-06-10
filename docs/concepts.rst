@@ -15,7 +15,7 @@ Basic Definitions
 Boolean Algebra
 ^^^^^^^^^^^^^^^
 
-This is the main entry point. An algebra is define by the actual classes used
+This is the main entry point. An algebra is defined by the actual classes used
 for its domain, functions and variables.
 
 
