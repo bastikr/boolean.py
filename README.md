@@ -41,7 +41,22 @@ http://readthedocs.org/docs/booleanpy/en/latest/
 Installation
 ------------
 
+### Installation via pip
+
+To install boolean.py, you need to have the following pieces of software on your computer:
+
+* Python 3.6+
+* pip
+
+You then only need to run the following command:
+
 `pip install boolean.py`
+
+### Installation via package managers
+
+There are packages available for easy install on some operating systems. You are welcome to help us package this tool for more distributions!
+
+* Arch Linux (AUR): [python-boolean.py](https://aur.archlinux.org/packages/python-boolean.py/)
 
 Testing
 -------
