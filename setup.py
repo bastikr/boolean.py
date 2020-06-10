@@ -19,7 +19,7 @@ https://booleanpy.readthedocs.org/en/latest/
 
 https://github.com/bastikr/boolean.py
 
-Copyright (c) 2009-2017 Sebastian Kraemer, basti.kr@gmail.com and others
+Copyright (c) 2009-2020 Sebastian Kraemer, basti.kr@gmail.com and others
 
 Released under revised BSD license aka. BSD Simplified or BSD-2-Clause.
 '''
@@ -27,9 +27,10 @@ Released under revised BSD license aka. BSD Simplified or BSD-2-Clause.
 
 setup(
     name='boolean.py',
-    version='3.7',
+    version='3.8',
     license='BSD-2-Clause',
-    description='Define boolean algebras, create and parse boolean expressions and create custom boolean DSL.',
+    description='Define boolean algebras, create and parse boolean '
+        'expressions and create custom boolean DSL.',
     long_description=long_desc,
     author='Sebastian Kraemer',
     author_email='basti.kr@gmail.com',
