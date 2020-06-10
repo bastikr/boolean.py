@@ -11,7 +11,8 @@ next
 ----------------
 
 * API changes
- * Add support for evaluation of boolean expression
+
+ * Add support for evaluation of boolean expression.
    Thank you to Lars van Gemerden @gemerden
 
 * Bug fixes
@@ -22,10 +23,12 @@ next
    Thank you to Benjy Weinberger @benjyw
 
 * Improve documentation
- * Add pointers to Linux distro packages 
+
+ * Add pointers to Linux distro packages.
    Thank you to Max Mehl @mxmehl and Carmen Bianca Bakker @carmenbianca
- * Fix typo
+ * Fix typo.
    Thank you to Gabriel Niebler @der-gabe
+
 
 3.7 (2019-10-04)
 ----------------
