@@ -14,7 +14,7 @@ next
 
 * Bug fixes
 
- * Fix parsing of tokens that have a number with the first character
+ * Fix parsing of tokens that have a number as the first character
 
 
 3.7 (2019-10-04)
