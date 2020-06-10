@@ -204,7 +204,8 @@ class BooleanAlgebra(object):
         if TRACE_PARSE:
             tokenized = list(tokenized)
             print('tokens:')
-            map(print, tokenized)
+            for t in tokenized:
+                print(t)
             tokenized = iter(tokenized)
 
         # the abstract syntax tree for this expression that will be build as we
@@ -262,16 +263,16 @@ class BooleanAlgebra(object):
                 if TRACE_PARSE: print(' ast: token_type is TOKEN_NOT:', repr(ast))
 
             elif token_type == TOKEN_AND:
-#                if not prev_token or not is_sym(prev_token_type):
-#                    raise ParseError(token_type, token_string, token_position, PARSE_INVALID_OPERATOR_SEQUENCE)
+                # if not prev_token or not is_sym(prev_token_type):
+                #     raise ParseError(token_type, token_string, token_position, PARSE_INVALID_OPERATOR_SEQUENCE)
 
                 ast = self._start_operation(ast, self.AND, precedence)
                 if TRACE_PARSE:
                     print('  ast:token_type is TOKEN_AND: start_operation', ast)
 
             elif token_type == TOKEN_OR:
-#                if not prev_token or not is_sym(prev_token_type):
-#                    raise ParseError(token_type, token_string, token_position, PARSE_INVALID_OPERATOR_SEQUENCE)
+                # if not prev_token or not is_sym(prev_token_type):
+                #     raise ParseError(token_type, token_string, token_position, PARSE_INVALID_OPERATOR_SEQUENCE)
 
                 ast = self._start_operation(ast, self.OR, precedence)
                 if TRACE_PARSE:
