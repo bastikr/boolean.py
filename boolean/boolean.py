@@ -461,7 +461,7 @@ class BooleanAlgebra(object):
         while position < length:
             tok = expr[position]
 
-            sym = tok.isalpha() or tok == '_'
+            sym = tok.isalnum() or tok == '_'
             if sym:
                 position += 1
                 while position < length:

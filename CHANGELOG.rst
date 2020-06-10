@@ -7,6 +7,16 @@ next
 ----
 
 
+3.8 (2020-06-10)
+----------------
+
+* No API changes
+
+* Bug fixes
+
+ * Fix parsing of tokens that have a number as the first character
+
+
 3.7 (2019-10-04)
 ----------------
 

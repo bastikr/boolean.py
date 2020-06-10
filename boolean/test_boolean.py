@@ -1079,6 +1079,8 @@ class OtherTestCase(unittest.TestCase):
         self.assertEqual(algebra.parse('a&(a|~b)', simplify=True), (a & (a | ~b)).simplify())
         self.assertEqual(algebra.parse('(a&b)|(b&((c|a)&(b|(c&a))))', simplify=True), ((a & b) | (b & ((c | a) & (b | (c & a))))).simplify())
         self.assertEqual(algebra.parse('(a&b)|(b&((c|a)&(b|(c&a))))', simplify=True), algebra.parse('a&b | b&(c|a)&(b|c&a)', simplify=True))
+        self.assertEqual(algebra.parse('1abc'), algebra.Symbol('1abc'))
+        self.assertEqual(algebra.parse('_abc'), algebra.Symbol('_abc'))
 
     def test_subs(self):
         algebra = BooleanAlgebra()
