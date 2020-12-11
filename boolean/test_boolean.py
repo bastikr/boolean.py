@@ -606,6 +606,10 @@ class NOTTestCase(unittest.TestCase):
         self.assertEqual((~ ~ ~(a & b | c)).demorgan(), ~(a & b) & ~c)
         self.assertEqual(algebra.parse('~' * 10 + '(a&b|c)').demorgan(), a & b | c)
         self.assertEqual(algebra.parse('~' * 11 + '(a&b|c)').demorgan(), (~(a & b | c)).demorgan())
+        _0 = algebra.FALSE
+        _1 = algebra.TRUE
+        self.assertEqual((~(_0)).demorgan(), _1)
+        self.assertEqual((~(_1)).demorgan(), _0)
 
     def test_order(self):
         algebra = BooleanAlgebra()
