@@ -838,6 +838,9 @@ class _TRUE(BaseElement):
     def __repr__(self):
         return 'TRUE'
 
+    def __call__(self):
+        return self
+
     __nonzero__ = __bool__ = lambda s: True
 
 
@@ -862,6 +865,9 @@ class _FALSE(BaseElement):
 
     def __repr__(self):
         return 'FALSE'
+
+    def __call__(self):
+        return self
 
     __nonzero__ = __bool__ = lambda s: False
 
