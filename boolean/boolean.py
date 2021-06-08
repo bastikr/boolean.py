@@ -450,13 +450,24 @@ class BooleanAlgebra(object):
         # operators, parens and common true or false symbols, as used in the
         # default tokenizer implementation.
         TOKENS = {
-            '*': TOKEN_AND, '&': TOKEN_AND, 'and': TOKEN_AND,
-            '+': TOKEN_OR, '|': TOKEN_OR, 'or': TOKEN_OR,
-            '~': TOKEN_NOT, '!': TOKEN_NOT, 'not': TOKEN_NOT,
-            '(': TOKEN_LPAR, ')': TOKEN_RPAR,
-            '[': TOKEN_LPAR, ']': TOKEN_RPAR,
-            'true': TOKEN_TRUE, '1': TOKEN_TRUE,
-            'false': TOKEN_FALSE, '0': TOKEN_FALSE, 'none': TOKEN_FALSE
+            '*': TOKEN_AND,
+            '&': TOKEN_AND,
+            'and': TOKEN_AND,
+            '+': TOKEN_OR,
+            '|': TOKEN_OR,
+            'or': TOKEN_OR,
+            '~': TOKEN_NOT,
+            '!': TOKEN_NOT,
+            'not': TOKEN_NOT,
+            '(': TOKEN_LPAR,
+            ')': TOKEN_RPAR,
+            '[': TOKEN_LPAR,
+            ']': TOKEN_RPAR,
+            'true': TOKEN_TRUE,
+            '1': TOKEN_TRUE,
+            'false': TOKEN_FALSE,
+            '0': TOKEN_FALSE,
+            'none': TOKEN_FALSE
         }
 
         position = 0
@@ -488,28 +499,26 @@ class BooleanAlgebra(object):
 
             position += 1
 
-    # TODO: explain what this means exactly
-    def _rdistributive(self, expr, op_example):
+    def _recurse_distributive(self, expr, operation_inst):
         """
-        Recursively flatten the `expr` expression for the `op_example`
-        AND or OR operation instance exmaple.
+        Recursively flatten, simplify and apply the distributive laws to the
+        `expr` expression. Distributivity is considered for the AND or OR
+        `operation_inst` instance.
         """
         if expr.isliteral:
             return expr
 
-        expr_class = expr.__class__
-
-        args = (self._rdistributive(arg, op_example) for arg in expr.args)
+        args = (self._recurse_distributive(arg, operation_inst) for arg in expr.args)
         args = tuple(arg.simplify() for arg in args)
         if len(args) == 1:
             return args[0]
 
-        expr = expr_class(*args)
+        flattened_expr = expr.__class__(*args)
 
-        dualoperation = op_example.dual
-        if isinstance(expr, dualoperation):
-            expr = expr.distributive()
-        return expr
+        dualoperation = operation_inst.dual
+        if isinstance(flattened_expr, dualoperation):
+            flattened_expr = flattened_expr.distributive()
+        return flattened_expr
 
     def normalize(self, expr, operation):
         """
@@ -527,10 +536,10 @@ class BooleanAlgebra(object):
         assert operation in (self.AND, self.OR,)
         # Move NOT inwards.
         expr = expr.literalize()
-        # Simplify first otherwise _rdistributive() may take forever.
+        # Simplify first otherwise _recurse_distributive() may take forever.
         expr = expr.simplify()
         operation_example = operation(self.TRUE, self.FALSE)
-        expr = self._rdistributive(expr, operation_example)
+        expr = self._recurse_distributive(expr, operation_example)
         # Canonicalize
         expr = expr.simplify()
         return expr
@@ -541,11 +550,15 @@ class BooleanAlgebra(object):
         """
         return self.normalize(expr, self.AND)
 
+    conjunctive_normal_form = cnf
+
     def dnf(self, expr):
         """
         Return a disjunctive normal form of the `expr` expression.
         """
         return self.normalize(expr, self.OR)
+
+    disjunctive_normal_form = dnf
 
 
 class Expression(object):
@@ -553,19 +566,6 @@ class Expression(object):
     Abstract base class for all boolean expressions, including functions and
     variable symbols.
     """
-    # Defines sort and comparison order between expressions arguments
-    sort_order = None
-
-    # Store arguments aka. subterms of this expressions.
-    # subterms are either literals or expressions.
-    args = tuple()
-
-    # True is this is a literal expression such as a Symbol, TRUE or FALSE
-    isliteral = False
-
-    # True if this expression has been simplified to in canonical form.
-    iscanonical = False
-
     # these class attributes are configured when a new BooleanAlgebra is created
     TRUE = None
     FALSE = None
@@ -573,6 +573,20 @@ class Expression(object):
     AND = None
     OR = None
     Symbol = None
+
+    def __init__(self):
+        # Defines sort and comparison order between expressions arguments
+        self.sort_order = None
+
+        # Store arguments aka. subterms of this expressions.
+        # subterms are either literals or expressions.
+        self.args = tuple()
+
+        # True is this is a literal expression such as a Symbol, TRUE or FALSE
+        self.isliteral = False
+
+        # True if this expression has been simplified to in canonical form.
+        self.iscanonical = False
 
     @property
     def objects(self):
@@ -618,7 +632,7 @@ class Expression(object):
     def get_symbols(self):
         """
         Return a list of all the symbols contained in this expression.
-        Include recursively subexpressions symbols.
+        Include subexpressions symbols recursively.
         This includes duplicates.
         """
         return [s if isinstance(s, Symbol) else s.args[0] for s in self.get_literals()]
@@ -627,20 +641,26 @@ class Expression(object):
     def symbols(self,):
         """
         Return a list of all the symbols contained in this expression.
-        Include recursively subexpressions symbols.
+        Include subexpressions symbols recursively.
         This includes duplicates.
         """
         return set(self.get_symbols())
 
     def subs(self, substitutions, default=None, simplify=False):
         """
-        Return an expression where the expression or all subterms equal to a key
-        expression are substituted with the corresponding value expression using
-        a mapping of: {expr->expr to substitute.}
+        Return an expression where all subterms of this expression are
+        by the new expression using a `substitutions` mapping of:
+        {expr: replacement}
 
-        Return this expression unmodified if nothing could be substituted.
+        Return the provided `default` value if this expression has no elements,
+        e.g. is empty.
 
-        Note that this can be used to tested for expression containment.
+        Simplify the results if `simplify` is True.
+
+        Return this expression unmodified if nothing could be substituted. Note
+        that a possible usage of this function is to check for expression
+        containment as the expression will be returned unmodified if if does not
+        contain any of the provided substitutions.
         """
         # shortcut: check if we have our whole expression as a possible
         # subsitution source
@@ -648,15 +668,14 @@ class Expression(object):
             if expr == self:
                 return substitution
 
-        # otherwise, do a proper substitution of sub expressions
+        # otherwise, do a proper substitution of subexpressions
         expr = self._subs(substitutions, default, simplify)
         return self if expr is None else expr
 
     def _subs(self, substitutions, default, simplify):
         """
-        Return an expression where all subterms equal to a key expression are
-        substituted by the corresponding value expression using a mapping of:
-        {expr->expr to substitute.}
+        Return an expression where all subterms are substituted by the new
+        expression using a `substitutions` mapping of: {expr: replacement}
         """
         # track the new list of unchanged args or replaced args through
         # a substitution
@@ -668,7 +687,7 @@ class Expression(object):
             return self
 
         # if the expression has no elements, e.g. is empty, do not apply
-        # substitions
+        # substitutions
         if not self.args:
             return default
 
@@ -736,12 +755,15 @@ class Expression(object):
 
         This method does not make any simplification or transformation, so it
         will return False although the expression terms may be mathematically
-        equal. Use simplify() before testing equality.
+        equal. Use simplify() before testing equality to check the mathematical
+        equality.
 
         For literals, plain equality is used.
-        For functions, it uses the facts that operations are:
-        - commutative and considers different ordering as equal.
-        - idempotent, so args can appear more often in one term than in the other.
+
+        For functions, equality uses the facts that operations are:
+
+        - commutative: order does not matter and different orders are equal.
+        - idempotent: so args can appear more often in one term than in the other.
         """
         if self is other:
             return True
@@ -791,12 +813,11 @@ class BaseElement(Expression):
     Abstract base class for the base elements TRUE and FALSE of the boolean
     algebra.
     """
-    sort_order = 0
 
     def __init__(self):
         super(BaseElement, self).__init__()
+        self.sort_order = 0
         self.iscanonical = True
-
         # The dual Base Element class for this element: TRUE.dual returns
         # _FALSE() and FALSE.dual returns _TRUE(). This is a cyclic reference
         # and therefore only assigned after creation of the singletons,
@@ -873,10 +894,9 @@ class Symbol(Expression):
     A Symbol can hold an object used to determine equality between symbols.
     """
 
-    sort_order = 5
-
     def __init__(self, obj):
         super(Symbol, self).__init__()
+        self.sort_order = 5
         # Store an associated object. This object determines equality
         self.obj = obj
         self.iscanonical = True
@@ -1461,11 +1481,11 @@ class AND(DualBase):
     ...         self.operator = 'AND'
     """
 
-    sort_order = 10
     _pyoperator = and_operator
 
     def __init__(self, arg1, arg2, *args):
         super(AND, self).__init__(arg1, arg2, *args)
+        self.sort_order = 10
         self.identity = self.TRUE
         self.annihilator = self.FALSE
         self.dual = self.OR
@@ -1487,11 +1507,11 @@ class OR(DualBase):
     ...         self.operator = 'OR'
     """
 
-    sort_order = 25
     _pyoperator = or_operator
 
     def __init__(self, arg1, arg2, *args):
         super(OR, self).__init__(arg1, arg2, *args)
+        self.sort_order = 25
         self.identity = self.FALSE
         self.annihilator = self.TRUE
         self.dual = self.AND
