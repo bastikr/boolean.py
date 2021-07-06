@@ -32,7 +32,7 @@ Example
         >>> expression1 == expression2
         False
         >>> expression1.simplify() == expression2
-        True    
+        True
 
 Documentation
 -------------
@@ -62,13 +62,13 @@ There are packages available for easy install on some operating systems.
 You are welcome to help us package this tool for more distributions!
 
 -  boolean.py has been packaged as Arch Linux, Fedora, openSus,
-   nixpkgs, Guix, DragonFly and FreeBSD 
+   nixpkgs, Guix, DragonFly and FreeBSD
    `packages <https://repology.org/project/python:boolean.py/versions>`__ .
 
 In particular:
 
--  Arch Linux (AUR):
-   `python-boolean.py <https://aur.archlinux.org/packages/python-boolean.py/>`__
+-  Arch Linux:
+   `python-boolean.py <https://archlinux.org/packages/community/any/python-boolean.py/>`__
 -  Fedora:
    `python-boolean.py <https://apps.fedoraproject.org/packages/python-boolean.py>`__
 -  openSUSE:
