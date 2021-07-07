@@ -523,16 +523,35 @@ class BooleanAlgebra(object):
 
         The operation must be an AND or OR operation or a subclass.
         """
-        # ensure that the operation is not NOT
-        assert operation in (self.AND, self.OR,)
+        # Ensure that the operation is not NOT
+        assert operation in (self.AND, self.OR)
         # Move NOT inwards.
         expr = expr.literalize()
         # Simplify first otherwise _rdistributive() may take forever.
         expr = expr.simplify()
         operation_example = operation(self.TRUE, self.FALSE)
-        expr = self._rdistributive(expr, operation_example)
-        # Canonicalize
-        expr = expr.simplify()
+
+        # For large dual operations build up from normalized subexpressions,
+        # otherwise we can get exponential blowup midway through
+        expr.args = tuple(self.normalize(a, operation) for a in expr.args)
+        if len(expr.args) > 1 and (
+            (operation == self.AND and isinstance(expr, self.OR))
+            or (operation == self.OR and isinstance(expr, self.AND))
+        ):
+            args = expr.args
+            expr_class = expr.__class__
+            expr = args[0]
+            for arg in args[1:]:
+                expr = expr_class(expr, arg)
+                expr = self._rdistributive(expr, operation_example)
+                # Canonicalize
+                expr = expr.simplify()
+
+        else:
+            expr = self._rdistributive(expr, operation_example)
+            # Canonicalize
+            expr = expr.simplify()
+
         return expr
 
     def cnf(self, expr):
