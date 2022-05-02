@@ -22,22 +22,9 @@ SPDX-License-Identifier: BSD-2-Clause
 
 import inspect
 import itertools
+from functools import reduce  # NOQA
 from operator import and_ as and_operator
 from operator import or_ as or_operator
-
-# Python 2 and 3
-try:
-    basestring  # NOQA
-except NameError:
-    basestring = str  # NOQA
-
-# Python 2 and 3
-try:
-    # Python 2
-    reduce  # NOQA
-except NameError:
-    # Python 3
-    from functools import reduce  # NOQA
 
 # Set to True to enable tracing for parsing
 TRACE_PARSE = False
@@ -100,13 +87,13 @@ class ParseError(Exception):
 
         tstr = ""
         if self.token_string:
-            tstr = ' for token: "%s"' % self.token_string
+            tstr = f' for token: "{self.token_string}"'
 
         pos = ""
         if self.position > 0:
-            pos = " at position: %d" % self.position
+            pos = f" at position: {self.position}"
 
-        return "{emsg}{tstr}{pos}".format(**locals())
+        return f"{emsg}{tstr}{pos}"
 
 
 class BooleanAlgebra(object):
@@ -209,7 +196,7 @@ class BooleanAlgebra(object):
 
         precedence = {self.NOT: 5, self.AND: 10, self.OR: 15, TOKEN_LPAR: 20}
 
-        if isinstance(expr, basestring):
+        if isinstance(expr, str):
             tokenized = self.tokenize(expr)
         else:
             tokenized = iter(expr)
@@ -501,8 +488,8 @@ class BooleanAlgebra(object):
             - True symbols: 1 and True
             - False symbols: 0, False and None
         """
-        if not isinstance(expr, basestring):
-            raise TypeError("expr must be string but it is %s." % type(expr))
+        if not isinstance(expr, str):
+            raise TypeError(f"expr must be string but it is {type(expr)}.")
 
         # mapping of lowercase token strings to a token type id for the standard
         # operators, parens and common true or false symbols, as used in the
@@ -1003,8 +990,8 @@ class Symbol(Expression):
         return str(self.obj)
 
     def __repr__(self):
-        obj = "'%s'" % self.obj if isinstance(self.obj, basestring) else repr(self.obj)
-        return "%s(%s)" % (self.__class__.__name__, obj)
+        obj = f"'{self.obj}'" if isinstance(self.obj, str) else repr(self.obj)
+        return f"{self.__class__.__name__}({obj})"
 
     def pretty(self, indent=0, debug=False):
         """
@@ -1012,10 +999,10 @@ class Symbol(Expression):
         """
         debug_details = ""
         if debug:
-            debug_details += "<isliteral=%r, iscanonical=%r>" % (self.isliteral, self.iscanonical)
+            debug_details += f"<isliteral={self.isliteral!r}, iscanonical={self.iscanonical!r}>"
 
-        obj = "'%s'" % self.obj if isinstance(self.obj, basestring) else repr(self.obj)
-        return (" " * indent) + ("%s(%s%s)" % (self.__class__.__name__, debug_details, obj))
+        obj = f"'{self.obj}'" if isinstance(self.obj, str) else repr(self.obj)
+        return (" " * indent) + f"{self.__class__.__name__}({debug_details}{obj})"
 
 
 class Function(Expression):
@@ -1035,27 +1022,28 @@ class Function(Expression):
 
         assert all(
             isinstance(arg, Expression) for arg in args
-        ), "Bad arguments: all arguments must be an Expression: %r" % (args,)
+        ), f"Bad arguments: all arguments must be an Expression: {args!r}"
         self.args = tuple(args)
 
     def __str__(self):
         args = self.args
         if len(args) == 1:
             if self.isliteral:
-                return "%s%s" % (self.operator, args[0])
-            return "%s(%s)" % (self.operator, args[0])
+                return f"{self.operator}{args[0]}"
+            return f"{self.operator}({args[0]})"
 
         args_str = []
         for arg in args:
             if arg.isliteral:
                 args_str.append(str(arg))
             else:
-                args_str.append("(%s)" % arg)
+                args_str.append(f"({arg})")
 
         return self.operator.join(args_str)
 
     def __repr__(self):
-        return "%s(%s)" % (self.__class__.__name__, ", ".join(map(repr, self.args)))
+        args = ", ".join(map(repr, self.args))
+        return f"{self.__class__.__name__}({args})"
 
     def pretty(self, indent=0, debug=False):
         """
@@ -1085,27 +1073,25 @@ class Function(Expression):
         """
         debug_details = ""
         if debug:
-            debug_details += "<isliteral=%r, iscanonical=%r" % (self.isliteral, self.iscanonical)
+            debug_details += f"<isliteral={self.isliteral!r}, iscanonical={self.iscanonical!r}"
             identity = getattr(self, "identity", None)
             if identity is not None:
-                debug_details += ", identity=%r" % (identity)
+                debug_details += f", identity={identity!r}"
 
             annihilator = getattr(self, "annihilator", None)
             if annihilator is not None:
-                debug_details += ", annihilator=%r" % (annihilator)
+                debug_details += f", annihilator={annihilator!r}"
 
             dual = getattr(self, "dual", None)
             if dual is not None:
-                debug_details += ", dual=%r" % (dual)
+                debug_details += f", dual={dual!r}"
             debug_details += ">"
         cls = self.__class__.__name__
         args = [a.pretty(indent=indent + 2, debug=debug) for a in self.args]
         pfargs = ",\n".join(args)
         cur_indent = " " * indent
         new_line = "" if self.isliteral else "\n"
-        return "{cur_indent}{cls}({debug_details}{new_line}{pfargs}\n{cur_indent})".format(
-            **locals()
-        )
+        return f"{cur_indent}{cls}({debug_details}{new_line}{pfargs}\n{cur_indent})"
 
 
 class NOT(Function):
@@ -1208,14 +1194,10 @@ class NOT(Function):
         """
         debug_details = ""
         if debug:
-            debug_details += "<isliteral=%r, iscanonical=%r>" % (self.isliteral, self.iscanonical)
+            debug_details += f"<isliteral={self.isliteral!r}, iscanonical={self.iscanonical!r}>"
         if self.isliteral:
             pretty_literal = self.args[0].pretty(indent=0, debug=debug)
-            return (" " * indent) + "%s(%s%s)" % (
-                self.__class__.__name__,
-                debug_details,
-                pretty_literal,
-            )
+            return (" " * indent) + f"{self.__class__.__name__}({debug_details}{pretty_literal})"
         else:
             return super(NOT, self).pretty(indent=indent, debug=debug)
 
