@@ -27,14 +27,14 @@ Example
     >>> expression1
     AND(Symbol('apple'), OR(Symbol('oranges'), Symbol('banana')), NOT(Symbol('banana')))
 
-    >>> expression2 = algebra.parse(u'(oranges | banana) and not banana & apple', simplify=True)
+    >>> expression2 = algebra.parse('(oranges | banana) and not banana & apple', simplify=True)
     >>> expression2
     AND(Symbol('apple'), NOT(Symbol('banana')), Symbol('oranges'))
 
     >>> expression1 == expression2
     False
     >>> expression1.simplify() == expression2
-    True    
+    True
 
 
 Documentation
@@ -100,6 +100,9 @@ interpreters that are actually installed on your machine:
 ::
 
     tox -e py36
+
+Alternatively use pytest.
+
 
 License
 -------
