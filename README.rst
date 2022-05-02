@@ -8,36 +8,40 @@ OR and NOT - other compositions like XOR and NAND are not implemented
 but can be emulated with AND or and NOT. Expressions are constructed
 from parsed strings or in Python.
 
-It runs on Python 2.7 and Python 3.
+It runs on Python 3.6+
+You can use older version 3.x for Python 2.7+ support.
 
 https://github.com/bastikr/boolean.py
 
 Build status: |Build Status|
+
 
 Example
 -------
 
 ::
 
-        >>> import boolean
-        >>> algebra = boolean.BooleanAlgebra()
-        >>> expression1 = algebra.parse(u'apple and (oranges or banana) and not banana', simplify=False)
-        >>> expression1
-        AND(Symbol('apple'), OR(Symbol('oranges'), Symbol('banana')), NOT(Symbol('banana')))
+    >>> import boolean
+    >>> algebra = boolean.BooleanAlgebra()
+    >>> expression1 = algebra.parse(u'apple and (oranges or banana) and not banana', simplify=False)
+    >>> expression1
+    AND(Symbol('apple'), OR(Symbol('oranges'), Symbol('banana')), NOT(Symbol('banana')))
 
-        >>> expression2 = algebra.parse(u'(oranges | banana) and not banana & apple', simplify=True)
-        >>> expression2
-        AND(Symbol('apple'), NOT(Symbol('banana')), Symbol('oranges'))
+    >>> expression2 = algebra.parse(u'(oranges | banana) and not banana & apple', simplify=True)
+    >>> expression2
+    AND(Symbol('apple'), NOT(Symbol('banana')), Symbol('oranges'))
 
-        >>> expression1 == expression2
-        False
-        >>> expression1.simplify() == expression2
-        True    
+    >>> expression1 == expression2
+    False
+    >>> expression1.simplify() == expression2
+    True    
+
 
 Documentation
 -------------
 
 http://readthedocs.org/docs/booleanpy/en/latest/
+
 
 Installation
 ------------
@@ -54,6 +58,7 @@ on your computer:
 You then only need to run the following command:
 
 ``pip install boolean.py``
+
 
 Installation via package managers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -86,7 +91,7 @@ Test with all of the supported Python environments using ``tox``:
 
 ::
 
-    pip install -r test-requirements.txt
+    pip install -r requirements-dev.txt
     tox
 
 If ``tox`` throws ``InterpreterNotFound``, limit it to python
@@ -94,12 +99,12 @@ interpreters that are actually installed on your machine:
 
 ::
 
-    tox -e py27,py36
+    tox -e py36
 
 License
 -------
 
-Copyright (c) 2009-2020 Sebastian Kraemer, basti.kr@gmail.com and others
+Copyright (c) Sebastian Kraemer, basti.kr@gmail.com and others
 SPDX-License-Identifier: BSD-2-Clause
 
 .. |Build Status| image:: https://travis-ci.org/bastikr/boolean.py.svg?branch=master

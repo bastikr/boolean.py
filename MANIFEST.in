@@ -1,15 +1,16 @@
 graft docs
 graft boolean
+graft .github
+
 
 include .gitignore
-include .travis.yml
 include CHANGELOG.rst
 include LICENSE.txt
 include MANIFEST.in
 include README.rst
 include setup.py
 include setup.cfg
-include test-requirements.txt
+include requirements-dev.txt
 include tox.ini
 
 global-exclude *.py[co] __pycache__
