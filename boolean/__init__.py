@@ -7,7 +7,7 @@ look either into the docs directory or view it online, at
 https://booleanpy.readthedocs.org/en/latest/.
 
 Copyright (c) 2009-2020 Sebastian Kraemer, basti.kr@gmail.com and others
-SPDX-License-Identifier: BSD-3-Clause
+SPDX-License-Identifier: BSD-2-Clause
 """
 
 from __future__ import absolute_import
