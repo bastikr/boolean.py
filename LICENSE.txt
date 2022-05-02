@@ -1,4 +1,4 @@
-Copyright (c) 2009-2020 Sebastian Kraemer, basti.kr@gmail.com and others
+Copyright (c) Sebastian Kraemer, basti.kr@gmail.com and others
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,

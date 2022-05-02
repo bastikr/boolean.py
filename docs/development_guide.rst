@@ -23,14 +23,14 @@ Test with all of the supported Python environments using `tox`:
 
 .. code-block:: shell
 
-   pip install -r test-requirements.txt
+   pip install -r requirements-dev.txt
    tox
 
 If `tox` throws `InterpreterNotFound`, limit it to python interpreters that are actually installed on your machine:
 
 .. code-block:: shell
 
-   tox -e py27,py36
+   tox -e py36
 
 Classes Hierarchy
 -----------------

@@ -7,6 +7,23 @@ next
 ----
 
 
+4.0 (2022-04-02)
+----------------
+
+* API changes
+
+ * Drop support for Python 2.
+ * Test on Python 3.10
+ * Make Expression.sort_order an instance attributes and not a class attribute
+
+* Misc.
+
+ * Correct licensing documentation
+ * Improve docstringf and apply minor refactorings
+ * Adopt black code style and isort for imports
+ * Drop Travis and use GitHub actions for CI
+
+
 3.8 (2020-06-10)
 ----------------
 

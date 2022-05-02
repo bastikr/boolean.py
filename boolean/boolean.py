@@ -16,32 +16,15 @@ how they are presented.
 For extensive documentation look either into the docs directory or view it
 online, at https://booleanpy.readthedocs.org/en/latest/.
 
-Copyright (c) 2009-2020 Sebastian Kraemer, basti.kr@gmail.com and others
+Copyright (c) Sebastian Kraemer, basti.kr@gmail.com and others
 SPDX-License-Identifier: BSD-2-Clause
 """
 
-from __future__ import absolute_import
-from __future__ import unicode_literals
-from __future__ import print_function
-
 import inspect
 import itertools
+from functools import reduce  # NOQA
 from operator import and_ as and_operator
 from operator import or_ as or_operator
-
-# Python 2 and 3
-try:
-    basestring  # NOQA
-except NameError:
-    basestring = str  # NOQA
-
-# Python 2 and 3
-try:
-    # Python 2
-    reduce  # NOQA
-except NameError:
-    # Python 3
-    from functools import reduce  # NOQA
 
 # Set to True to enable tracing for parsing
 TRACE_PARSE = False
@@ -57,14 +40,14 @@ TOKEN_FALSE = 7
 TOKEN_SYMBOL = 8
 
 TOKEN_TYPES = {
-    TOKEN_AND: 'AND',
-    TOKEN_OR: 'OR',
-    TOKEN_NOT: 'NOT',
-    TOKEN_LPAR: '(',
-    TOKEN_RPAR: ')',
-    TOKEN_TRUE: 'TRUE',
-    TOKEN_FALSE: 'FALSE',
-    TOKEN_SYMBOL: 'SYMBOL',
+    TOKEN_AND: "AND",
+    TOKEN_OR: "OR",
+    TOKEN_NOT: "NOT",
+    TOKEN_LPAR: "(",
+    TOKEN_RPAR: ")",
+    TOKEN_TRUE: "TRUE",
+    TOKEN_FALSE: "FALSE",
+    TOKEN_SYMBOL: "SYMBOL",
 }
 
 # parsing error code and messages
@@ -76,12 +59,12 @@ PARSE_INVALID_SYMBOL_SEQUENCE = 5
 PARSE_INVALID_OPERATOR_SEQUENCE = 6
 
 PARSE_ERRORS = {
-    PARSE_UNKNOWN_TOKEN: 'Unknown token',
-    PARSE_UNBALANCED_CLOSING_PARENS: 'Unbalanced parenthesis',
-    PARSE_INVALID_EXPRESSION: 'Invalid expression',
-    PARSE_INVALID_NESTING: 'Invalid expression nesting such as (AND xx)',
-    PARSE_INVALID_SYMBOL_SEQUENCE: 'Invalid symbols sequence such as (A B)',
-    PARSE_INVALID_OPERATOR_SEQUENCE: 'Invalid operator sequence without symbols such as AND OR or OR OR',
+    PARSE_UNKNOWN_TOKEN: "Unknown token",
+    PARSE_UNBALANCED_CLOSING_PARENS: "Unbalanced parenthesis",
+    PARSE_INVALID_EXPRESSION: "Invalid expression",
+    PARSE_INVALID_NESTING: "Invalid expression nesting such as (AND xx)",
+    PARSE_INVALID_SYMBOL_SEQUENCE: "Invalid symbols sequence such as (A B)",
+    PARSE_INVALID_OPERATOR_SEQUENCE: "Invalid operator sequence without symbols such as AND OR or OR OR",
 }
 
 
@@ -93,24 +76,24 @@ class ParseError(Exception):
     formatted message.
     """
 
-    def __init__(self, token_type=None, token_string='', position=-1, error_code=0):
+    def __init__(self, token_type=None, token_string="", position=-1, error_code=0):
         self.token_type = token_type
         self.token_string = token_string
         self.position = position
         self.error_code = error_code
 
     def __str__(self, *args, **kwargs):
-        emsg = PARSE_ERRORS.get(self.error_code, 'Unknown parsing error')
+        emsg = PARSE_ERRORS.get(self.error_code, "Unknown parsing error")
 
-        tstr = ''
+        tstr = ""
         if self.token_string:
-            tstr = ' for token: "%s"' % self.token_string
+            tstr = f' for token: "{self.token_string}"'
 
-        pos = ''
+        pos = ""
         if self.position > 0:
-            pos = ' at position: %d' % self.position
+            pos = f" at position: {self.position}"
 
-        return '{emsg}{tstr}{pos}'.format(**locals())
+        return f"{emsg}{tstr}{pos}"
 
 
 class BooleanAlgebra(object):
@@ -123,9 +106,16 @@ class BooleanAlgebra(object):
     including base elements, functions and variable symbols.
     """
 
-    def __init__(self, TRUE_class=None, FALSE_class=None, Symbol_class=None,
-                 NOT_class=None, AND_class=None, OR_class=None,
-                 allowed_in_token=('.', ':', '_')):
+    def __init__(
+        self,
+        TRUE_class=None,
+        FALSE_class=None,
+        Symbol_class=None,
+        NOT_class=None,
+        AND_class=None,
+        OR_class=None,
+        allowed_in_token=(".", ":", "_"),
+    ):
         """
         The types for TRUE, FALSE, NOT, AND, OR and Symbol define the boolean
         algebra elements, operations and Symbol variable. They default to the
@@ -154,12 +144,12 @@ class BooleanAlgebra(object):
         self.Symbol = Symbol_class or Symbol
 
         tf_nao = {
-            'TRUE': self.TRUE,
-            'FALSE': self.FALSE,
-            'NOT': self.NOT,
-            'AND': self.AND,
-            'OR': self.OR,
-            'Symbol': self.Symbol
+            "TRUE": self.TRUE,
+            "FALSE": self.FALSE,
+            "NOT": self.NOT,
+            "AND": self.AND,
+            "OR": self.OR,
+            "Symbol": self.Symbol,
         }
 
         # setup cross references such that all algebra types and
@@ -206,14 +196,14 @@ class BooleanAlgebra(object):
 
         precedence = {self.NOT: 5, self.AND: 10, self.OR: 15, TOKEN_LPAR: 20}
 
-        if isinstance(expr, basestring):
+        if isinstance(expr, str):
             tokenized = self.tokenize(expr)
         else:
             tokenized = iter(expr)
 
         if TRACE_PARSE:
             tokenized = list(tokenized)
-            print('tokens:')
+            print("tokens:")
             for t in tokenized:
                 print(t)
             tokenized = iter(tokenized)
@@ -233,88 +223,126 @@ class BooleanAlgebra(object):
         prev_token = None
         for token_type, token_string, token_position in tokenized:
             if TRACE_PARSE:
-                print('\nprocessing token_type:', repr(token_type), 'token_string:', repr(token_string), 'token_position:', repr(token_position))
+                print(
+                    "\nprocessing token_type:",
+                    repr(token_type),
+                    "token_string:",
+                    repr(token_string),
+                    "token_position:",
+                    repr(token_position),
+                )
 
             if prev_token:
                 prev_token_type, _prev_token_string, _prev_token_position = prev_token
                 if TRACE_PARSE:
-                    print('  prev_token:', repr(prev_token))
+                    print("  prev_token:", repr(prev_token))
 
-                if is_sym(prev_token_type) and (is_sym(token_type)):  # or token_type == TOKEN_LPAR) :
-                    raise ParseError(token_type, token_string, token_position, PARSE_INVALID_SYMBOL_SEQUENCE)
+                if is_sym(prev_token_type) and (
+                    is_sym(token_type)
+                ):  # or token_type == TOKEN_LPAR) :
+                    raise ParseError(
+                        token_type, token_string, token_position, PARSE_INVALID_SYMBOL_SEQUENCE
+                    )
 
-                if is_operator(prev_token_type) and (is_operator(token_type) or token_type == TOKEN_RPAR):
-                    raise ParseError(token_type, token_string, token_position, PARSE_INVALID_OPERATOR_SEQUENCE)
+                if is_operator(prev_token_type) and (
+                    is_operator(token_type) or token_type == TOKEN_RPAR
+                ):
+                    raise ParseError(
+                        token_type, token_string, token_position, PARSE_INVALID_OPERATOR_SEQUENCE
+                    )
 
             else:
                 if is_operator(token_type):
-                    raise ParseError(token_type, token_string, token_position, PARSE_INVALID_OPERATOR_SEQUENCE)
+                    raise ParseError(
+                        token_type, token_string, token_position, PARSE_INVALID_OPERATOR_SEQUENCE
+                    )
 
             if token_type == TOKEN_SYMBOL:
                 ast.append(self.Symbol(token_string))
                 if TRACE_PARSE:
-                    print(' ast: token_type is TOKEN_SYMBOL: append new symbol', repr(ast))
+                    print(" ast: token_type is TOKEN_SYMBOL: append new symbol", repr(ast))
 
             elif isinstance(token_type, Symbol):
                 ast.append(token_type)
                 if TRACE_PARSE:
-                    print(' ast: token_type is Symbol): append existing symbol', repr(ast))
+                    print(" ast: token_type is Symbol): append existing symbol", repr(ast))
 
             elif token_type == TOKEN_TRUE:
                 ast.append(self.TRUE)
-                if TRACE_PARSE: print(' ast: token_type is TOKEN_TRUE:', repr(ast))
+                if TRACE_PARSE:
+                    print(" ast: token_type is TOKEN_TRUE:", repr(ast))
 
             elif token_type == TOKEN_FALSE:
                 ast.append(self.FALSE)
-                if TRACE_PARSE: print(' ast: token_type is TOKEN_FALSE:', repr(ast))
+                if TRACE_PARSE:
+                    print(" ast: token_type is TOKEN_FALSE:", repr(ast))
 
             elif token_type == TOKEN_NOT:
                 ast = [ast, self.NOT]
-                if TRACE_PARSE: print(' ast: token_type is TOKEN_NOT:', repr(ast))
+                if TRACE_PARSE:
+                    print(" ast: token_type is TOKEN_NOT:", repr(ast))
 
             elif token_type == TOKEN_AND:
                 ast = self._start_operation(ast, self.AND, precedence)
                 if TRACE_PARSE:
-                    print('  ast:token_type is TOKEN_AND: start_operation', ast)
+                    print("  ast:token_type is TOKEN_AND: start_operation", ast)
 
             elif token_type == TOKEN_OR:
                 ast = self._start_operation(ast, self.OR, precedence)
                 if TRACE_PARSE:
-                    print('  ast:token_type is TOKEN_OR: start_operation', ast)
+                    print("  ast:token_type is TOKEN_OR: start_operation", ast)
 
             elif token_type == TOKEN_LPAR:
                 if prev_token:
                     # Check that an opening parens is preceded by a function
                     # or an opening parens
                     if prev_token_type not in (TOKEN_NOT, TOKEN_AND, TOKEN_OR, TOKEN_LPAR):
-                        raise ParseError(token_type, token_string, token_position, PARSE_INVALID_NESTING)
+                        raise ParseError(
+                            token_type, token_string, token_position, PARSE_INVALID_NESTING
+                        )
                 ast = [ast, TOKEN_LPAR]
 
             elif token_type == TOKEN_RPAR:
                 while True:
                     if ast[0] is None:
-                        raise ParseError(token_type, token_string, token_position, PARSE_UNBALANCED_CLOSING_PARENS)
+                        raise ParseError(
+                            token_type,
+                            token_string,
+                            token_position,
+                            PARSE_UNBALANCED_CLOSING_PARENS,
+                        )
 
                     if ast[1] is TOKEN_LPAR:
                         ast[0].append(ast[2])
-                        if TRACE_PARSE: print('ast9:', repr(ast))
+                        if TRACE_PARSE:
+                            print("ast9:", repr(ast))
                         ast = ast[0]
-                        if TRACE_PARSE: print('ast10:', repr(ast))
+                        if TRACE_PARSE:
+                            print("ast10:", repr(ast))
                         break
 
                     if isinstance(ast[1], int):
-                        raise ParseError(token_type, token_string, token_position, PARSE_UNBALANCED_CLOSING_PARENS)
+                        raise ParseError(
+                            token_type,
+                            token_string,
+                            token_position,
+                            PARSE_UNBALANCED_CLOSING_PARENS,
+                        )
 
                     # the parens are properly nested
                     # the top ast node should be a function subclass
                     if not (inspect.isclass(ast[1]) and issubclass(ast[1], Function)):
-                        raise ParseError(token_type, token_string, token_position, PARSE_INVALID_NESTING)
+                        raise ParseError(
+                            token_type, token_string, token_position, PARSE_INVALID_NESTING
+                        )
 
                     subex = ast[1](*ast[2:])
                     ast[0].append(subex)
-                    if TRACE_PARSE: print('ast11:', repr(ast))
+                    if TRACE_PARSE:
+                        print("ast11:", repr(ast))
                     ast = ast[0]
-                    if TRACE_PARSE: print('ast12:', repr(ast))
+                    if TRACE_PARSE:
+                        print("ast12:", repr(ast))
             else:
                 raise ParseError(token_type, token_string, token_position, PARSE_UNKNOWN_TOKEN)
 
@@ -323,33 +351,41 @@ class BooleanAlgebra(object):
         try:
             while True:
                 if ast[0] is None:
-                    if TRACE_PARSE: print('ast[0] is None:', repr(ast))
+                    if TRACE_PARSE:
+                        print("ast[0] is None:", repr(ast))
                     if ast[1] is None:
-                        if TRACE_PARSE: print('  ast[1] is None:', repr(ast))
+                        if TRACE_PARSE:
+                            print("  ast[1] is None:", repr(ast))
                         if len(ast) != 3:
                             raise ParseError(error_code=PARSE_INVALID_EXPRESSION)
                         parsed = ast[2]
-                        if TRACE_PARSE: print('    parsed = ast[2]:', repr(parsed))
+                        if TRACE_PARSE:
+                            print("    parsed = ast[2]:", repr(parsed))
 
                     else:
                         # call the function in ast[1] with the rest of the ast as args
                         parsed = ast[1](*ast[2:])
-                        if TRACE_PARSE: print('  parsed = ast[1](*ast[2:]):', repr(parsed))
+                        if TRACE_PARSE:
+                            print("  parsed = ast[1](*ast[2:]):", repr(parsed))
                     break
                 else:
-                    if TRACE_PARSE: print('subex = ast[1](*ast[2:]):', repr(ast))
+                    if TRACE_PARSE:
+                        print("subex = ast[1](*ast[2:]):", repr(ast))
                     subex = ast[1](*ast[2:])
                     ast[0].append(subex)
-                    if TRACE_PARSE: print('  ast[0].append(subex):', repr(ast))
+                    if TRACE_PARSE:
+                        print("  ast[0].append(subex):", repr(ast))
                     ast = ast[0]
-                    if TRACE_PARSE: print('    ast = ast[0]:', repr(ast))
+                    if TRACE_PARSE:
+                        print("    ast = ast[0]:", repr(ast))
         except TypeError:
             raise ParseError(error_code=PARSE_INVALID_EXPRESSION)
 
         if simplify:
             return parsed.simplify()
 
-        if TRACE_PARSE: print('final parsed:', repr(parsed))
+        if TRACE_PARSE:
+            print("final parsed:", repr(parsed))
         return parsed
 
     def _start_operation(self, ast, operation, precedence):
@@ -357,26 +393,31 @@ class BooleanAlgebra(object):
         Return an AST where all operations of lower precedence are finalized.
         """
         if TRACE_PARSE:
-            print('   start_operation:', repr(operation), 'AST:', ast)
+            print("   start_operation:", repr(operation), "AST:", ast)
 
         op_prec = precedence[operation]
         while True:
             if ast[1] is None:
                 # [None, None, x]
-                if TRACE_PARSE: print('     start_op: ast[1] is None:', repr(ast))
+                if TRACE_PARSE:
+                    print("     start_op: ast[1] is None:", repr(ast))
                 ast[1] = operation
-                if TRACE_PARSE: print('     --> start_op: ast[1] is None:', repr(ast))
+                if TRACE_PARSE:
+                    print("     --> start_op: ast[1] is None:", repr(ast))
                 return ast
 
             prec = precedence[ast[1]]
             if prec > op_prec:  # op=&, [ast, |, x, y] -> [[ast, |, x], &, y]
-                if TRACE_PARSE: print('     start_op: prec > op_prec:', repr(ast))
+                if TRACE_PARSE:
+                    print("     start_op: prec > op_prec:", repr(ast))
                 ast = [ast, operation, ast.pop(-1)]
-                if TRACE_PARSE: print('     --> start_op: prec > op_prec:', repr(ast))
+                if TRACE_PARSE:
+                    print("     --> start_op: prec > op_prec:", repr(ast))
                 return ast
 
             if prec == op_prec:  # op=&, [ast, &, x] -> [ast, &, x]
-                if TRACE_PARSE: print('     start_op: prec == op_prec:', repr(ast))
+                if TRACE_PARSE:
+                    print("     start_op: prec == op_prec:", repr(ast))
                 return ast
 
             if not (inspect.isclass(ast[1]) and issubclass(ast[1], Function)):
@@ -384,17 +425,21 @@ class BooleanAlgebra(object):
                 raise ParseError(error_code=PARSE_INVALID_NESTING)
 
             if ast[0] is None:  # op=|, [None, &, x, y] -> [None, |, x&y]
-                if TRACE_PARSE: print('     start_op: ast[0] is None:', repr(ast))
+                if TRACE_PARSE:
+                    print("     start_op: ast[0] is None:", repr(ast))
                 subexp = ast[1](*ast[2:])
                 new_ast = [ast[0], operation, subexp]
-                if TRACE_PARSE: print('     --> start_op: ast[0] is None:', repr(new_ast))
+                if TRACE_PARSE:
+                    print("     --> start_op: ast[0] is None:", repr(new_ast))
                 return new_ast
 
             else:  # op=|, [[ast, &, x], ~, y] -> [ast, &, x, ~y]
-                if TRACE_PARSE: print('     start_op: else:', repr(ast))
+                if TRACE_PARSE:
+                    print("     start_op: else:", repr(ast))
                 ast[0].append(ast[1](*ast[2:]))
                 ast = ast[0]
-                if TRACE_PARSE: print('     --> start_op: else:', repr(ast))
+                if TRACE_PARSE:
+                    print("     --> start_op: else:", repr(ast))
 
     def tokenize(self, expr):
         """
@@ -443,20 +488,31 @@ class BooleanAlgebra(object):
             - True symbols: 1 and True
             - False symbols: 0, False and None
         """
-        if not isinstance(expr, basestring):
-            raise TypeError('expr must be string but it is %s.' % type(expr))
+        if not isinstance(expr, str):
+            raise TypeError(f"expr must be string but it is {type(expr)}.")
 
         # mapping of lowercase token strings to a token type id for the standard
         # operators, parens and common true or false symbols, as used in the
         # default tokenizer implementation.
         TOKENS = {
-            '*': TOKEN_AND, '&': TOKEN_AND, 'and': TOKEN_AND,
-            '+': TOKEN_OR, '|': TOKEN_OR, 'or': TOKEN_OR,
-            '~': TOKEN_NOT, '!': TOKEN_NOT, 'not': TOKEN_NOT,
-            '(': TOKEN_LPAR, ')': TOKEN_RPAR,
-            '[': TOKEN_LPAR, ']': TOKEN_RPAR,
-            'true': TOKEN_TRUE, '1': TOKEN_TRUE,
-            'false': TOKEN_FALSE, '0': TOKEN_FALSE, 'none': TOKEN_FALSE
+            "*": TOKEN_AND,
+            "&": TOKEN_AND,
+            "and": TOKEN_AND,
+            "+": TOKEN_OR,
+            "|": TOKEN_OR,
+            "or": TOKEN_OR,
+            "~": TOKEN_NOT,
+            "!": TOKEN_NOT,
+            "not": TOKEN_NOT,
+            "(": TOKEN_LPAR,
+            ")": TOKEN_RPAR,
+            "[": TOKEN_LPAR,
+            "]": TOKEN_RPAR,
+            "true": TOKEN_TRUE,
+            "1": TOKEN_TRUE,
+            "false": TOKEN_FALSE,
+            "0": TOKEN_FALSE,
+            "none": TOKEN_FALSE,
         }
 
         position = 0
@@ -465,7 +521,7 @@ class BooleanAlgebra(object):
         while position < length:
             tok = expr[position]
 
-            sym = tok.isalnum() or tok == '_'
+            sym = tok.isalnum() or tok == "_"
             if sym:
                 position += 1
                 while position < length:
@@ -482,34 +538,33 @@ class BooleanAlgebra(object):
             except KeyError:
                 if sym:
                     yield TOKEN_SYMBOL, tok, position
-                elif tok not in (' ', '\t', '\r', '\n'):
-                    raise ParseError(token_string=tok, position=position,
-                                     error_code=PARSE_UNKNOWN_TOKEN)
+                elif tok not in (" ", "\t", "\r", "\n"):
+                    raise ParseError(
+                        token_string=tok, position=position, error_code=PARSE_UNKNOWN_TOKEN
+                    )
 
             position += 1
 
-    # TODO: explain what this means exactly
-    def _rdistributive(self, expr, op_example):
+    def _recurse_distributive(self, expr, operation_inst):
         """
-        Recursively flatten the `expr` expression for the `op_example`
-        AND or OR operation instance exmaple.
+        Recursively flatten, simplify and apply the distributive laws to the
+        `expr` expression. Distributivity is considered for the AND or OR
+        `operation_inst` instance.
         """
         if expr.isliteral:
             return expr
 
-        expr_class = expr.__class__
-
-        args = (self._rdistributive(arg, op_example) for arg in expr.args)
+        args = (self._recurse_distributive(arg, operation_inst) for arg in expr.args)
         args = tuple(arg.simplify() for arg in args)
         if len(args) == 1:
             return args[0]
 
-        expr = expr_class(*args)
+        flattened_expr = expr.__class__(*args)
 
-        dualoperation = op_example.dual
-        if isinstance(expr, dualoperation):
-            expr = expr.distributive()
-        return expr
+        dualoperation = operation_inst.dual
+        if isinstance(flattened_expr, dualoperation):
+            flattened_expr = flattened_expr.distributive()
+        return flattened_expr
 
     def normalize(self, expr, operation):
         """
@@ -523,16 +578,38 @@ class BooleanAlgebra(object):
 
         The operation must be an AND or OR operation or a subclass.
         """
-        # ensure that the operation is not NOT
-        assert operation in (self.AND, self.OR,)
+        # Ensure that the operation is not NOT
+        assert operation in (
+            self.AND,
+            self.OR,
+        )
         # Move NOT inwards.
         expr = expr.literalize()
-        # Simplify first otherwise _rdistributive() may take forever.
+        # Simplify first otherwise _recurse_distributive() may take forever.
         expr = expr.simplify()
         operation_example = operation(self.TRUE, self.FALSE)
-        expr = self._rdistributive(expr, operation_example)
-        # Canonicalize
-        expr = expr.simplify()
+
+        # For large dual operations build up from normalized subexpressions,
+        # otherwise we can get exponential blowup midway through
+        expr.args = tuple(self.normalize(a, operation) for a in expr.args)
+        if len(expr.args) > 1 and (
+            (operation == self.AND and isinstance(expr, self.OR))
+            or (operation == self.OR and isinstance(expr, self.AND))
+        ):
+            args = expr.args
+            expr_class = expr.__class__
+            expr = args[0]
+            for arg in args[1:]:
+                expr = expr_class(expr, arg)
+                expr = self._recurse_distributive(expr, operation_example)
+                # Canonicalize
+                expr = expr.simplify()
+
+        else:
+            expr = self._recurse_distributive(expr, operation_example)
+            # Canonicalize
+            expr = expr.simplify()
+
         return expr
 
     def cnf(self, expr):
@@ -541,11 +618,15 @@ class BooleanAlgebra(object):
         """
         return self.normalize(expr, self.AND)
 
+    conjunctive_normal_form = cnf
+
     def dnf(self, expr):
         """
         Return a disjunctive normal form of the `expr` expression.
         """
         return self.normalize(expr, self.OR)
+
+    disjunctive_normal_form = dnf
 
 
 class Expression(object):
@@ -553,18 +634,6 @@ class Expression(object):
     Abstract base class for all boolean expressions, including functions and
     variable symbols.
     """
-    # Defines sort and comparison order between expressions arguments
-    sort_order = None
-
-    # Store arguments aka. subterms of this expressions.
-    # subterms are either literals or expressions.
-    args = tuple()
-
-    # True is this is a literal expression such as a Symbol, TRUE or FALSE
-    isliteral = False
-
-    # True if this expression has been simplified to in canonical form.
-    iscanonical = False
 
     # these class attributes are configured when a new BooleanAlgebra is created
     TRUE = None
@@ -573,6 +642,20 @@ class Expression(object):
     AND = None
     OR = None
     Symbol = None
+
+    def __init__(self):
+        # Defines sort and comparison order between expressions arguments
+        self.sort_order = None
+
+        # Store arguments aka. subterms of this expressions.
+        # subterms are either literals or expressions.
+        self.args = tuple()
+
+        # True is this is a literal expression such as a Symbol, TRUE or FALSE
+        self.isliteral = False
+
+        # True if this expression has been simplified to in canonical form.
+        self.iscanonical = False
 
     @property
     def objects(self):
@@ -618,29 +701,37 @@ class Expression(object):
     def get_symbols(self):
         """
         Return a list of all the symbols contained in this expression.
-        Include recursively subexpressions symbols.
+        Include subexpressions symbols recursively.
         This includes duplicates.
         """
         return [s if isinstance(s, Symbol) else s.args[0] for s in self.get_literals()]
 
     @property
-    def symbols(self,):
+    def symbols(
+        self,
+    ):
         """
         Return a list of all the symbols contained in this expression.
-        Include recursively subexpressions symbols.
+        Include subexpressions symbols recursively.
         This includes duplicates.
         """
         return set(self.get_symbols())
 
     def subs(self, substitutions, default=None, simplify=False):
         """
-        Return an expression where the expression or all subterms equal to a key
-        expression are substituted with the corresponding value expression using
-        a mapping of: {expr->expr to substitute.}
+        Return an expression where all subterms of this expression are
+        by the new expression using a `substitutions` mapping of:
+        {expr: replacement}
 
-        Return this expression unmodified if nothing could be substituted.
+        Return the provided `default` value if this expression has no elements,
+        e.g. is empty.
 
-        Note that this can be used to tested for expression containment.
+        Simplify the results if `simplify` is True.
+
+        Return this expression unmodified if nothing could be substituted. Note
+        that a possible usage of this function is to check for expression
+        containment as the expression will be returned unmodified if if does not
+        contain any of the provided substitutions.
         """
         # shortcut: check if we have our whole expression as a possible
         # subsitution source
@@ -648,15 +739,14 @@ class Expression(object):
             if expr == self:
                 return substitution
 
-        # otherwise, do a proper substitution of sub expressions
+        # otherwise, do a proper substitution of subexpressions
         expr = self._subs(substitutions, default, simplify)
         return self if expr is None else expr
 
     def _subs(self, substitutions, default, simplify):
         """
-        Return an expression where all subterms equal to a key expression are
-        substituted by the corresponding value expression using a mapping of:
-        {expr->expr to substitute.}
+        Return an expression where all subterms are substituted by the new
+        expression using a `substitutions` mapping of: {expr: replacement}
         """
         # track the new list of unchanged args or replaced args through
         # a substitution
@@ -668,7 +758,7 @@ class Expression(object):
             return self
 
         # if the expression has no elements, e.g. is empty, do not apply
-        # substitions
+        # substitutions
         if not self.args:
             return default
 
@@ -736,12 +826,15 @@ class Expression(object):
 
         This method does not make any simplification or transformation, so it
         will return False although the expression terms may be mathematically
-        equal. Use simplify() before testing equality.
+        equal. Use simplify() before testing equality to check the mathematical
+        equality.
 
         For literals, plain equality is used.
-        For functions, it uses the facts that operations are:
-        - commutative and considers different ordering as equal.
-        - idempotent, so args can appear more often in one term than in the other.
+
+        For functions, equality uses the facts that operations are:
+
+        - commutative: order does not matter and different orders are equal.
+        - idempotent: so args can appear more often in one term than in the other.
         """
         if self is other:
             return True
@@ -781,7 +874,7 @@ class Expression(object):
     __add__ = __or__
 
     def __bool__(self):
-        raise TypeError('Cannot evaluate expression as a Python Boolean.')
+        raise TypeError("Cannot evaluate expression as a Python Boolean.")
 
     __nonzero__ = __bool__
 
@@ -791,12 +884,11 @@ class BaseElement(Expression):
     Abstract base class for the base elements TRUE and FALSE of the boolean
     algebra.
     """
-    sort_order = 0
 
     def __init__(self):
         super(BaseElement, self).__init__()
+        self.sort_order = 0
         self.iscanonical = True
-
         # The dual Base Element class for this element: TRUE.dual returns
         # _FALSE() and FALSE.dual returns _TRUE(). This is a cyclic reference
         # and therefore only assigned after creation of the singletons,
@@ -813,7 +905,7 @@ class BaseElement(Expression):
         """
         Return a pretty formatted representation of self.
         """
-        return (' ' * indent) + repr(self)
+        return (" " * indent) + repr(self)
 
 
 class _TRUE(BaseElement):
@@ -833,10 +925,10 @@ class _TRUE(BaseElement):
         return self is other or other is True or isinstance(other, _TRUE)
 
     def __str__(self):
-        return '1'
+        return "1"
 
     def __repr__(self):
-        return 'TRUE'
+        return "TRUE"
 
     def __call__(self):
         return self
@@ -861,10 +953,10 @@ class _FALSE(BaseElement):
         return self is other or other is False or isinstance(other, _FALSE)
 
     def __str__(self):
-        return '0'
+        return "0"
 
     def __repr__(self):
-        return 'FALSE'
+        return "FALSE"
 
     def __call__(self):
         return self
@@ -879,10 +971,9 @@ class Symbol(Expression):
     A Symbol can hold an object used to determine equality between symbols.
     """
 
-    sort_order = 5
-
     def __init__(self, obj):
         super(Symbol, self).__init__()
+        self.sort_order = 5
         # Store an associated object. This object determines equality
         self.obj = obj
         self.iscanonical = True
@@ -918,19 +1009,19 @@ class Symbol(Expression):
         return str(self.obj)
 
     def __repr__(self):
-        obj = "'%s'" % self.obj if isinstance(self.obj, basestring) else repr(self.obj)
-        return '%s(%s)' % (self.__class__.__name__, obj)
+        obj = f"'{self.obj}'" if isinstance(self.obj, str) else repr(self.obj)
+        return f"{self.__class__.__name__}({obj})"
 
     def pretty(self, indent=0, debug=False):
         """
         Return a pretty formatted representation of self.
         """
-        debug_details = ''
+        debug_details = ""
         if debug:
-            debug_details += '<isliteral=%r, iscanonical=%r>' % (self.isliteral, self.iscanonical)
+            debug_details += f"<isliteral={self.isliteral!r}, iscanonical={self.iscanonical!r}>"
 
-        obj = "'%s'" % self.obj if isinstance(self.obj, basestring) else repr(self.obj)
-        return (' ' * indent) + ('%s(%s%s)' % (self.__class__.__name__, debug_details, obj))
+        obj = f"'{self.obj}'" if isinstance(self.obj, str) else repr(self.obj)
+        return (" " * indent) + f"{self.__class__.__name__}({debug_details}{obj})"
 
 
 class Function(Expression):
@@ -948,28 +1039,30 @@ class Function(Expression):
         # Specifies an infix notation of an operator for printing such as | or &.
         self.operator = None
 
-        assert all(isinstance(arg, Expression) for arg in args), \
-            'Bad arguments: all arguments must be an Expression: %r' % (args,)
+        assert all(
+            isinstance(arg, Expression) for arg in args
+        ), f"Bad arguments: all arguments must be an Expression: {args!r}"
         self.args = tuple(args)
 
     def __str__(self):
         args = self.args
         if len(args) == 1:
             if self.isliteral:
-                return '%s%s' % (self.operator, args[0])
-            return '%s(%s)' % (self.operator, args[0])
+                return f"{self.operator}{args[0]}"
+            return f"{self.operator}({args[0]})"
 
         args_str = []
         for arg in args:
             if arg.isliteral:
                 args_str.append(str(arg))
             else:
-                args_str.append('(%s)' % arg)
+                args_str.append(f"({arg})")
 
         return self.operator.join(args_str)
 
     def __repr__(self):
-        return '%s(%s)' % (self.__class__.__name__, ', '.join(map(repr, self.args)))
+        args = ", ".join(map(repr, self.args))
+        return f"{self.__class__.__name__}({args})"
 
     def pretty(self, indent=0, debug=False):
         """
@@ -997,27 +1090,27 @@ class Function(Expression):
               Symbol('c')
             )
         """
-        debug_details = ''
+        debug_details = ""
         if debug:
-            debug_details += '<isliteral=%r, iscanonical=%r' % (self.isliteral, self.iscanonical)
-            identity = getattr(self, 'identity', None)
+            debug_details += f"<isliteral={self.isliteral!r}, iscanonical={self.iscanonical!r}"
+            identity = getattr(self, "identity", None)
             if identity is not None:
-                debug_details += ', identity=%r' % (identity)
+                debug_details += f", identity={identity!r}"
 
-            annihilator = getattr(self, 'annihilator', None)
+            annihilator = getattr(self, "annihilator", None)
             if annihilator is not None:
-                debug_details += ', annihilator=%r' % (annihilator)
+                debug_details += f", annihilator={annihilator!r}"
 
-            dual = getattr(self, 'dual', None)
+            dual = getattr(self, "dual", None)
             if dual is not None:
-                debug_details += ', dual=%r' % (dual)
-            debug_details += '>'
+                debug_details += f", dual={dual!r}"
+            debug_details += ">"
         cls = self.__class__.__name__
         args = [a.pretty(indent=indent + 2, debug=debug) for a in self.args]
-        pfargs = ',\n'.join(args)
-        cur_indent = ' ' * indent
-        new_line = '' if self.isliteral else '\n'
-        return '{cur_indent}{cls}({debug_details}{new_line}{pfargs}\n{cur_indent})'.format(**locals())
+        pfargs = ",\n".join(args)
+        cur_indent = " " * indent
+        new_line = "" if self.isliteral else "\n"
+        return f"{cur_indent}{cls}({debug_details}{new_line}{pfargs}\n{cur_indent})"
 
 
 class NOT(Function):
@@ -1044,7 +1137,7 @@ class NOT(Function):
     def __init__(self, arg1):
         super(NOT, self).__init__(arg1)
         self.isliteral = isinstance(self.args[0], Symbol)
-        self.operator = '~'
+        self.operator = "~"
 
     def literalize(self):
         """
@@ -1069,7 +1162,10 @@ class NOT(Function):
         if not isinstance(expr, self.__class__):
             return expr.simplify()
 
-        if expr.args[0] in (self.TRUE, self.FALSE,):
+        if expr.args[0] in (
+            self.TRUE,
+            self.FALSE,
+        ):
             return expr.args[0].dual
 
         expr = self.__class__(expr.args[0].simplify())
@@ -1115,12 +1211,12 @@ class NOT(Function):
         Return a pretty formatted representation of self.
         Include additional debug details if `debug` is True.
         """
-        debug_details = ''
+        debug_details = ""
         if debug:
-            debug_details += '<isliteral=%r, iscanonical=%r>' % (self.isliteral, self.iscanonical)
+            debug_details += f"<isliteral={self.isliteral!r}, iscanonical={self.iscanonical!r}>"
         if self.isliteral:
             pretty_literal = self.args[0].pretty(indent=0, debug=debug)
-            return (' ' * indent) + '%s(%s%s)' % (self.__class__.__name__, debug_details, pretty_literal)
+            return (" " * indent) + f"{self.__class__.__name__}({debug_details}{pretty_literal})"
         else:
             return super(NOT, self).pretty(indent=indent, debug=debug)
 
@@ -1299,7 +1395,7 @@ class DualBase(Function):
         i = 0
         for arg in self.args:
             if isinstance(arg, self.__class__):
-                args[i:i + 1] = arg.args
+                args[i : i + 1] = arg.args
                 i += len(arg.args)
             else:
                 i += 1
@@ -1467,15 +1563,15 @@ class AND(DualBase):
     ...         self.operator = 'AND'
     """
 
-    sort_order = 10
     _pyoperator = and_operator
 
     def __init__(self, arg1, arg2, *args):
         super(AND, self).__init__(arg1, arg2, *args)
+        self.sort_order = 10
         self.identity = self.TRUE
         self.annihilator = self.FALSE
         self.dual = self.OR
-        self.operator = '&'
+        self.operator = "&"
 
 
 class OR(DualBase):
@@ -1493,12 +1589,12 @@ class OR(DualBase):
     ...         self.operator = 'OR'
     """
 
-    sort_order = 25
     _pyoperator = or_operator
 
     def __init__(self, arg1, arg2, *args):
         super(OR, self).__init__(arg1, arg2, *args)
+        self.sort_order = 25
         self.identity = self.FALSE
         self.annihilator = self.TRUE
         self.dual = self.AND
-        self.operator = '|'
+        self.operator = "|"
