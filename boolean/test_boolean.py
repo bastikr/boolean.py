@@ -7,6 +7,7 @@ Copyright (c) Sebastian Kraemer, basti.kr@gmail.com and others
 SPDX-License-Identifier: BSD-2-Clause
 """
 
+import time
 import unittest
 from unittest.case import expectedFailure
 
@@ -1204,6 +1205,32 @@ class OtherTestCase(unittest.TestCase):
         alg = BooleanAlgebra()
         exp = alg.parse("a and b or a and c")
         assert set(["a", "b", "c"]) == exp.objects
+
+    def test_normalize_blowup(self):
+        # Real-world example of a complex expression with simple CNF/DNF form.
+        # Note this is a more reduced, milder version of the problem, for rapid
+        # testing.
+        formula = """
+        a & (
+            (b & c & d & e & f & g)
+            | (c & f & g & h & i & j)
+            | (c & d & f & g & i & l & o & u)
+            | (c & e & f & g & i & p & y & ~v)
+            | (c & f & g & i & j & z & ~(c & f & g & i & j & k))
+            | (c & f & g & t & ~(b & c & d & e & f & g))
+            | (c & f & g & ~t & ~(b & c & d & e & f & g))
+        )
+        """
+        algebra = BooleanAlgebra()
+        expr = algebra.parse(formula)
+        t0 = time.time()
+        cnf = algebra.cnf(expr)
+        t1 = time.time()
+
+        assert str(cnf) == "a&c&f&g"
+        # Locally, this test takes 0.4s, previously it was 500s.
+        # We allow 30s because of the wide range of possible CPUs.
+        assert t1 - t0 < 30, "Normalizing took too long"
 
 
 class BooleanBoolTestCase(unittest.TestCase):
