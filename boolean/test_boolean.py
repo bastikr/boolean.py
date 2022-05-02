@@ -7,7 +7,6 @@ Copyright (c) Sebastian Kraemer, basti.kr@gmail.com and others
 SPDX-License-Identifier: BSD-2-Clause
 """
 
-import time
 import unittest
 from unittest.case import expectedFailure
 
@@ -140,7 +139,6 @@ class BooleanAlgebraTestCase(unittest.TestCase):
 
     def test_parse_with_advanced_tokenizer_example(self):
         import tokenize
-
         from io import StringIO
 
         class PlainVar(Symbol):
@@ -1207,6 +1205,27 @@ class OtherTestCase(unittest.TestCase):
         assert set(["a", "b", "c"]) == exp.objects
 
     def test_normalize_blowup(self):
+        from boolean import AND, NOT, OR
+        from collections import defaultdict
+
+        # Subclasses to count calls to simplify
+        class CountingNot(NOT):
+            def simplify(self):
+                counts["CountingNot"] += 1
+                return super().simplify()
+
+        class CountingAnd(AND):
+            def simplify(self, sort=True):
+                counts["CountingAnd"] += 1
+                return super().simplify(sort=sort)
+
+        class CountingOr(OR):
+            def simplify(self, sort=True):
+                counts["CountingOr"] += 1
+                return super().simplify(sort=sort)
+
+        counts = defaultdict(int)
+
         # Real-world example of a complex expression with simple CNF/DNF form.
         # Note this is a more reduced, milder version of the problem, for rapid
         # testing.
@@ -1221,16 +1240,18 @@ class OtherTestCase(unittest.TestCase):
             | (c & f & g & ~t & ~(b & c & d & e & f & g))
         )
         """
-        algebra = BooleanAlgebra()
-        expr = algebra.parse(formula)
-        t0 = time.time()
-        cnf = algebra.cnf(expr)
-        t1 = time.time()
+        algebra = BooleanAlgebra(
+            NOT_class=CountingNot,
+            AND_class=CountingAnd,
+            OR_class=CountingOr,
+        )
 
+        expr = algebra.parse(formula)
+        cnf = algebra.cnf(expr)
         assert str(cnf) == "a&c&f&g"
-        # Locally, this test takes 0.4s, previously it was 500s.
-        # We allow 30s because of the wide range of possible CPUs.
-        assert t1 - t0 < 30, "Normalizing took too long"
+        # We should get exactly this count of calls.
+        # before we had a combinatorial explosion
+        assert counts == {"CountingAnd": 44, "CountingNot": 193, "CountingOr": 2490}
 
 
 class BooleanBoolTestCase(unittest.TestCase):
