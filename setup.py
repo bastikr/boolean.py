@@ -24,11 +24,12 @@ SPDX-License-Identifier: BSD-2-Clause
 
 setup(
     name="boolean.py",
-    version="4.0",
+    version="4.1",
     license="BSD-2-Clause",
     description="Define boolean algebras, create and parse boolean "
     "expressions and create custom boolean DSL.",
     long_description=long_desc,
+    long_description_content_type="text/x-rst",
     author="Sebastian Kraemer",
     author_email="basti.kr@gmail.com",
     url="https://github.com/bastikr/boolean.py",
