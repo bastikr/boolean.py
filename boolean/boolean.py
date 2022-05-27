@@ -447,6 +447,7 @@ class BooleanAlgebra(object):
         unicode string.
 
         This 3-tuple contains (token, token string, position):
+
         - token: either a Symbol instance or one of TOKEN_* token types.
         - token string: the original token unicode string.
         - position: some simple object describing the starting position of the
@@ -464,27 +465,32 @@ class BooleanAlgebra(object):
         tests for other examples of alternative tokenizers.
 
         This tokenizer has these characteristics:
+
         - The `expr` string can span multiple lines,
         - Whitespace is not significant.
         - The returned position is the starting character offset of a token.
-
         - A TOKEN_SYMBOL is returned for valid identifiers which is a string
-        without spaces. These are valid identifiers:
-            - Python identifiers.
-            - a string even if starting with digits
-            - digits (except for 0 and 1).
-            - dotted names : foo.bar consist of one token.
-            - names with colons: foo:bar consist of one token.
-            These are not identifiers:
-            - quoted strings.
-            - any punctuation which is not an operation
+          without spaces.
+
+            - These are valid identifiers:
+                - Python identifiers.
+                - a string even if starting with digits
+                - digits (except for 0 and 1).
+                - dotted names : foo.bar consist of one token.
+                - names with colons: foo:bar consist of one token.
+            
+            - These are not identifiers:
+                - quoted strings.
+                - any punctuation which is not an operation
 
         - Recognized operators are (in any upper/lower case combinations):
+
             - for and:  '*', '&', 'and'
             - for or: '+', '|', 'or'
             - for not: '~', '!', 'not'
 
         - Recognized special symbols are (in any upper/lower case combinations):
+
             - True symbols: 1 and True
             - False symbols: 0, False and None
         """
@@ -572,7 +578,8 @@ class BooleanAlgebra(object):
         given AND or OR operation.
 
         The new expression arguments will satisfy these conditions:
-        - operation(*args) == expr (here mathematical equality is meant)
+    
+        - ``operation(*args) == expr`` (here mathematical equality is meant)
         - the operation does not occur in any of its arg.
         - NOT is only appearing in literals (aka. Negation normal form).
 
@@ -1073,7 +1080,7 @@ class Function(Expression):
         For example::
 
             >>> print(BooleanAlgebra().parse(
-            ...    u'not a and not b and not (a and ba and c) and c or c').pretty())
+            >>>    u'not a and not b and not (a and ba and c) and c or c').pretty())
             OR(
               AND(
                 NOT(Symbol('a')),
@@ -1129,9 +1136,9 @@ class NOT(Function):
     For example::
 
     >>> class NOT2(NOT):
-    ...     def __init__(self, *args):
-    ...         super(NOT2, self).__init__(*args)
-    ...         self.operator = '!'
+    >>>     def __init__(self, *args):
+    >>>         super(NOT2, self).__init__(*args)
+    >>>         self.operator = '!'
     """
 
     def __init__(self, arg1):
@@ -1264,6 +1271,7 @@ class DualBase(Function):
 
         For simplification of AND and OR fthe ollowing rules are used
         recursively bottom up:
+
          - Associativity (output does not contain same operations nested)
          - Annihilation
          - Idempotence
@@ -1557,10 +1565,11 @@ class AND(DualBase):
 
     You can subclass to define alternative string representation.
     For example::
+
     >>> class AND2(AND):
-    ...     def __init__(self, *args):
-    ...         super(AND2, self).__init__(*args)
-    ...         self.operator = 'AND'
+    >>>     def __init__(self, *args):
+    >>>         super(AND2, self).__init__(*args)
+    >>>         self.operator = 'AND'
     """
 
     _pyoperator = and_operator
@@ -1584,9 +1593,9 @@ class OR(DualBase):
     For example::
 
     >>> class OR2(OR):
-    ...     def __init__(self, *args):
-    ...         super(OR2, self).__init__(*args)
-    ...         self.operator = 'OR'
+    >>>     def __init__(self, *args):
+    >>>         super(OR2, self).__init__(*args)
+    >>>         self.operator = 'OR'
     """
 
     _pyoperator = or_operator
