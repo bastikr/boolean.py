@@ -74,3 +74,23 @@ jobs:
 
             - name: Run tests
               run: pytest -vvs boolean
+
+    docs:
+      name: Generate docs
+      runs-on: ubuntu-20.04
+
+      steps:
+          - uses: actions/checkout@v2
+
+          - name: Checkout and install reqs
+            run: |
+                pip install --upgrade --user -e .[docs]
+
+          - name: Gen docs
+            run: |
+                make -C docs html
+
+          - name: Collect docs
+            uses: actions/upload-artifact@v2
+            with:
+                path: docs/build/
