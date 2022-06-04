@@ -8,5 +8,6 @@ boolean.py documentation
    users_guide
    concepts
    development_guide
+   API<api/modules>
    acknowledgements
 

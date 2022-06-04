@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 
-from __future__ import absolute_import
-
-from setuptools import find_packages, setup
+from setuptools import find_packages
+from setuptools import setup
 
 long_desc = """
 
@@ -50,4 +49,22 @@ setup(
         "Topic :: Software Development :: Libraries",
         "Topic :: Utilities",
     ],
+    extras_require={
+        "testing":
+            [
+                "pytest >= 6, != 7.0.0",
+                "pytest-xdist >= 2",
+                "twine",
+                "black",
+                "isort",
+                "pycodestyle",
+            ],
+        "docs":
+            [
+                "Sphinx >= 3.3.1",
+                "sphinx-rtd-theme >= 0.5.0",
+                "doc8 >= 0.8.1",
+                "sphinxcontrib-apidoc >= 0.3.0",
+            ],
+    }
 )

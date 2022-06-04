@@ -7,6 +7,7 @@ look either into the docs directory or view it online, at
 https://booleanpy.readthedocs.org/en/latest/.
 
 Copyright (c) Sebastian Kraemer, basti.kr@gmail.com and others
+
 SPDX-License-Identifier: BSD-2-Clause
 """
 

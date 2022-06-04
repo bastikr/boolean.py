@@ -11,12 +11,16 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os
+# -- Path setup --------------------------------------------------------------
 
 # If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.append(os.path.abspath("../boolean/"))
+# add these directories to sys.path here.
+
+import pathlib
+import sys
+
+srcdir = pathlib.Path(__file__).resolve().parents[1]
+sys.path.insert(0, srcdir.as_posix())
 
 # -- General configuration -----------------------------------------------------
 
@@ -27,7 +31,19 @@ extensions = [
     "sphinx.ext.doctest",
     "sphinx.ext.mathjax",
     "sphinx.ext.inheritance_diagram",
+    "sphinx.ext.intersphinx",
+    "sphinxcontrib.apidoc",
 ]
+
+# Setting for sphinxcontrib.apidoc to automatically create API documentation.
+apidoc_module_dir = srcdir.joinpath('boolean').as_posix()
+apidoc_excluded_paths = [srcdir.joinpath('boolean').joinpath('test_boolean.py').as_posix()]
+apidoc_module_first = True
+
+# Reference to other Sphinx documentations
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3", None),
+}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = [".templates"]
@@ -135,7 +151,7 @@ html_theme = "default"
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = [".static"]
+#html_static_path = [".static"]
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.

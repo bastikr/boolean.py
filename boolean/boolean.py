@@ -17,6 +17,7 @@ For extensive documentation look either into the docs directory or view it
 online, at https://booleanpy.readthedocs.org/en/latest/.
 
 Copyright (c) Sebastian Kraemer, basti.kr@gmail.com and others
+
 SPDX-License-Identifier: BSD-2-Clause
 """
 
@@ -99,6 +100,7 @@ class ParseError(Exception):
 class BooleanAlgebra(object):
     """
     An algebra is defined by:
+
     - the types of its operations and Symbol.
     - the tokenizer used when parsing expressions from strings.
 
@@ -447,6 +449,7 @@ class BooleanAlgebra(object):
         unicode string.
 
         This 3-tuple contains (token, token string, position):
+
         - token: either a Symbol instance or one of TOKEN_* token types.
         - token string: the original token unicode string.
         - position: some simple object describing the starting position of the
@@ -464,27 +467,32 @@ class BooleanAlgebra(object):
         tests for other examples of alternative tokenizers.
 
         This tokenizer has these characteristics:
+
         - The `expr` string can span multiple lines,
         - Whitespace is not significant.
         - The returned position is the starting character offset of a token.
-
         - A TOKEN_SYMBOL is returned for valid identifiers which is a string
-        without spaces. These are valid identifiers:
-            - Python identifiers.
-            - a string even if starting with digits
-            - digits (except for 0 and 1).
-            - dotted names : foo.bar consist of one token.
-            - names with colons: foo:bar consist of one token.
-            These are not identifiers:
-            - quoted strings.
-            - any punctuation which is not an operation
+          without spaces.
+
+            - These are valid identifiers:
+                - Python identifiers.
+                - a string even if starting with digits
+                - digits (except for 0 and 1).
+                - dotted names : foo.bar consist of one token.
+                - names with colons: foo:bar consist of one token.
+            
+            - These are not identifiers:
+                - quoted strings.
+                - any punctuation which is not an operation
 
         - Recognized operators are (in any upper/lower case combinations):
+
             - for and:  '*', '&', 'and'
             - for or: '+', '|', 'or'
             - for not: '~', '!', 'not'
 
         - Recognized special symbols are (in any upper/lower case combinations):
+
             - True symbols: 1 and True
             - False symbols: 0, False and None
         """
@@ -572,7 +580,8 @@ class BooleanAlgebra(object):
         given AND or OR operation.
 
         The new expression arguments will satisfy these conditions:
-        - operation(*args) == expr (here mathematical equality is meant)
+    
+        - ``operation(*args) == expr`` (here mathematical equality is meant)
         - the operation does not occur in any of its arg.
         - NOT is only appearing in literals (aka. Negation normal form).
 
@@ -1070,25 +1079,25 @@ class Function(Expression):
 
         If debug is True, also prints debug information for each expression arg.
 
-        For example::
+        For example:
 
-            >>> print(BooleanAlgebra().parse(
-            ...    u'not a and not b and not (a and ba and c) and c or c').pretty())
-            OR(
+        >>> print(BooleanAlgebra().parse(
+        ...    u'not a and not b and not (a and ba and c) and c or c').pretty())
+        OR(
+          AND(
+            NOT(Symbol('a')),
+            NOT(Symbol('b')),
+            NOT(
               AND(
-                NOT(Symbol('a')),
-                NOT(Symbol('b')),
-                NOT(
-                  AND(
-                    Symbol('a'),
-                    Symbol('ba'),
-                    Symbol('c')
-                  )
-                ),
+                Symbol('a'),
+                Symbol('ba'),
                 Symbol('c')
-              ),
-              Symbol('c')
-            )
+              )
+            ),
+            Symbol('c')
+          ),
+          Symbol('c')
+        )
         """
         debug_details = ""
         if debug:
@@ -1126,7 +1135,7 @@ class NOT(Function):
 
     You can subclass to define alternative string representation.
 
-    For example::
+    For example:
 
     >>> class NOT2(NOT):
     ...     def __init__(self, *args):
@@ -1226,7 +1235,7 @@ class DualBase(Function):
     Base class for AND and OR function.
 
     This class uses the duality principle to combine similar methods of AND
-    and OR. Both operations take 2 or more arguments and can be created using
+    and OR. Both operations take two or more arguments and can be created using
     "|" for OR and "&" for AND.
     """
 
@@ -1264,14 +1273,44 @@ class DualBase(Function):
 
         For simplification of AND and OR fthe ollowing rules are used
         recursively bottom up:
-         - Associativity (output does not contain same operations nested)
-         - Annihilation
-         - Idempotence
-         - Identity
-         - Complementation
-         - Elimination
-         - Absorption
-         - Commutativity (output is always sorted)
+
+        - Associativity (output does not contain same operations nested)::
+
+            (A & B) & C = A & (B & C) = A & B & C
+            (A | B) | C = A | (B | C) = A | B | C
+         
+         
+        - Annihilation::
+
+            A & 0 = 0, A | 1 = 1
+
+        - Idempotence (e.g. removing duplicates)::
+
+            A & A = A, A | A = A
+
+        - Identity::
+
+            A & 1 = A, A | 0 = A
+
+        - Complementation::
+
+            A & ~A = 0, A | ~A = 1
+
+        - Elimination::
+
+            (A & B) | (A & ~B) = A, (A | B) & (A | ~B) = A
+
+        - Absorption::
+
+            A & (A | B) = A, A | (A & B) = A
+
+        - Negative absorption::
+
+            A & (~A | B) = A & B, A | (~A & B) = A | B
+
+        - Commutativity (output is always sorted)::
+
+            A & B = B & A, A | B = B | A
 
         Other boolean objects are also in their canonical form.
         """
@@ -1389,7 +1428,9 @@ class DualBase(Function):
         Return a new expression where nested terms of this expression are
         flattened as far as possible.
 
-        E.g. A & (B & C) becomes A & B & C.
+        E.g.::
+
+            A & (B & C) becomes A & B & C.
         """
         args = list(self.args)
         i = 0
@@ -1409,8 +1450,13 @@ class DualBase(Function):
 
         See https://en.wikipedia.org/wiki/Absorption_law
 
-        Absorption: A & (A | B) = A, A | (A & B) = A
-        Negative absorption: A & (~A | B) = A & B, A | (~A & B) = A | B
+        Absorption::
+
+            A & (A | B) = A, A | (A & B) = A
+
+        Negative absorption::
+
+            A & (~A | B) = A & B, A | (~A & B) = A | B
         """
         args = list(args)
         if not args:
@@ -1497,7 +1543,8 @@ class DualBase(Function):
         """
         Return a term where the leading AND or OR terms are switched.
 
-        This is done by applying the distributive laws:
+        This is done by applying the distributive laws::
+
             A & (B|C) = (A&B) | (A&C)
             A | (B&C) = (A|B) & (A|C)
         """
@@ -1551,12 +1598,15 @@ class DualBase(Function):
 
 class AND(DualBase):
     """
-    Boolean AND operation, taking 2 or more arguments.
+    Boolean AND operation, taking two or more arguments.
 
     It can also be created by using "&" between two boolean expressions.
 
-    You can subclass to define alternative string representation.
-    For example::
+    You can subclass to define alternative string representation by overriding
+    self.operator.
+    
+    For example:
+
     >>> class AND2(AND):
     ...     def __init__(self, *args):
     ...         super(AND2, self).__init__(*args)
@@ -1576,12 +1626,14 @@ class AND(DualBase):
 
 class OR(DualBase):
     """
-    Boolean OR operation, taking 2 or more arguments
+    Boolean OR operation, taking two or more arguments
 
     It can also be created by using "|" between two boolean expressions.
 
-    You can subclass to define alternative string representation.
-    For example::
+    You can subclass to define alternative string representation by overriding
+    self.operator.
+
+    For example:
 
     >>> class OR2(OR):
     ...     def __init__(self, *args):
