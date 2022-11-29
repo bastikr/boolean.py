@@ -10,26 +10,13 @@ SPDX-License-Identifier: BSD-2-Clause
 import unittest
 from unittest.case import expectedFailure
 
-from boolean import (
-    TOKEN_AND,
-    TOKEN_FALSE,
-    TOKEN_LPAR,
-    TOKEN_NOT,
-    TOKEN_OR,
-    TOKEN_RPAR,
-    TOKEN_SYMBOL,
-    TOKEN_TRUE,
-    BooleanAlgebra,
-    ParseError,
-    Symbol,
-)
-from boolean.boolean import (
-    PARSE_INVALID_EXPRESSION,
-    PARSE_INVALID_NESTING,
-    PARSE_INVALID_OPERATOR_SEQUENCE,
-    PARSE_INVALID_SYMBOL_SEQUENCE,
-    PARSE_UNKNOWN_TOKEN,
-)
+from boolean import (TOKEN_AND, TOKEN_FALSE, TOKEN_LPAR, TOKEN_NOT, TOKEN_OR,
+                     TOKEN_RPAR, TOKEN_SYMBOL, TOKEN_TRUE, BooleanAlgebra,
+                     ParseError, Symbol)
+from boolean.boolean import (PARSE_INVALID_EXPRESSION, PARSE_INVALID_NESTING,
+                             PARSE_INVALID_OPERATOR_SEQUENCE,
+                             PARSE_INVALID_SYMBOL_SEQUENCE,
+                             PARSE_UNKNOWN_TOKEN)
 
 
 class BooleanAlgebraTestCase(unittest.TestCase):
@@ -760,6 +747,28 @@ class DualBaseTestCase(unittest.TestCase):
         )
         assert result.pretty() == expected.pretty()
 
+    def test_absorption_invariant_to_order(self):
+        algebra = BooleanAlgebra()
+
+        a, b = algebra.symbols(*"ab")
+
+        e = (~a | ~b) & b & ~a
+        args = [
+            ~a | ~b,
+            ~a,
+            b,
+        ]
+
+        result_original = e.absorb(args)
+
+        args[1], args[2] = args[2], args[1]
+        result_swapped = e.absorb(args)
+
+        assert len(result_original) == 2
+        assert len(result_swapped) == 2
+        assert result_original[0] == result_swapped[1]
+        assert result_original[1] == result_swapped[0]
+
     @expectedFailure
     def test_parse_complex_expression_should_create_same_expression_as_python(self):
         algebra = BooleanAlgebra()
@@ -1205,8 +1214,9 @@ class OtherTestCase(unittest.TestCase):
         assert set(["a", "b", "c"]) == exp.objects
 
     def test_normalize_blowup(self):
-        from boolean import AND, NOT, OR
         from collections import defaultdict
+
+        from boolean import AND, NOT, OR
 
         # Subclasses to count calls to simplify
         class CountingNot(NOT):
