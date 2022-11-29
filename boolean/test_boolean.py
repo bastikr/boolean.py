@@ -10,13 +10,26 @@ SPDX-License-Identifier: BSD-2-Clause
 import unittest
 from unittest.case import expectedFailure
 
-from boolean import (TOKEN_AND, TOKEN_FALSE, TOKEN_LPAR, TOKEN_NOT, TOKEN_OR,
-                     TOKEN_RPAR, TOKEN_SYMBOL, TOKEN_TRUE, BooleanAlgebra,
-                     ParseError, Symbol)
-from boolean.boolean import (PARSE_INVALID_EXPRESSION, PARSE_INVALID_NESTING,
-                             PARSE_INVALID_OPERATOR_SEQUENCE,
-                             PARSE_INVALID_SYMBOL_SEQUENCE,
-                             PARSE_UNKNOWN_TOKEN)
+from boolean import (
+    TOKEN_AND,
+    TOKEN_FALSE,
+    TOKEN_LPAR,
+    TOKEN_NOT,
+    TOKEN_OR,
+    TOKEN_RPAR,
+    TOKEN_SYMBOL,
+    TOKEN_TRUE,
+    BooleanAlgebra,
+    ParseError,
+    Symbol,
+)
+from boolean.boolean import (
+    PARSE_INVALID_EXPRESSION,
+    PARSE_INVALID_NESTING,
+    PARSE_INVALID_OPERATOR_SEQUENCE,
+    PARSE_INVALID_SYMBOL_SEQUENCE,
+    PARSE_UNKNOWN_TOKEN,
+)
 
 
 class BooleanAlgebraTestCase(unittest.TestCase):
@@ -1214,9 +1227,8 @@ class OtherTestCase(unittest.TestCase):
         assert set(["a", "b", "c"]) == exp.objects
 
     def test_normalize_blowup(self):
-        from collections import defaultdict
-
         from boolean import AND, NOT, OR
+        from collections import defaultdict
 
         # Subclasses to count calls to simplify
         class CountingNot(NOT):
