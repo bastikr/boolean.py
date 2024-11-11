@@ -867,7 +867,7 @@ class Expression(object):
         lt = other.__lt__(self)
         if lt is NotImplemented:
             self_lt = self.__lt__(other)
-            if type(self_lt) is type(NotImplemented):
+            if self_lt is NotImplemented:
                 # `return not NotImplemented`` no longer works in Python 3.14
                 return False
             else:
