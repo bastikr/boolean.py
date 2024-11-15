@@ -760,6 +760,28 @@ class DualBaseTestCase(unittest.TestCase):
         )
         assert result.pretty() == expected.pretty()
 
+    def test_absorption_invariant_to_order(self):
+        algebra = BooleanAlgebra()
+
+        a, b = algebra.symbols("a", "b")
+
+        e = (~a | ~b) & b & ~a
+        args = [
+            ~a | ~b,
+            ~a,
+            b,
+        ]
+
+        result_original = e.absorb(args)
+
+        args[1], args[2] = args[2], args[1]
+        result_swapped = e.absorb(args)
+
+        assert len(result_original) == 2
+        assert len(result_swapped) == 2
+        assert result_original[0] == result_swapped[1]
+        assert result_original[1] == result_swapped[0]
+
     @expectedFailure
     def test_parse_complex_expression_should_create_same_expression_as_python(self):
         algebra = BooleanAlgebra()

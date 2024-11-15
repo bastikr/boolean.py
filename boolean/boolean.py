@@ -1491,7 +1491,12 @@ class DualBase(Function):
                             i -= 1
                         continue
                     else:
-                        args[j] = b
+                        if b in args:
+                            del args[j]
+                            if j < i:
+                                i -= 1
+                        else:
+                            args[j] = b
                         j += 1
                         continue
 
