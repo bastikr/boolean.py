@@ -763,7 +763,7 @@ class DualBaseTestCase(unittest.TestCase):
     def test_absorption_invariant_to_order(self):
         algebra = BooleanAlgebra()
 
-        a, b = algebra.symbols(*"ab")
+        a, b = algebra.symbols("a", "b")
 
         e = (~a | ~b) & b & ~a
         args = [
