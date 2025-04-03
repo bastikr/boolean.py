@@ -53,6 +53,10 @@ setup(
                 "pytest >= 6, != 7.0.0",
                 "pytest-xdist >= 2",
             ],
+        "dev":
+            [
+                "twine",
+            ],
         "linting":
             [
                 "black",
