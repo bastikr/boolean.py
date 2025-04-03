@@ -58,7 +58,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                os: [ubuntu-22.04, ubuntu-24.04, macos-13, macos-14, windows-2019, windows-2022, windows-2024]
+                os: [ubuntu-22.04, ubuntu-24.04, macos-13, macos-14, windows-2019, windows-2022, windows-2025]
                 python: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14-dev"]
 
         steps:
