@@ -45,6 +45,7 @@ jobs:
           - name: Collect built sdist and wheel
             uses: actions/upload-artifact@v4
             with:
+                name: boolean-build
                 path: dist/*
 
     test_on_many_oses:
@@ -92,4 +93,5 @@ jobs:
           - name: Collect docs
             uses: actions/upload-artifact@v4
             with:
+                name: boolean-documentation
                 path: docs/build/
