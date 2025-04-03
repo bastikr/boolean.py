@@ -40,8 +40,8 @@ jobs:
 
           - name: Build sdist
             run: |
-                python setup.py sdist bdist_wheel
-                twine check dist/*
+                python -m build --sdist --wheel
+                python -m twine check dist/*
 
           - name: Collect built sdist
             uses: actions/upload-artifact@v4

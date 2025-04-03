@@ -56,6 +56,7 @@ setup(
         "dev":
             [
                 "twine",
+                "build",
             ],
         "linting":
             [
