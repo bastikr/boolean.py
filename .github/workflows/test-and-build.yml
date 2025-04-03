@@ -29,10 +29,10 @@ on: [push, pull_request, workflow_dispatch]
 jobs:
     build:
       name: Build source distribution
-      runs-on: ubuntu-20.04
+      runs-on: ubuntu-24.04
 
       steps:
-          - uses: actions/checkout@v2
+          - uses: actions/checkout@v4
 
           - name: Checkout and install reqs
             run: |
@@ -44,7 +44,7 @@ jobs:
                 twine check dist/*
 
           - name: Collect built sdist
-            uses: actions/upload-artifact@v2
+            uses: actions/upload-artifact@v4
             with:
                 path: dist/*.tar.gz
 
@@ -58,16 +58,16 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                os: [ubuntu-20.04, macos-11, windows-2022]
+                os: [ubuntu-22.04, ubuntu-24.04, macos-13, macos-14, windows-2019, windows-2022, windows-2024]
                 python: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14-dev"]
 
         steps:
             - name: Set up Python
-              uses: actions/setup-python@v2
+              uses: actions/setup-python@v5
               with:
                 python-version: "${{ matrix.python }}"
 
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v4
 
             - name: Install
               run: pip install -e . -r requirements-dev.txt
@@ -77,10 +77,10 @@ jobs:
 
     docs:
       name: Generate docs
-      runs-on: ubuntu-20.04
+      runs-on: ubuntu-24.04
 
       steps:
-          - uses: actions/checkout@v2
+          - uses: actions/checkout@v4
 
           - name: Checkout and install reqs
             run: |
@@ -91,6 +91,6 @@ jobs:
                 make -C docs html
 
           - name: Collect docs
-            uses: actions/upload-artifact@v2
+            uses: actions/upload-artifact@v4
             with:
                 path: docs/build/
