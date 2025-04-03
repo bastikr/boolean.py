@@ -35,18 +35,17 @@ jobs:
           - uses: actions/checkout@v4
 
           - name: Checkout and install reqs
-            run: |
-                pip install --upgrade --user build twine pip setuptools
+            run: python -m pip install --user --upgrade build twine packaging pip setuptools
 
           - name: Build sdist
             run: |
                 python -m build --sdist --wheel
                 python -m twine check dist/*
 
-          - name: Collect built sdist
+          - name: Collect built sdist and wheel
             uses: actions/upload-artifact@v4
             with:
-                path: dist/*.tar.gz
+                path: dist/*
 
     test_on_many_oses:
         name: Run tests ${{ matrix.python }} on ${{ matrix.os }}
