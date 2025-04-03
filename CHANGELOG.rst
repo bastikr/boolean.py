@@ -6,6 +6,17 @@ Changelog
 next
 ----
 
+5.0 (2025-04-03)
+----------------
+
+* API changes
+
+ * Drop support for Python versions older than 3.9.
+ * Add support by testing on Python 3.11 to 3.14
+ * Fix absorption issues https://github.com/bastikr/boolean.py/issues/111 and
+   https://github.com/bastikr/boolean.py/issues/112
+
+
 
 4.0 (2022-05-05)
 ----------------

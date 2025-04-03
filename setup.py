@@ -23,7 +23,7 @@ SPDX-License-Identifier: BSD-2-Clause
 
 setup(
     name="boolean.py",
-    version="4.0",
+    version="5.0",
     license="BSD-2-Clause",
     description="Define boolean algebras, create and parse boolean "
     "expressions and create custom boolean DSL.",
