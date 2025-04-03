@@ -35,8 +35,6 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
-    test_loader="unittest:TestLoader",
-    test_suite="boolean.test_boolean",
     keywords="boolean expression, boolean algebra, logic, expression parser",
     classifiers=[
         "Development Status :: 5 - Production/Stable",
@@ -54,7 +52,14 @@ setup(
             [
                 "pytest >= 6, != 7.0.0",
                 "pytest-xdist >= 2",
+            ],
+        "dev":
+            [
                 "twine",
+                "build",
+            ],
+        "linting":
+            [
                 "black",
                 "isort",
                 "pycodestyle",

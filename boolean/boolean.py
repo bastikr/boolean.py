@@ -866,7 +866,12 @@ class Expression(object):
     def __gt__(self, other):
         lt = other.__lt__(self)
         if lt is NotImplemented:
-            return not self.__lt__(other)
+            self_lt = self.__lt__(other)
+            if self_lt is NotImplemented:
+                # `return not NotImplemented`` no longer works in Python 3.14
+                return False
+            else:
+                return not self_lt
         return lt
 
     def __and__(self, other):
