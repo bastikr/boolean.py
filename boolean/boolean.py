@@ -1340,28 +1340,32 @@ class DualBase(Function):
         #     (A | B) | C = A | (B | C) = A | B | C
         expr = expr.flatten()
 
+        # Remove duplicates while preserving order.
+        seen = set()
+        args = []
+        for arg in expr.args:
+            if arg not in seen:
+                seen.add(arg)
+                args.append(arg)
+
         # Annihilation: A & 0 = 0, A | 1 = 1
-        if self.annihilator in expr.args:
+        if self.annihilator in seen:
             return self.annihilator
 
         # Idempotence: A & A = A, A | A = A
-        # this boils down to removing duplicates
-        args = []
-        for arg in expr.args:
-            if arg not in args:
-                args.append(arg)
         if len(args) == 1:
             return args[0]
 
         # Identity: A & 1 = A, A | 0 = A
-        if self.identity in args:
+        if self.identity in seen:
             args.remove(self.identity)
+            seen.remove(self.identity)
             if len(args) == 1:
                 return args[0]
 
         # Complementation: A & ~A = 0, A | ~A = 1
         for arg in args:
-            if self.NOT(arg) in args:
+            if self.NOT(arg) in seen:
                 return self.annihilator
 
         # Elimination: (A & B) | (A & ~B) = A, (A | B) & (A | ~B) = A
