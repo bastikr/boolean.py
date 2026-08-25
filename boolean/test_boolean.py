@@ -682,6 +682,16 @@ class DualBaseTestCase(unittest.TestCase):
     def test_dual(self):
         algebra = BooleanAlgebra()
         assert algebra.AND(algebra.Symbol("a"), algebra.Symbol("b")).dual == algebra.OR
+
+    def test_and_or_with_non_expression_other(self):
+        algebra = BooleanAlgebra()
+        a, b = algebra.Symbol("a"), algebra.Symbol("b")
+        expr = a & b
+
+        self.assertRaises(TypeError, lambda: expr + "a")
+        self.assertRaises(TypeError, lambda: expr & "a")
+        self.assertRaises(TypeError, lambda: expr | "a")
+        self.assertRaises(TypeError, lambda: expr * "a")
         assert algebra.OR(algebra.Symbol("a"), algebra.Symbol("b")).dual == algebra.AND
 
         assert algebra.parse("a|b").dual == algebra.AND

@@ -875,6 +875,8 @@ class Expression(object):
         return lt
 
     def __and__(self, other):
+        if not isinstance(other, Expression):
+            return NotImplemented
         return self.AND(self, other)
 
     __mul__ = __and__
@@ -883,6 +885,8 @@ class Expression(object):
         return self.NOT(self)
 
     def __or__(self, other):
+        if not isinstance(other, Expression):
+            return NotImplemented
         return self.OR(self, other)
 
     __add__ = __or__
