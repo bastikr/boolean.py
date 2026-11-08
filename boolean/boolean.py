@@ -1328,12 +1328,13 @@ class DualBase(Function):
         # Otherwise bring arguments into canonical form.
         args = [arg.simplify() for arg in self.args]
 
-        # Create new instance of own class with canonical args.
-        # TODO: Only create new class if some args changed.
+        # De Morgan's law can create new subexpressions. Simplify those before
+        # applying the rules below, which assume canonical arguments.
+        for i, arg in enumerate(args):
+            literalized = arg.literalize()
+            if literalized is not arg:
+                args[i] = literalized.simplify()
         expr = self.__class__(*args)
-
-        # Literalize before doing anything, this also applies De Morgan's Law
-        expr = expr.literalize()
 
         # Associativity:
         #     (A & B) & C = A & (B & C) = A & B & C
