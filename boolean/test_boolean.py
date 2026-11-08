@@ -33,6 +33,25 @@ from boolean.boolean import (
 
 
 class BooleanAlgebraTestCase(unittest.TestCase):
+    def test_simplify_nested_negations_in_one_pass(self):
+        algebra = BooleanAlgebra()
+        cases = (
+            ("~(~a&((b&c)|a))&1", "a|~b|~c"),
+            ("~(((a&b)|~c)&c)&1", "~a|~b|~c"),
+            ("0|~((~a&(b|c))|a)", "~a&~b&~c"),
+            ("1&~(a&~(b&a)&~(~b))", "1"),
+            ("~((a&b)|~(b&a))|0", "0"),
+            ("0|~(~a|(a&b)|~b)", "0"),
+        )
+        for source, expected in cases:
+            for sort in (False, True):
+                with self.subTest(source=source, sort=sort):
+                    simplified = algebra.parse(source).simplify(sort=sort)
+                    self.assertEqual(simplified, algebra.parse(expected))
+                    self.assertEqual(
+                        repr(simplified), repr(simplified.simplify())
+                    )
+
     def test_creation(self):
         algebra = BooleanAlgebra()
         expr_str = "(a|b|c)&d&(~e|(f&g))"
