@@ -456,6 +456,42 @@ class BaseElementTestCase(unittest.TestCase):
         assert repr(algebra.FALSE) == "FALSE"
 
 
+class LiteralTraversalTestCase(unittest.TestCase):
+    def test_deep_literal_traversal(self):
+        algebra = BooleanAlgebra()
+        symbol = algebra.Symbol("deep")
+        literal = algebra.NOT(symbol)
+        expression = literal
+        for _ in range(2000):
+            expression = algebra.NOT(expression)
+        self.assertEqual(expression.get_literals(), [literal])
+        self.assertEqual(expression.literals, {literal})
+        self.assertEqual(expression.get_symbols(), [symbol])
+        self.assertEqual(expression.symbols, {symbol})
+
+    def test_literal_order_duplicates_and_constants(self):
+        algebra = BooleanAlgebra()
+        a, b = algebra.symbols("a", "b")
+        negated = algebra.NOT(b)
+        expression = algebra.OR(
+            a, algebra.AND(negated, a, algebra.TRUE), algebra.FALSE, b
+        )
+        self.assertEqual(expression.get_literals(), [a, negated, a, b])
+        self.assertEqual(expression.get_symbols(), [a, b, a, b])
+        self.assertEqual(algebra.TRUE.get_literals(), [])
+
+    def test_literal_traversal_preserves_overrides(self):
+        class CustomSymbol(Symbol):
+            def get_literals(self):
+                return [replacement]
+
+        algebra = BooleanAlgebra(Symbol_class=CustomSymbol)
+        replacement = Symbol("replacement")
+        symbol = algebra.Symbol("custom")
+        expression = algebra.OR(symbol, algebra.FALSE)
+        self.assertEqual(expression.get_literals(), [replacement])
+
+
 class SymbolTestCase(unittest.TestCase):
     def test_init(self):
         Symbol(1)

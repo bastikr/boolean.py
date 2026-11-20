@@ -6,6 +6,9 @@ Changelog
 next
 ----
 
+* Avoid recursion limits when collecting literals and symbols from deeply nested
+  expressions.
+
 5.0 (2025-04-03)
 ----------------
 
