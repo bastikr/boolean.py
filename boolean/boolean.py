@@ -684,7 +684,18 @@ class Expression(object):
             return [self]
         if not self.args:
             return []
-        return list(itertools.chain.from_iterable(arg.get_literals() for arg in self.args))
+        literals = []
+        pending = list(reversed(self.args))
+        while pending:
+            expression = pending.pop()
+            if type(expression).get_literals is not Expression.get_literals:
+                # Retain custom traversal behavior supplied by subclasses.
+                literals.extend(expression.get_literals())
+            elif expression.isliteral:
+                literals.append(expression)
+            else:
+                pending.extend(reversed(expression.args))
+        return literals
 
     @property
     def literals(self):
