@@ -262,3 +262,20 @@ your own mini expression language. See the tests for examples.
 2. You can subclass the Symbol, NOT, AND and OR functions to add additional 
 methods or for custom representations.
 When doing so, you configure  :class:`BooleanAlgebra` instances by passing the custom sub-classes as agruments. 
+
+The ``~expression`` operator calls ``expression.NOT(expression)``. A custom
+``NOT`` implementation must construct its result without applying ``~`` to
+the same argument; doing so calls ``NOT`` again and eventually raises
+``RecursionError``. Subclassing :class:`NOT` lets you reuse its constructor
+while customizing its representation, for example:
+
+.. doctest:: boolean
+
+    >>> import boolean
+    >>> class NamedNot(boolean.NOT):
+    ...     def __str__(self):
+    ...         return "not ({})".format(self.args[0])
+    >>> algebra = boolean.BooleanAlgebra(NOT_class=NamedNot)
+    >>> x = algebra.Symbol("x")
+    >>> print(~x)
+    not (x)
