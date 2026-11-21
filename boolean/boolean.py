@@ -253,6 +253,16 @@ class BooleanAlgebra(object):
                         token_type, token_string, token_position, PARSE_INVALID_OPERATOR_SEQUENCE
                     )
 
+                if prev_token_type in (TOKEN_LPAR, TOKEN_NOT):
+                    if token_type == TOKEN_RPAR:
+                        raise ParseError(
+                            token_type, token_string, token_position, PARSE_INVALID_NESTING
+                        )
+                    if is_operator(token_type):
+                        raise ParseError(
+                            token_type, token_string, token_position, PARSE_INVALID_OPERATOR_SEQUENCE
+                        )
+
             else:
                 if is_operator(token_type):
                     raise ParseError(

@@ -369,6 +369,70 @@ class BooleanAlgebraTestCase(unittest.TestCase):
         except ParseError as pe:
             assert pe.error_code == PARSE_INVALID_SYMBOL_SEQUENCE
 
+    def test_parse_empty_groups_report_parse_error(self):
+        algebra = BooleanAlgebra()
+        for expr in ("()", "( )", "(())", "a & ()", "not ()", "( )this"):
+            with self.subTest(expr=expr):
+                with self.assertRaises(ParseError) as context:
+                    algebra.parse(expr)
+                error = context.exception
+                self.assertEqual(error.error_code, PARSE_INVALID_NESTING)
+                self.assertEqual(error.token_type, TOKEN_RPAR)
+                self.assertEqual(error.token_string, ")")
+                self.assertEqual(error.position, expr.index(")"))
+                self.assertIn('for token: ")"', str(error))
+
+    def test_parse_missing_not_operand_reports_parse_error(self):
+        algebra = BooleanAlgebra()
+        for expr in ("(not)", "(a and not)", "((!))"):
+            with self.subTest(expr=expr):
+                with self.assertRaises(ParseError) as context:
+                    algebra.parse(expr)
+                error = context.exception
+                self.assertEqual(error.error_code, PARSE_INVALID_NESTING)
+                self.assertEqual(error.token_type, TOKEN_RPAR)
+                self.assertEqual(error.position, expr.index(")"))
+
+    def test_parse_missing_left_operand_reports_parse_error(self):
+        algebra = BooleanAlgebra()
+        cases = (
+            ("(and a)", "and", TOKEN_AND),
+            ("(or a)", "or", TOKEN_OR),
+            ("a & (| b)", "|", TOKEN_OR),
+            ("not and a", "and", TOKEN_AND),
+            ("! | a", "|", TOKEN_OR),
+        )
+        for expr, token, token_type in cases:
+            with self.subTest(expr=expr):
+                with self.assertRaises(ParseError) as context:
+                    algebra.parse(expr)
+                error = context.exception
+                self.assertEqual(error.error_code, PARSE_INVALID_OPERATOR_SEQUENCE)
+                self.assertEqual(error.token_type, token_type)
+                self.assertEqual(error.token_string, token)
+                self.assertEqual(error.position, expr.index(token) + len(token) - 1)
+
+    def test_parse_malformed_token_iterable_preserves_location(self):
+        tokens = iter(
+            ((TOKEN_LPAR, "open", 10), (TOKEN_NOT, "negate", 20), (TOKEN_RPAR, "close", 30))
+        )
+        with self.assertRaises(ParseError) as context:
+            BooleanAlgebra().parse(tokens)
+        error = context.exception
+        self.assertEqual(error.error_code, PARSE_INVALID_NESTING)
+        self.assertEqual(error.token_type, TOKEN_RPAR)
+        self.assertEqual(error.token_string, "close")
+        self.assertEqual(error.position, 30)
+
+    def test_parse_valid_nested_groups_and_negations(self):
+        algebra = BooleanAlgebra()
+        a, b, c = algebra.symbols("a", "b", "c")
+        self.assertEqual(algebra.parse("((a))"), a)
+        self.assertEqual(algebra.parse("(not a)"), ~a)
+        self.assertEqual(algebra.parse("not (not a)"), ~~a)
+        self.assertEqual(algebra.parse("a and (not b or c)"), a & (~b | c))
+        self.assertEqual(algebra.parse("((a and b) or c)"), (a & b) | c)
+
     def test_parse_side_by_side_symbols_should_raise_exception_but_not2(self):
         algebra = BooleanAlgebra()
         expr_str = "(a or b) c"
