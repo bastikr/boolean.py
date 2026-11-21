@@ -250,6 +250,27 @@ To substitute parts of an expression, use the :meth:`subs` method::
     >>> e.subs({y&z:y})
     x|y
 
+The replacement values must also be boolean.py expressions. To substitute a
+constant, use ``algebra.TRUE`` or ``algebra.FALSE`` from the algebra that created
+the expression. Python's built-in ``True`` and ``False`` are not expression
+objects and cannot be used as replacement values.
+
+Call :meth:`simplify` after substitution to reduce the resulting expression::
+
+    >>> import boolean
+    >>> algebra = boolean.BooleanAlgebra()
+    >>> A, B = algebra.symbols('A', 'B')
+    >>> expr = algebra.parse('A & ~B')
+    >>> expr.subs({A: algebra.TRUE, B: algebra.FALSE}).simplify()
+    TRUE
+    >>> expr.subs({A: algebra.FALSE}).simplify()
+    FALSE
+    >>> print(expr.subs({B: algebra.FALSE}).simplify())
+    A
+
+The same constants are available as ``expr.TRUE`` and ``expr.FALSE``, or as
+the first two values returned by ``algebra.definition()``.
+
 
 Using boolean.py to define your own boolean algebra
 ---------------------------------------------------
