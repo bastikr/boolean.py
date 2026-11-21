@@ -880,6 +880,12 @@ class Expression(object):
     __mul__ = __and__
 
     def __invert__(self):
+        """
+        Construct a negation using the algebra's NOT callable.
+
+        Custom NOT implementations must not apply ``~`` to their argument:
+        doing so calls this method again and recurses indefinitely.
+        """
         return self.NOT(self)
 
     def __or__(self, other):
