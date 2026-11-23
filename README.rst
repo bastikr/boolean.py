@@ -4,8 +4,8 @@ boolean.py
 "boolean.py" is a small library implementing a boolean algebra. It
 defines two base elements, TRUE and FALSE, and a Symbol class that can
 take on one of these two values. Calculations are done in terms of AND,
-OR and NOT - other compositions like XOR and NAND are not implemented
-but can be emulated with AND or and NOT. Expressions are constructed
+OR, NOT and XOR (odd parity). Other compositions like NAND can be
+emulated with AND and NOT. Expressions are constructed
 from parsed strings or in Python.
 
 It runs on Python 3.6+

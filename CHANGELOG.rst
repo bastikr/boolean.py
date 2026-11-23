@@ -6,6 +6,9 @@ Changelog
 next
 ----
 
+* Add native XOR expressions, ``^`` and case-insensitive ``xor`` parsing,
+  parity simplification, evaluation, substitution, and CNF/DNF conversion.
+
 5.0 (2025-04-03)
 ----------------
 

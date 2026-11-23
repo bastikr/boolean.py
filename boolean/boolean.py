@@ -2,7 +2,7 @@
 Boolean expressions algebra.
 
 This module defines a Boolean algebra over the set {TRUE, FALSE} with boolean
-variables called Symbols and the boolean functions AND, OR, NOT.
+variables called Symbols and the boolean functions AND, OR, NOT, XOR.
 
 Some basic logic comparison is supported: two expressions can be
 compared for equivalence or containment. Furthermore you can simplify
@@ -23,9 +23,11 @@ SPDX-License-Identifier: BSD-2-Clause
 
 import inspect
 import itertools
+from collections import Counter
 from functools import reduce  # NOQA
 from operator import and_ as and_operator
 from operator import or_ as or_operator
+from operator import xor as xor_operator
 
 # Set to True to enable tracing for parsing
 TRACE_PARSE = False
@@ -39,6 +41,7 @@ TOKEN_RPAR = 5
 TOKEN_TRUE = 6
 TOKEN_FALSE = 7
 TOKEN_SYMBOL = 8
+TOKEN_XOR = 9
 
 TOKEN_TYPES = {
     TOKEN_AND: "AND",
@@ -49,6 +52,7 @@ TOKEN_TYPES = {
     TOKEN_TRUE: "TRUE",
     TOKEN_FALSE: "FALSE",
     TOKEN_SYMBOL: "SYMBOL",
+    TOKEN_XOR: "XOR",
 }
 
 # parsing error code and messages
@@ -117,9 +121,10 @@ class BooleanAlgebra(object):
         AND_class=None,
         OR_class=None,
         allowed_in_token=(".", ":", "_"),
+        XOR_class=None,
     ):
         """
-        The types for TRUE, FALSE, NOT, AND, OR and Symbol define the boolean
+        The types for TRUE, FALSE, NOT, AND, OR, XOR and Symbol define the boolean
         algebra elements, operations and Symbol variable. They default to the
         standard classes if not provided.
 
@@ -141,6 +146,7 @@ class BooleanAlgebra(object):
         self.NOT = NOT_class or NOT
         self.AND = AND_class or AND
         self.OR = OR_class or OR
+        self.XOR = XOR_class or XOR
 
         # class used for Symbols
         self.Symbol = Symbol_class or Symbol
@@ -151,6 +157,7 @@ class BooleanAlgebra(object):
             "NOT": self.NOT,
             "AND": self.AND,
             "OR": self.OR,
+            "XOR": self.XOR,
             "Symbol": self.Symbol,
         }
 
@@ -196,7 +203,7 @@ class BooleanAlgebra(object):
         See the `tokenize()` method for detailed specification.
         """
 
-        precedence = {self.NOT: 5, self.AND: 10, self.OR: 15, TOKEN_LPAR: 20}
+        precedence = {self.NOT: 5, self.AND: 10, self.XOR: 12, self.OR: 15, TOKEN_LPAR: 20}
 
         if isinstance(expr, str):
             tokenized = self.tokenize(expr)
@@ -220,7 +227,7 @@ class BooleanAlgebra(object):
             return isinstance(_t, Symbol) or _t in (TOKEN_TRUE, TOKEN_FALSE, TOKEN_SYMBOL)
 
         def is_operator(_t):
-            return _t in (TOKEN_AND, TOKEN_OR)
+            return _t in (TOKEN_AND, TOKEN_OR, TOKEN_XOR)
 
         prev_token = None
         for token_type, token_string, token_position in tokenized:
@@ -238,6 +245,11 @@ class BooleanAlgebra(object):
                 prev_token_type, _prev_token_string, _prev_token_position = prev_token
                 if TRACE_PARSE:
                     print("  prev_token:", repr(prev_token))
+
+                if is_operator(token_type) and prev_token_type in (TOKEN_LPAR, TOKEN_NOT):
+                    raise ParseError(
+                        token_type, token_string, token_position, PARSE_INVALID_NESTING
+                    )
 
                 if is_sym(prev_token_type) and (
                     is_sym(token_type)
@@ -294,11 +306,16 @@ class BooleanAlgebra(object):
                 if TRACE_PARSE:
                     print("  ast:token_type is TOKEN_OR: start_operation", ast)
 
+            elif token_type == TOKEN_XOR:
+                ast = self._start_operation(ast, self.XOR, precedence)
+
             elif token_type == TOKEN_LPAR:
                 if prev_token:
                     # Check that an opening parens is preceded by a function
                     # or an opening parens
-                    if prev_token_type not in (TOKEN_NOT, TOKEN_AND, TOKEN_OR, TOKEN_LPAR):
+                    if prev_token_type not in (
+                        TOKEN_NOT, TOKEN_AND, TOKEN_OR, TOKEN_XOR, TOKEN_LPAR
+                    ):
                         raise ParseError(
                             token_type, token_string, token_position, PARSE_INVALID_NESTING
                         )
@@ -315,6 +332,13 @@ class BooleanAlgebra(object):
                         )
 
                     if ast[1] is TOKEN_LPAR:
+                        if len(ast) != 3:
+                            raise ParseError(
+                                token_type,
+                                token_string,
+                                token_position,
+                                PARSE_INVALID_EXPRESSION,
+                            )
                         ast[0].append(ast[2])
                         if TRACE_PARSE:
                             print("ast9:", repr(ast))
@@ -489,6 +513,7 @@ class BooleanAlgebra(object):
 
             - for and:  '*', '&', 'and'
             - for or: '+', '|', 'or'
+            - for xor: '^', 'xor' (between AND and OR in precedence)
             - for not: '~', '!', 'not'
 
         - Recognized special symbols are (in any upper/lower case combinations):
@@ -509,6 +534,8 @@ class BooleanAlgebra(object):
             "+": TOKEN_OR,
             "|": TOKEN_OR,
             "or": TOKEN_OR,
+            "^": TOKEN_XOR,
+            "xor": TOKEN_XOR,
             "~": TOKEN_NOT,
             "!": TOKEN_NOT,
             "not": TOKEN_NOT,
@@ -574,6 +601,29 @@ class BooleanAlgebra(object):
             flattened_expr = flattened_expr.distributive()
         return flattened_expr
 
+    def _eliminate_xor(self, expr):
+        """Expand parity only when a normal form explicitly requires AND/OR."""
+        if isinstance(expr, self.XOR):
+            expr = expr.simplify()
+        if expr.isliteral:
+            return expr
+        args = tuple(self._eliminate_xor(arg) for arg in expr.args)
+        if isinstance(expr, self.XOR):
+
+            def expand(terms):
+                if len(terms) == 1:
+                    return terms[0]
+                middle = len(terms) // 2
+                left, right = expand(terms[:middle]), expand(terms[middle:])
+                return self.OR(
+                    self.AND(left, self.NOT(right)), self.AND(self.NOT(left), right)
+                )
+
+            return expand(args)
+        if all(arg is old for arg, old in zip(args, expr.args)):
+            return expr
+        return expr.__class__(*args)
+
     def normalize(self, expr, operation):
         """
         Return a normalized expression transformed to its normal form in the
@@ -593,6 +643,7 @@ class BooleanAlgebra(object):
             self.OR,
         )
         # Move NOT inwards.
+        expr = self._eliminate_xor(expr)
         expr = expr.literalize()
         # Simplify first otherwise _recurse_distributive() may take forever.
         expr = expr.simplify()
@@ -650,6 +701,7 @@ class Expression(object):
     NOT = None
     AND = None
     OR = None
+    XOR = None
     Symbol = None
 
     def __init__(self):
@@ -885,6 +937,9 @@ class Expression(object):
     def __or__(self, other):
         return self.OR(self, other)
 
+    def __xor__(self, other):
+        return self.XOR(self, other)
+
     __add__ = __or__
 
     def __bool__(self):
@@ -944,7 +999,7 @@ class _TRUE(BaseElement):
     def __repr__(self):
         return "TRUE"
 
-    def __call__(self):
+    def __call__(self, **kwargs):
         return self
 
     __nonzero__ = __bool__ = lambda s: True
@@ -972,7 +1027,7 @@ class _FALSE(BaseElement):
     def __repr__(self):
         return "FALSE"
 
-    def __call__(self):
+    def __call__(self, **kwargs):
         return self
 
     __nonzero__ = __bool__ = lambda s: False
@@ -1044,7 +1099,7 @@ class Function(Expression):
 
     A boolean function takes n (one or more) boolean expressions as arguments
     where n is called the order of the function and maps them to one of the base
-    elements TRUE or FALSE. Implemented functions are AND, OR and NOT.
+    elements TRUE or FALSE. Implemented functions are AND, OR, NOT and XOR.
     """
 
     def __init__(self, *args):
@@ -1182,7 +1237,12 @@ class NOT(Function):
         ):
             return expr.args[0].dual
 
-        expr = self.__class__(expr.args[0].simplify())
+        arg = expr.args[0].simplify()
+        if arg in (self.TRUE, self.FALSE):
+            return arg.dual
+        if isinstance(arg, self.__class__):
+            return arg.args[0]
+        expr = self.__class__(arg)
         expr.iscanonical = True
         return expr
 
@@ -1209,6 +1269,9 @@ class NOT(Function):
         if expr.isliteral or not isinstance(expr, self.NOT):
             return expr
         op = expr.args[0]
+        if isinstance(op, self.XOR):
+            # Complementing one operand reverses the parity of the whole XOR.
+            return op.__class__(self.__class__(op.args[0]).cancel(), *op.args[1:])
         return op.dual(*(self.__class__(arg).cancel() for arg in op.args))
 
     def __call__(self, **kwargs):
@@ -1660,3 +1723,68 @@ class OR(DualBase):
         self.annihilator = self.TRUE
         self.dual = self.AND
         self.operator = "|"
+
+
+class XOR(Function):
+    """Exclusive OR of two or more expressions: true for odd parity.
+
+    Use ``a ^ b``, ``XOR(a, b, c)``, or parse ``a xor b``. Unlike AND and
+    OR, XOR is not idempotent: repeated operands cancel in pairs. Normal
+    forms expand XOR into AND/OR, while simplify keeps a compact parity node.
+    """
+
+    def __init__(self, arg1, arg2, *args):
+        super(XOR, self).__init__(arg1, arg2, *args)
+        self.operator = "^"
+        self.sort_order = 20
+
+    def __call__(self, **kwargs):
+        return reduce(xor_operator, (bool(arg(**kwargs)) for arg in self.args), False)
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return Counter(self.args) == Counter(other.args)
+        return NotImplemented
+
+    def __hash__(self):
+        return hash((self.__class__.__name__, frozenset(Counter(self.args).items())))
+
+    def __lt__(self, other):
+        comparison = Expression.__lt__(self, other)
+        if comparison is not NotImplemented:
+            return comparison
+        if isinstance(other, self.__class__):
+            return self.args < other.args
+        return NotImplemented
+
+    def simplify(self, sort=True):
+        if self.iscanonical:
+            return self
+        pending = list(reversed(self.args))
+        terms = {}
+        parity = False
+        while pending:
+            arg = pending.pop().simplify()
+            while isinstance(arg, self.NOT):
+                parity = not parity
+                arg = arg.args[0]
+            if arg == self.TRUE:
+                parity = not parity
+            elif arg == self.FALSE:
+                continue
+            elif isinstance(arg, self.__class__):
+                pending.extend(reversed(arg.args))
+            elif arg in terms:
+                del terms[arg]
+            else:
+                terms[arg] = None
+        args = list(terms)
+        if not args:
+            return self.TRUE if parity else self.FALSE
+        if sort:
+            args.sort()
+        if len(args) == 1:
+            return self.NOT(args[0]).simplify() if parity else args[0]
+        result = self.__class__(*args)
+        result.iscanonical = True
+        return self.NOT(result).simplify() if parity else result
