@@ -251,6 +251,39 @@ To substitute parts of an expression, use the :meth:`subs` method::
     x|y
 
 
+Exclusive OR
+------------
+
+XOR is true when an odd number of its operands are true. Construct it with
+``algebra.XOR(a, b, c)``, the Python ``^`` operator, or a parsed ``^`` / ``xor``
+operator. The word is case-insensitive. Precedence matches Python's bitwise
+operators: NOT, then AND, then XOR, then OR::
+
+    >>> import boolean
+    >>> algebra = boolean.BooleanAlgebra()
+    >>> a, b, c = algebra.symbols('a', 'b', 'c')
+    >>> algebra.parse('a and b xor c') == ((a & b) ^ c)
+    True
+    >>> (a ^ b)(a=True, b=False)
+    True
+    >>> (a ^ a ^ b).simplify()
+    Symbol('b')
+    >>> (a ^ ~a).simplify()
+    TRUE
+
+Repeated operands cancel in pairs, ``FALSE`` is the identity, and ``TRUE``
+reverses parity. Simplification keeps a compact XOR expression rather than
+expanding a truth table. ``literalize()`` can move a negation through XOR by
+negating one operand. ``cnf()`` and ``dnf()`` expand XOR into AND/OR/NOT; as with
+other normal-form conversions, the result can grow exponentially.
+
+XOR supports substitution, structural equality, hashing and custom subclasses
+via ``BooleanAlgebra(XOR_class=...)``. Structural equality is commutative but
+preserves operand multiplicity: ``XOR(a, a, b)`` differs from ``XOR(a, b)``.
+``definition()`` retains its existing six-element tuple; access the
+additional operator as ``algebra.XOR``. Custom tokenizers can emit ``TOKEN_XOR``.
+
+
 Using boolean.py to define your own boolean algebra
 ---------------------------------------------------
 

@@ -6,7 +6,7 @@ from setuptools import setup
 long_desc = """
 
 This library helps you deal with boolean expressions and algebra with variables
-and the boolean functions AND, OR, NOT.
+and the boolean functions AND, OR, NOT, XOR.
 
 You can parse expressions from strings and simplify and compare expressions.
 You can also easily create your custom algreba and mini DSL and create custom
